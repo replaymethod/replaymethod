@@ -1,5 +1,7 @@
 # Replay Method
 
+[![CI](https://github.com/replaymethod/replaymethod/actions/workflows/ci.yml/badge.svg)](https://github.com/replaymethod/replaymethod/actions/workflows/ci.yml)
+
 **AI coaching for competitive gamers, grounded in real gameplay evidence.**
 
 [Visit Replay Method](https://replaymethod.xyz) · [Contact](mailto:contact@replaymethod.xyz)
