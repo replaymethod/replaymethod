@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1786791620990,
+      "tag": "0000_hesitant_venom",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1786792993273,
+      "tag": "0001_dry_bucky",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786795072512,
+      "tag": "0002_red_human_fly",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786797387272,
+      "tag": "0003_useful_garia",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786892862253,
+      "tag": "0004_perfect_tony_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786926774282,
+      "tag": "0005_whole_frightful_four",
+      "breakpoints": true
+    }
+  ]
+}

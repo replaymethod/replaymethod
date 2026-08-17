@@ -77,13 +77,60 @@ Important limitations today:
 
 ## Current priorities
 
-1. Move and preserve the complete existing source code in this repository.
-2. Build the production Rocket League replay worker.
-3. Validate detectors against a diverse dataset of real ranked replays.
-4. Automate evidence-based reports and email delivery.
-5. Add safe failure and abstention states.
-6. Extend the game-adapter model to VALORANT and League of Legends.
-7. Track player improvement across repeated analyses.
+1. Build and deploy the production Rocket League replay worker.
+2. Validate detectors against a diverse dataset of real ranked replays.
+3. Automate evidence-based reports and email delivery.
+4. Add safe failure and abstention states.
+5. Extend the game-adapter model to VALORANT and League of Legends.
+6. Track player improvement across repeated analyses.
+
+## Current game support
+
+| Game | Ingestion | Current state |
+| --- | --- | --- |
+| Rocket League | Original `.replay` file | Web intake and durable job pipeline work. The dedicated replay-engine service must be deployed and calibrated before automated findings are enabled publicly. |
+| League of Legends | Riot account and match history | The shared adapter boundary and a truthful blocked state exist. Production API and Riot Sign On approval remain external blockers. |
+| VALORANT | Riot account and match history | The shared adapter boundary and a truthful blocked state exist. Production API and Riot Sign On approval remain external blockers. |
+
+## Repository map
+
+- `app/` — landing pages, intake, private reports, admin and API routes
+- `lib/core/` — universal coaching contracts, pipeline and synthesis
+- `lib/adapters/` — game-specific ingestion boundaries
+- `db/` and `drizzle/` — portable schema and versioned migrations
+- `worker/` — Cloudflare request entry point and background scheduling hook
+- `services/rl-engine/` — standalone Rocket League replay service
+- `tests/` — build, route and engine regression checks
+
+Architecture and operating details live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), [docs/ROCKET_LEAGUE_ENGINE.md](docs/ROCKET_LEAGUE_ENGINE.md), and [docs/RIOT_INTEGRATION.md](docs/RIOT_INTEGRATION.md).
+
+## Local development
+
+Requirements:
+
+- Node.js 22.13 or newer
+- Linux or macOS shell for the existing build helpers
+
+```bash
+npm ci
+npm run dev
+```
+
+Copy `.env.example` to a local, ignored environment file and add only the credentials needed for the integration you are testing. Never commit secrets.
+
+Useful checks:
+
+```bash
+npm run lint
+npm run build
+npm test
+```
+
+## Deployment and portability
+
+The existing Sites project is declared in `.openai/hosting.json`. A future migration target needs a Next-compatible web runtime, a SQLite/Postgres-equivalent database, S3/R2-compatible private object storage, background job execution, and a container or native host for the Rocket League engine.
+
+The domain remains under owner control and can point to another host later. No payment system is active; pricing shown on the landing page is a founding hypothesis, not a charged subscription.
 
 ## Security and ownership
 
@@ -98,4 +145,4 @@ Replay Method is being built by Rafael Westin.
 
 ---
 
-*Source-code migration into this repository is in progress.*
+*The repository source was exported from exact Site version 16 and is being validated before merge.*
