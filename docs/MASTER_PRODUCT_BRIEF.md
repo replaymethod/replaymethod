@@ -327,8 +327,12 @@ At the time of this consolidation:
 
 - the source, CI and branch protection are on GitHub;
 - the evidence-first product and multi-detector direction are documented;
-- the landing-page monetization and positioning revisions are in the active
-  work batch and must be validated, merged and published;
+- the first landing-page conversion batch is validated and ready for release;
+- that batch adds an above-the-fold Rocket League drag-and-drop
+  intake: replay first, minimal player context second and private-report email
+  last, with marketing consent separate and off by default;
+- a fully post-result email capture is deliberately deferred until anonymous
+  device ownership and secure report claiming can be implemented end to end;
 - accounts, enforced free limits, cross-match memory and payments are not yet
   implemented;
 - no paid checkout is active;
