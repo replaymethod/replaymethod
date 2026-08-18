@@ -120,6 +120,12 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
     }
   };
 
+  const trackUpgradeInterest = () => {
+    let visitorId = sessionStorage.getItem("replaymethod-session-id");
+    if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
+    void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ visitorId, event: "cta_click", game: data.game, placement: "report_improvement_loop", path: location.pathname, source: "report" }) });
+  };
+
   const statusIndex = data.status === "ready" ? stages.length - 1 : stageOrder[data.processing?.stage || "queued"] ?? 0;
   const stopped = data.status === "blocked" || data.status === "failed";
   const stoppedCopy = stopped ? stopCopy(data) : null;
@@ -145,7 +151,7 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
 
         <section className="practice-plan"><header><span>03 · PRACTICE</span><h2>Your focused plan.</h2></header><div>{data.report.practicePlan.map((item, index) => <article key={`${item}-${index}`}><i>{String(index + 1).padStart(2, "0")}</i><div><small>{index === 0 ? "START HERE" : `STEP ${index + 1}`}</small><b>{item}</b></div></article>)}</div>{data.report.coachNote && <aside><span>COACH NOTE</span><p>{data.report.coachNote}</p></aside>}</section>
 
-        <section className="verify-next"><span>04 · PROVE</span><h2>The next report checks whether the decision changed—not just whether your rank moved.</h2><a href={`/analyze?game=${data.game}`}>Submit the next match →</a></section>
+        <section className="verify-next"><div><span>04 · PROVE</span><h2>Your diagnosis is complete. The improvement loop checks whether this decision actually changes.</h2><p>Founding membership will remember this focus, compare it across your next matches and show when the underlying habit improves—even before your rank catches up.</p></div><aside><span>FOUNDING 100</span><b>$9<small>/month</small></b><ul><li>4 analyses each month</li><li>Cross-match pattern memory</li><li>Progress verification</li></ul><Link href="/#pricing" onClick={trackUpgradeInterest}>Reserve founding access →</Link><small>No charge today</small></aside></section>
 
         <section className="report-method"><div><span>METHOD & LIMITS</span><h2>Traceable coaching, not a black box.</h2><p>{data.report.analysisSource === "automated" ? "This report was generated from versioned structured findings. The language layer can explain and prioritize them, but it cannot create new gameplay facts." : "This beta report was quality-reviewed. Automated engine metadata will appear here for reports produced by the structured pipeline."}</p></div><aside><b>{data.processing?.versions.detector || "Quality-reviewed beta"}</b><span>Detector</span><b>{data.processing?.versions.schema || "Legacy report schema"}</b><span>Schema</span></aside>{data.report.limitations.length > 0 && <ul>{data.report.limitations.map(item => <li key={item}>{item}</li>)}</ul>}</section>
 

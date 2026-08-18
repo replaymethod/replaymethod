@@ -12,14 +12,15 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Replay Method",
     title: "Replay Method — Turn every match into progress",
-    description: "Replay. Reveal. Practice. Prove. Stop grinding blind and fix the repeated decision keeping you hardstuck."
+    description: "Replay. Reveal. Practice. Prove. Stop grinding blind and fix the repeated decision keeping you hardstuck.",
+    images: [{ url: "/og.png", width: 1672, height: 939, alt: "Replay Method — Stop losing for the same reason." }]
   },
   twitter: {
     card: "summary_large_image",
     title: "Replay Method — Turn every match into progress",
-    description: "AI coaching for players who are done grinding blind."
+    description: "AI coaching for players who are done grinding blind.",
+    images: ["/og.png"]
   },
-  other: { "codex-preview": "development" },
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" }
 };
 

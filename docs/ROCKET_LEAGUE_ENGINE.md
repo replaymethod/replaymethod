@@ -19,6 +19,16 @@ The authoritative engine should run as a native asynchronous service. Cloudflare
 
 Returns either the shared `AdapterSuccess` contract or HTTP 422 for input that cannot be safely parsed/attributed. A parser success with no calibrated, supported finding must also abstain rather than invent a report.
 
+## Detector program
+
+The candidate catalog lives in `services/rl-engine/detector-catalog.mjs`. It
+currently spans boost economy, rotation, challenges, recovery, possession,
+offense, defense, kickoffs and team coordination. Catalog inclusion does not make
+a detector public; every entry starts in `discovery` with `public: false`.
+
+The research and rationale behind this broader shape are recorded in
+[`COMPETITIVE_INTELLIGENCE.md`](COMPETITIVE_INTELLIGENCE.md).
+
 ## Initial detector gate
 
 Candidate detectors, in recommended precision-first order:
@@ -37,7 +47,9 @@ These are candidates, not public claims. Enable a detector only after:
 - evidence timestamps checked against replay playback
 - patch/parser regression tests
 
-Start with a small reliable detector set. The UI already supports abstention and limitations.
+Analyze broadly in shadow mode, but start public coaching with a small reliable
+detector set. The UI already supports abstention and limitations. "One primary
+leak" is a report-prioritization rule, not a restriction to one internal detector.
 
 ## Versioning
 

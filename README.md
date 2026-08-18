@@ -102,9 +102,18 @@ Important limitations today:
 - `db/` and `drizzle/` — portable schema and versioned migrations
 - `worker/` — Cloudflare request entry point and background scheduling hook
 - `services/rl-engine/` — standalone Rocket League replay service
+- `scripts/calibrate-rl-engine.mjs` — real-replay shadow calibration runner
 - `tests/` — build, route and engine regression checks
 
 Architecture and operating details live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), [docs/ROCKET_LEAGUE_ENGINE.md](docs/ROCKET_LEAGUE_ENGINE.md), and [docs/RIOT_INTEGRATION.md](docs/RIOT_INTEGRATION.md).
+
+The durable product source of truth is
+[`docs/MASTER_PRODUCT_BRIEF.md`](docs/MASTER_PRODUCT_BRIEF.md). The product and
+detector strategy is grounded in a review of 22 coaching,
+analytics, replay, training and video products documented in
+[docs/COMPETITIVE_INTELLIGENCE.md](docs/COMPETITIVE_INTELLIGENCE.md).
+Current Rocket League parser, shadow-detector and calibration status is tracked
+in [docs/RL_ENGINE_STATUS.md](docs/RL_ENGINE_STATUS.md).
 
 ## Local development
 
@@ -132,7 +141,7 @@ npm test
 
 The existing Sites project is declared in `.openai/hosting.json`. A future migration target needs a Next-compatible web runtime, a SQLite/Postgres-equivalent database, S3/R2-compatible private object storage, background job execution, and a container or native host for the Rocket League engine.
 
-The domain remains under owner control and can point to another host later. No payment system is active; pricing shown on the landing page is a founding hypothesis, not a charged subscription.
+The domain remains under owner control and can point to another host later. No payment system is active; pricing shown on the landing page is a founding hypothesis, not a charged subscription. The researched free-to-paid model, market comparison and launch guardrails are documented in [`docs/MONETIZATION_STRATEGY.md`](docs/MONETIZATION_STRATEGY.md).
 
 ## Security and ownership
 

@@ -1,0 +1,5604 @@
+{
+  "schemaVersion": "rocket-league-calibration-report.v1",
+  "generatedAt": "2026-08-18T03:01:40.466Z",
+  "corpus": {
+    "replayCount": 6,
+    "failureCount": 0,
+    "modes": {
+      "Lan": 3,
+      "Ranked Doubles": 3
+    },
+    "totalSampledFrames": 22992,
+    "totalParserEvents": 52971,
+    "totalDecisionEvents": 9722
+  },
+  "replays": [
+    {
+      "replayFingerprint": "709c0cde2286a1ae",
+      "mode": "Lan",
+      "gameVersion": "161109.39595.145160",
+      "playerCount": 6,
+      "sampledFrames": 4227,
+      "frameCoverage": {
+        "ball": 1,
+        "players": 1
+      },
+      "parserEvents": 10989,
+      "decisionEvents": 1811,
+      "shadowRuns": [
+        {
+          "detectorId": "boost.zero_duration",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 17,
+          "measurements": {
+            "totalSeconds": 52.587158203125,
+            "longestSeconds": 9.19775390625
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 1501.0775146484375,
+              "startFrame": 380,
+              "lastTime": 1505.4764404296875,
+              "endFrame": 424,
+              "endTimeSeconds": 1505.4764404296875,
+              "durationSeconds": 4.39892578125
+            },
+            {
+              "startTimeSeconds": 1528.6707763671875,
+              "startFrame": 656,
+              "lastTime": 1531.0701904296875,
+              "endFrame": 680,
+              "endTimeSeconds": 1531.0701904296875,
+              "durationSeconds": 2.3994140625
+            },
+            {
+              "startTimeSeconds": 1560.762939453125,
+              "startFrame": 977,
+              "lastTime": 1562.362548828125,
+              "endFrame": 993,
+              "endTimeSeconds": 1562.362548828125,
+              "durationSeconds": 1.599609375
+            },
+            {
+              "startTimeSeconds": 1598.15380859375,
+              "startFrame": 1351,
+              "lastTime": 1602.2528076171875,
+              "endFrame": 1392,
+              "endTimeSeconds": 1602.2528076171875,
+              "durationSeconds": 4.0989990234375
+            },
+            {
+              "startTimeSeconds": 1620.54833984375,
+              "startFrame": 1575,
+              "lastTime": 1623.34765625,
+              "endFrame": 1603,
+              "endTimeSeconds": 1623.34765625,
+              "durationSeconds": 2.79931640625
+            },
+            {
+              "startTimeSeconds": 1623.8475341796875,
+              "startFrame": 1608,
+              "lastTime": 1624.6473388671875,
+              "endFrame": 1616,
+              "endTimeSeconds": 1624.6473388671875,
+              "durationSeconds": 0.7998046875
+            },
+            {
+              "startTimeSeconds": 1664.8375244140625,
+              "startFrame": 2018,
+              "lastTime": 1666.4371337890625,
+              "endFrame": 2034,
+              "endTimeSeconds": 1666.4371337890625,
+              "durationSeconds": 1.599609375
+            },
+            {
+              "startTimeSeconds": 1684.9326171875,
+              "startFrame": 2219,
+              "lastTime": 1686.93212890625,
+              "endFrame": 2239,
+              "endTimeSeconds": 1686.93212890625,
+              "durationSeconds": 1.99951171875
+            },
+            {
+              "startTimeSeconds": 1688.8316650390625,
+              "startFrame": 2258,
+              "lastTime": 1690.0313720703125,
+              "endFrame": 2270,
+              "endTimeSeconds": 1690.0313720703125,
+              "durationSeconds": 1.19970703125
+            },
+            {
+              "startTimeSeconds": 1699.928955078125,
+              "startFrame": 2369,
+              "lastTime": 1701.8284912109375,
+              "endFrame": 2388,
+              "endTimeSeconds": 1701.8284912109375,
+              "durationSeconds": 1.8995361328125
+            },
+            {
+              "startTimeSeconds": 1724.9228515625,
+              "startFrame": 2619,
+              "lastTime": 1729.121826171875,
+              "endFrame": 2661,
+              "endTimeSeconds": 1729.121826171875,
+              "durationSeconds": 4.198974609375
+            },
+            {
+              "startTimeSeconds": 1750.8165283203125,
+              "startFrame": 2878,
+              "lastTime": 1754.6156005859375,
+              "endFrame": 2916,
+              "endTimeSeconds": 1754.6156005859375,
+              "durationSeconds": 3.799072265625
+            },
+            {
+              "startTimeSeconds": 1821.29931640625,
+              "startFrame": 3583,
+              "lastTime": 1824.698486328125,
+              "endFrame": 3617,
+              "endTimeSeconds": 1824.698486328125,
+              "durationSeconds": 3.399169921875
+            },
+            {
+              "startTimeSeconds": 1829.9971923828125,
+              "startFrame": 3670,
+              "lastTime": 1839.1949462890625,
+              "endFrame": 3762,
+              "endTimeSeconds": 1839.1949462890625,
+              "durationSeconds": 9.19775390625
+            },
+            {
+              "startTimeSeconds": 1855.1910400390625,
+              "startFrame": 3922,
+              "lastTime": 1859.489990234375,
+              "endFrame": 3965,
+              "endTimeSeconds": 1859.489990234375,
+              "durationSeconds": 4.2989501953125
+            },
+            {
+              "startTimeSeconds": 1860.289794921875,
+              "startFrame": 3973,
+              "lastTime": 1861.28955078125,
+              "endFrame": 3983,
+              "endTimeSeconds": 1861.28955078125,
+              "durationSeconds": 0.999755859375
+            },
+            {
+              "startTimeSeconds": 1868.087890625,
+              "startFrame": 4051,
+              "lastTime": 1871.9869384765625,
+              "endFrame": 4090,
+              "endTimeSeconds": 1871.9869384765625,
+              "durationSeconds": 3.8990478515625
+            }
+          ]
+        },
+        {
+          "detectorId": "kickoff.speed",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 2,
+          "measurements": {
+            "meanTimeToBallSeconds": 2.0478515625,
+            "fastestTimeToBallSeconds": 2.0306396484375,
+            "slowestTimeToBallSeconds": 2.0650634765625
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 1615.3294677734375,
+              "timeToBallSeconds": 2.0650634765625,
+              "spawnPosition": "diagonal_right",
+              "approach": "speed_flip",
+              "contactGap": 45.31736755371094,
+              "outcome": "team_zero_win"
+            },
+            {
+              "startTimeSeconds": 1679.53857421875,
+              "timeToBallSeconds": 2.0306396484375,
+              "spawnPosition": "diagonal_left",
+              "approach": "diagonal_flip",
+              "contactGap": 40.953216552734375,
+              "outcome": "team_one_win"
+            }
+          ]
+        },
+        {
+          "detectorId": "possession.first_touch",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 24,
+          "measurements": {
+            "actionCounts": {
+              "boom": 7,
+              "clear": 5,
+              "save": 3,
+              "unclassified": 4,
+              "pass": 2,
+              "shot": 3
+            }
+          },
+          "evidence": [
+            {
+              "timeSeconds": 1497.724853515625,
+              "frame": 534,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 1779.38427734375
+            },
+            {
+              "timeSeconds": 1518.29248046875,
+              "frame": 960,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 1426.6121826171875
+            },
+            {
+              "timeSeconds": 1535.248046875,
+              "frame": 1311,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 2427.3203125
+            },
+            {
+              "timeSeconds": 1582.4298095703125,
+              "frame": 2287,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 11.880005836486816
+            },
+            {
+              "timeSeconds": 1587.458251953125,
+              "frame": 2391,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 3105.736328125
+            },
+            {
+              "timeSeconds": 1595.918212890625,
+              "frame": 2566,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                }
+              ],
+              "ballSpeedChange": 11.312444686889648
+            },
+            {
+              "timeSeconds": 1620.779052734375,
+              "frame": 2898,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 7.8407464027404785
+            },
+            {
+              "timeSeconds": 1628.4249267578125,
+              "frame": 3056,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 9.687514305114746
+            },
+            {
+              "timeSeconds": 1640.0325927734375,
+              "frame": 3296,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "pass"
+                }
+              ],
+              "ballSpeedChange": 15.831031799316406
+            },
+            {
+              "timeSeconds": 1664.9930419921875,
+              "frame": 3630,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                }
+              ],
+              "ballSpeedChange": 1652.4427490234375
+            },
+            {
+              "timeSeconds": 1684.56640625,
+              "frame": 3852,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 2832.0556640625
+            },
+            {
+              "timeSeconds": 1697.39501953125,
+              "frame": 4118,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 3531.712646484375
+            },
+            {
+              "timeSeconds": 1708.3104248046875,
+              "frame": 4344,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 2477.4609375
+            },
+            {
+              "timeSeconds": 1725.474609375,
+              "frame": 4699,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 3289.45068359375
+            },
+            {
+              "timeSeconds": 1772.226318359375,
+              "frame": 5484,
+              "role": "ambiguous",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "pass"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 3031.315185546875
+            },
+            {
+              "timeSeconds": 1781.9920654296875,
+              "frame": 5686,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                }
+              ],
+              "ballSpeedChange": 4.843085765838623
+            },
+            {
+              "timeSeconds": 1804.820068359375,
+              "frame": 5975,
+              "role": "unknown",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 16.05610466003418
+            },
+            {
+              "timeSeconds": 1810.278076171875,
+              "frame": 6088,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 1744.651123046875
+            },
+            {
+              "timeSeconds": 1818.597900390625,
+              "frame": 6260,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 2147.805419921875
+            },
+            {
+              "timeSeconds": 1830.060302734375,
+              "frame": 6497,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                }
+              ],
+              "ballSpeedChange": 3891.952880859375
+            }
+          ]
+        },
+        {
+          "detectorId": "challenge.dive",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 8,
+          "measurements": {
+            "beatenToBall": 2,
+            "aerial": 8
+          },
+          "evidence": [
+            {
+              "timeSeconds": 1528.6251220703125,
+              "frame": 1174,
+              "kind": "whiff",
+              "closestApproachDistance": 132.18814086914062,
+              "approachSpeed": 1812.9483642578125,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1749.7027587890625,
+              "frame": 5018,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 111.64029693603516,
+              "approachSpeed": 655.7255859375,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1758.11328125,
+              "frame": 5192,
+              "kind": "whiff",
+              "closestApproachDistance": 106.09586334228516,
+              "approachSpeed": 1452.8489990234375,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1763.6724853515625,
+              "frame": 5307,
+              "kind": "whiff",
+              "closestApproachDistance": 112.71085357666016,
+              "approachSpeed": 840.7144775390625,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1806.0238037109375,
+              "frame": 6000,
+              "kind": "whiff",
+              "closestApproachDistance": 113.34137725830078,
+              "approachSpeed": 1485.29296875,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1810.471435546875,
+              "frame": 6092,
+              "kind": "whiff",
+              "closestApproachDistance": 177.95773315429688,
+              "approachSpeed": 1053.0057373046875,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1818.162841796875,
+              "frame": 6251,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 196.3705596923828,
+              "approachSpeed": 1340.405517578125,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1845.471923828125,
+              "frame": 6816,
+              "kind": "whiff",
+              "closestApproachDistance": 155.6602325439453,
+              "approachSpeed": 1099.37744140625,
+              "aerial": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "replayFingerprint": "b36807e7483cb85a",
+      "mode": "Lan",
+      "gameVersion": "191004.56206.249352",
+      "playerCount": 6,
+      "sampledFrames": 3738,
+      "frameCoverage": {
+        "ball": 1,
+        "players": 1
+      },
+      "parserEvents": 11695,
+      "decisionEvents": 1950,
+      "shadowRuns": [
+        {
+          "detectorId": "boost.zero_duration",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 9,
+          "measurements": {
+            "totalSeconds": 24.000900268554688,
+            "longestSeconds": 4.000244140625
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 36.915225982666016,
+              "startFrame": 177,
+              "lastTime": 39.21519088745117,
+              "endFrame": 200,
+              "endTimeSeconds": 39.21519088745117,
+              "durationSeconds": 2.2999649047851562
+            },
+            {
+              "startTimeSeconds": 50.91501235961914,
+              "startFrame": 317,
+              "lastTime": 53.91496658325195,
+              "endFrame": 347,
+              "endTimeSeconds": 53.91496658325195,
+              "durationSeconds": 2.9999542236328125
+            },
+            {
+              "startTimeSeconds": 121.3139419555664,
+              "startFrame": 1021,
+              "lastTime": 123.41390991210938,
+              "endFrame": 1042,
+              "endTimeSeconds": 123.41390991210938,
+              "durationSeconds": 2.0999679565429688
+            },
+            {
+              "startTimeSeconds": 138.4144744873047,
+              "startFrame": 1192,
+              "lastTime": 142.4147186279297,
+              "endFrame": 1232,
+              "endTimeSeconds": 142.4147186279297,
+              "durationSeconds": 4.000244140625
+            },
+            {
+              "startTimeSeconds": 278.7230224609375,
+              "startFrame": 2595,
+              "lastTime": 280.6231384277344,
+              "endFrame": 2614,
+              "endTimeSeconds": 280.6231384277344,
+              "durationSeconds": 1.900115966796875
+            },
+            {
+              "startTimeSeconds": 306.0246887207031,
+              "startFrame": 2868,
+              "lastTime": 309.72491455078125,
+              "endFrame": 2905,
+              "endTimeSeconds": 309.72491455078125,
+              "durationSeconds": 3.700225830078125
+            },
+            {
+              "startTimeSeconds": 314.12518310546875,
+              "startFrame": 2949,
+              "lastTime": 316.3253173828125,
+              "endFrame": 2971,
+              "endTimeSeconds": 316.3253173828125,
+              "durationSeconds": 2.20013427734375
+            },
+            {
+              "startTimeSeconds": 334.7264404296875,
+              "startFrame": 3155,
+              "lastTime": 337.4266052246094,
+              "endFrame": 3182,
+              "endTimeSeconds": 337.4266052246094,
+              "durationSeconds": 2.700164794921875
+            },
+            {
+              "startTimeSeconds": 369.528564453125,
+              "startFrame": 3503,
+              "lastTime": 371.6286926269531,
+              "endFrame": 3524,
+              "endTimeSeconds": 371.6286926269531,
+              "durationSeconds": 2.100128173828125
+            }
+          ]
+        },
+        {
+          "detectorId": "kickoff.speed",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 3,
+          "measurements": {
+            "meanTimeToBallSeconds": 2.155029296875,
+            "fastestTimeToBallSeconds": 2.066162109375,
+            "slowestTimeToBallSeconds": 2.26611328125
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 205.69419860839844,
+              "timeToBallSeconds": 2.26611328125,
+              "spawnPosition": "off_center_right",
+              "approach": "front_flip",
+              "contactGap": 0,
+              "outcome": "team_zero_win"
+            },
+            {
+              "startTimeSeconds": 329.4288330078125,
+              "timeToBallSeconds": 2.066162109375,
+              "spawnPosition": "diagonal_right",
+              "approach": "diagonal_flip",
+              "contactGap": 19.699554443359375,
+              "outcome": "team_one_win"
+            },
+            {
+              "startTimeSeconds": 364.4202880859375,
+              "timeToBallSeconds": 2.1328125,
+              "spawnPosition": "diagonal_left",
+              "approach": "diagonal_flip",
+              "contactGap": 271.7958984375,
+              "outcome": "team_one_win"
+            }
+          ]
+        },
+        {
+          "detectorId": "possession.first_touch",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 30,
+          "measurements": {
+            "actionCounts": {
+              "unclassified": 11,
+              "pass": 1,
+              "boom": 11,
+              "shot": 3,
+              "clear": 3,
+              "save": 1
+            }
+          },
+          "evidence": [
+            {
+              "timeSeconds": 30.51508140563965,
+              "frame": 339,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 3086.8681640625
+            },
+            {
+              "timeSeconds": 37.48164367675781,
+              "frame": 548,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "pass"
+                }
+              ],
+              "ballSpeedChange": 1736.5628662109375
+            },
+            {
+              "timeSeconds": 47.41482925415039,
+              "frame": 846,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 2401.664306640625
+            },
+            {
+              "timeSeconds": 58.747989654541016,
+              "frame": 1186,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                }
+              ],
+              "ballSpeedChange": 10.657293319702148
+            },
+            {
+              "timeSeconds": 65.38153839111328,
+              "frame": 1385,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 2345.423828125
+            },
+            {
+              "timeSeconds": 73.88335418701172,
+              "frame": 1640,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 2.0197932720184326
+            },
+            {
+              "timeSeconds": 84.952392578125,
+              "frame": 1972,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 2461.776123046875
+            },
+            {
+              "timeSeconds": 107.19049072265625,
+              "frame": 2639,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 1947.287841796875
+            },
+            {
+              "timeSeconds": 116.82588958740234,
+              "frame": 2928,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 4098.31298828125
+            },
+            {
+              "timeSeconds": 119.6264877319336,
+              "frame": 3012,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 2855.31982421875
+            },
+            {
+              "timeSeconds": 137.1260528564453,
+              "frame": 3537,
+              "role": "ambiguous",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 11.117289543151855
+            },
+            {
+              "timeSeconds": 150.85604858398438,
+              "frame": 3949,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 3670.54150390625
+            },
+            {
+              "timeSeconds": 170.45127868652344,
+              "frame": 4537,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 1704.7567138671875
+            },
+            {
+              "timeSeconds": 177.94944763183594,
+              "frame": 4762,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 4002.499755859375
+            },
+            {
+              "timeSeconds": 182.48167419433594,
+              "frame": 4898,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 3149.034912109375
+            },
+            {
+              "timeSeconds": 210.99290466308594,
+              "frame": 5478,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 1333.3607177734375
+            },
+            {
+              "timeSeconds": 219.85740661621094,
+              "frame": 5744,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 3185.279052734375
+            },
+            {
+              "timeSeconds": 231.65452575683594,
+              "frame": 6098,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 2316.475341796875
+            },
+            {
+              "timeSeconds": 237.2552490234375,
+              "frame": 6266,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                }
+              ],
+              "ballSpeedChange": 2315.200439453125
+            },
+            {
+              "timeSeconds": 246.1197509765625,
+              "frame": 6532,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 2142.68505859375
+            }
+          ]
+        },
+        {
+          "detectorId": "challenge.dive",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 3,
+          "measurements": {
+            "beatenToBall": 1,
+            "aerial": 3
+          },
+          "evidence": [
+            {
+              "timeSeconds": 152.75558471679688,
+              "frame": 4006,
+              "kind": "whiff",
+              "closestApproachDistance": 174.3750457763672,
+              "approachSpeed": 511.6571960449219,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 231.28794860839844,
+              "frame": 6087,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 111.04015350341797,
+              "approachSpeed": 1349.4033203125,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 294.3413391113281,
+              "frame": 7979,
+              "kind": "whiff",
+              "closestApproachDistance": 120.62557983398438,
+              "approachSpeed": 831.10888671875,
+              "aerial": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "replayFingerprint": "edf46af011fb016c",
+      "mode": "Lan",
+      "gameVersion": "160721.58730.135786",
+      "playerCount": 6,
+      "sampledFrames": 4021,
+      "frameCoverage": {
+        "ball": 1,
+        "players": 1
+      },
+      "parserEvents": 10405,
+      "decisionEvents": 1711,
+      "shadowRuns": [
+        {
+          "detectorId": "boost.zero_duration",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 12,
+          "measurements": {
+            "totalSeconds": 38.390625,
+            "longestSeconds": 5.19873046875
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 1310.2716064453125,
+              "startFrame": 54,
+              "lastTime": 1311.5712890625,
+              "endFrame": 67,
+              "endTimeSeconds": 1311.5712890625,
+              "durationSeconds": 1.2996826171875
+            },
+            {
+              "startTimeSeconds": 1312.2711181640625,
+              "startFrame": 74,
+              "lastTime": 1313.370849609375,
+              "endFrame": 85,
+              "endTimeSeconds": 1313.370849609375,
+              "durationSeconds": 1.0997314453125
+            },
+            {
+              "startTimeSeconds": 1323.96826171875,
+              "startFrame": 191,
+              "lastTime": 1326.36767578125,
+              "endFrame": 215,
+              "endTimeSeconds": 1326.36767578125,
+              "durationSeconds": 2.3994140625
+            },
+            {
+              "startTimeSeconds": 1348.0623779296875,
+              "startFrame": 432,
+              "lastTime": 1351.8614501953125,
+              "endFrame": 470,
+              "endTimeSeconds": 1351.8614501953125,
+              "durationSeconds": 3.799072265625
+            },
+            {
+              "startTimeSeconds": 1375.15576171875,
+              "startFrame": 703,
+              "lastTime": 1378.954833984375,
+              "endFrame": 741,
+              "endTimeSeconds": 1378.954833984375,
+              "durationSeconds": 3.799072265625
+            },
+            {
+              "startTimeSeconds": 1423.2440185546875,
+              "startFrame": 1184,
+              "lastTime": 1426.0433349609375,
+              "endFrame": 1212,
+              "endTimeSeconds": 1426.0433349609375,
+              "durationSeconds": 2.79931640625
+            },
+            {
+              "startTimeSeconds": 1453.336669921875,
+              "startFrame": 1485,
+              "lastTime": 1458.535400390625,
+              "endFrame": 1537,
+              "endTimeSeconds": 1458.535400390625,
+              "durationSeconds": 5.19873046875
+            },
+            {
+              "startTimeSeconds": 1508.923095703125,
+              "startFrame": 2041,
+              "lastTime": 1513.8218994140625,
+              "endFrame": 2090,
+              "endTimeSeconds": 1513.8218994140625,
+              "durationSeconds": 4.8988037109375
+            },
+            {
+              "startTimeSeconds": 1554.911865234375,
+              "startFrame": 2501,
+              "lastTime": 1559.310791015625,
+              "endFrame": 2545,
+              "endTimeSeconds": 1559.310791015625,
+              "durationSeconds": 4.39892578125
+            },
+            {
+              "startTimeSeconds": 1590.703125,
+              "startFrame": 2859,
+              "lastTime": 1594.2022705078125,
+              "endFrame": 2894,
+              "endTimeSeconds": 1594.2022705078125,
+              "durationSeconds": 3.4991455078125
+            },
+            {
+              "startTimeSeconds": 1655.1873779296875,
+              "startFrame": 3504,
+              "lastTime": 1659.08642578125,
+              "endFrame": 3543,
+              "endTimeSeconds": 1659.08642578125,
+              "durationSeconds": 3.8990478515625
+            },
+            {
+              "startTimeSeconds": 1705.47509765625,
+              "startFrame": 4007,
+              "lastTime": 1706.7747802734375,
+              "endFrame": 4020,
+              "endTimeSeconds": 1706.7747802734375,
+              "durationSeconds": 1.2996826171875
+            }
+          ]
+        },
+        {
+          "detectorId": "kickoff.speed",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 1,
+          "measurements": {
+            "meanTimeToBallSeconds": 2.07861328125,
+            "fastestTimeToBallSeconds": 2.07861328125,
+            "slowestTimeToBallSeconds": 2.07861328125
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 1549.8463134765625,
+              "timeToBallSeconds": 2.07861328125,
+              "spawnPosition": "diagonal_left",
+              "approach": "other",
+              "contactGap": 39.78407287597656,
+              "outcome": "team_zero_win"
+            }
+          ]
+        },
+        {
+          "detectorId": "possession.first_touch",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 26,
+          "measurements": {
+            "actionCounts": {
+              "save": 2,
+              "unclassified": 11,
+              "shot": 3,
+              "clear": 6,
+              "boom": 4
+            }
+          },
+          "evidence": [
+            {
+              "timeSeconds": 1321.6949462890625,
+              "frame": 348,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                }
+              ],
+              "ballSpeedChange": 15.062631607055664
+            },
+            {
+              "timeSeconds": 1351.16845703125,
+              "frame": 775,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 2247.390625
+            },
+            {
+              "timeSeconds": 1356.58251953125,
+              "frame": 887,
+              "role": "ambiguous",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                }
+              ],
+              "ballSpeedChange": 2028.3900146484375
+            },
+            {
+              "timeSeconds": 1377.265625,
+              "frame": 1132,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 3648.306396484375
+            },
+            {
+              "timeSeconds": 1389.25390625,
+              "frame": 1380,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 3878.233642578125
+            },
+            {
+              "timeSeconds": 1404.09423828125,
+              "frame": 1687,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 3250.48095703125
+            },
+            {
+              "timeSeconds": 1417.14599609375,
+              "frame": 1957,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 2199.762451171875
+            },
+            {
+              "timeSeconds": 1420.81982421875,
+              "frame": 2033,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                }
+              ],
+              "ballSpeedChange": 1055.9217529296875
+            },
+            {
+              "timeSeconds": 1444.748046875,
+              "frame": 2528,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 3852.385009765625
+            },
+            {
+              "timeSeconds": 1447.69677734375,
+              "frame": 2589,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 3489.1982421875
+            },
+            {
+              "timeSeconds": 1453.642578125,
+              "frame": 2712,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                }
+              ],
+              "ballSpeedChange": 3203.47509765625
+            },
+            {
+              "timeSeconds": 1470.2242431640625,
+              "frame": 3055,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 926.4010620117188
+            },
+            {
+              "timeSeconds": 1484.0982666015625,
+              "frame": 3342,
+              "role": "ambiguous",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 3869.51123046875
+            },
+            {
+              "timeSeconds": 1501.9356689453125,
+              "frame": 3711,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 1856.5263671875
+            },
+            {
+              "timeSeconds": 1505.7061767578125,
+              "frame": 3789,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 1542.4581298828125
+            },
+            {
+              "timeSeconds": 1509.9600830078125,
+              "frame": 3877,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 9.820991516113281
+            },
+            {
+              "timeSeconds": 1530.8428955078125,
+              "frame": 4309,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 1386.3802490234375
+            },
+            {
+              "timeSeconds": 1555.3087158203125,
+              "frame": 4632,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 13.970574378967285
+            },
+            {
+              "timeSeconds": 1563.66455078125,
+              "frame": 4803,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 3372.741943359375
+            },
+            {
+              "timeSeconds": 1602.0185546875,
+              "frame": 5411,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 2060.01025390625
+            }
+          ]
+        },
+        {
+          "detectorId": "challenge.dive",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 4,
+          "measurements": {
+            "beatenToBall": 0,
+            "aerial": 4
+          },
+          "evidence": [
+            {
+              "timeSeconds": 1310.9635009765625,
+              "frame": 126,
+              "kind": "whiff",
+              "closestApproachDistance": 86.31132507324219,
+              "approachSpeed": 961.5292358398438,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1627.382080078125,
+              "frame": 5936,
+              "kind": "whiff",
+              "closestApproachDistance": 122.41049194335938,
+              "approachSpeed": 1518.515869140625,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1685.3857421875,
+              "frame": 6953,
+              "kind": "whiff",
+              "closestApproachDistance": 139.70350646972656,
+              "approachSpeed": 1862.954345703125,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 1705.93017578125,
+              "frame": 7378,
+              "kind": "whiff",
+              "closestApproachDistance": 164.7904815673828,
+              "approachSpeed": 956.7861328125,
+              "aerial": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "replayFingerprint": "f4b2c319787c3c11",
+      "mode": "Ranked Doubles",
+      "gameVersion": "260316.80791.512269",
+      "playerCount": 4,
+      "sampledFrames": 4059,
+      "frameCoverage": {
+        "ball": 1,
+        "players": 1
+      },
+      "parserEvents": 7346,
+      "decisionEvents": 1556,
+      "shadowRuns": [
+        {
+          "detectorId": "boost.zero_duration",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 25,
+          "measurements": {
+            "totalSeconds": 55.50258255004883,
+            "longestSeconds": 7.100433349609375
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 12.093578338623047,
+              "startFrame": 85,
+              "lastTime": 13.093582153320312,
+              "endFrame": 95,
+              "endTimeSeconds": 13.093582153320312,
+              "durationSeconds": 1.0000038146972656
+            },
+            {
+              "startTimeSeconds": 37.593570709228516,
+              "startFrame": 340,
+              "lastTime": 38.49355697631836,
+              "endFrame": 349,
+              "endTimeSeconds": 38.49355697631836,
+              "durationSeconds": 0.8999862670898438
+            },
+            {
+              "startTimeSeconds": 49.99338150024414,
+              "startFrame": 464,
+              "lastTime": 50.79336929321289,
+              "endFrame": 472,
+              "endTimeSeconds": 50.79336929321289,
+              "durationSeconds": 0.79998779296875
+            },
+            {
+              "startTimeSeconds": 51.79335403442383,
+              "startFrame": 482,
+              "lastTime": 55.29330062866211,
+              "endFrame": 517,
+              "endTimeSeconds": 55.29330062866211,
+              "durationSeconds": 3.4999465942382812
+            },
+            {
+              "startTimeSeconds": 94.59270477294922,
+              "startFrame": 910,
+              "lastTime": 97.89265441894531,
+              "endFrame": 943,
+              "endTimeSeconds": 97.89265441894531,
+              "durationSeconds": 3.2999496459960938
+            },
+            {
+              "startTimeSeconds": 111.49244689941406,
+              "startFrame": 1079,
+              "lastTime": 112.79242706298828,
+              "endFrame": 1092,
+              "endTimeSeconds": 112.79242706298828,
+              "durationSeconds": 1.2999801635742188
+            },
+            {
+              "startTimeSeconds": 137.9927978515625,
+              "startFrame": 1344,
+              "lastTime": 139.69290161132812,
+              "endFrame": 1361,
+              "endTimeSeconds": 139.69290161132812,
+              "durationSeconds": 1.700103759765625
+            },
+            {
+              "startTimeSeconds": 159.09408569335938,
+              "startFrame": 1555,
+              "lastTime": 159.79412841796875,
+              "endFrame": 1562,
+              "endTimeSeconds": 159.79412841796875,
+              "durationSeconds": 0.700042724609375
+            },
+            {
+              "startTimeSeconds": 169.5947265625,
+              "startFrame": 1660,
+              "lastTime": 171.89486694335938,
+              "endFrame": 1683,
+              "endTimeSeconds": 171.89486694335938,
+              "durationSeconds": 2.300140380859375
+            },
+            {
+              "startTimeSeconds": 186.395751953125,
+              "startFrame": 1828,
+              "lastTime": 189.39593505859375,
+              "endFrame": 1858,
+              "endTimeSeconds": 189.39593505859375,
+              "durationSeconds": 3.00018310546875
+            },
+            {
+              "startTimeSeconds": 199.89657592773438,
+              "startFrame": 1963,
+              "lastTime": 204.89688110351562,
+              "endFrame": 2013,
+              "endTimeSeconds": 204.89688110351562,
+              "durationSeconds": 5.00030517578125
+            },
+            {
+              "startTimeSeconds": 235.5987548828125,
+              "startFrame": 2320,
+              "lastTime": 236.69882202148438,
+              "endFrame": 2331,
+              "endTimeSeconds": 236.69882202148438,
+              "durationSeconds": 1.100067138671875
+            },
+            {
+              "startTimeSeconds": 263.9004821777344,
+              "startFrame": 2603,
+              "lastTime": 265.40057373046875,
+              "endFrame": 2618,
+              "endTimeSeconds": 265.40057373046875,
+              "durationSeconds": 1.500091552734375
+            },
+            {
+              "startTimeSeconds": 269.40081787109375,
+              "startFrame": 2658,
+              "lastTime": 272.1009826660156,
+              "endFrame": 2685,
+              "endTimeSeconds": 272.1009826660156,
+              "durationSeconds": 2.700164794921875
+            },
+            {
+              "startTimeSeconds": 273.7010803222656,
+              "startFrame": 2701,
+              "lastTime": 274.5011291503906,
+              "endFrame": 2709,
+              "endTimeSeconds": 274.5011291503906,
+              "durationSeconds": 0.800048828125
+            },
+            {
+              "startTimeSeconds": 277.00128173828125,
+              "startFrame": 2734,
+              "lastTime": 282.0015869140625,
+              "endFrame": 2784,
+              "endTimeSeconds": 282.0015869140625,
+              "durationSeconds": 5.00030517578125
+            },
+            {
+              "startTimeSeconds": 310.60333251953125,
+              "startFrame": 3070,
+              "lastTime": 314.8035888671875,
+              "endFrame": 3112,
+              "endTimeSeconds": 314.8035888671875,
+              "durationSeconds": 4.20025634765625
+            },
+            {
+              "startTimeSeconds": 315.3036193847656,
+              "startFrame": 3117,
+              "lastTime": 315.9036560058594,
+              "endFrame": 3123,
+              "endTimeSeconds": 315.9036560058594,
+              "durationSeconds": 0.60003662109375
+            },
+            {
+              "startTimeSeconds": 323.5041198730469,
+              "startFrame": 3199,
+              "lastTime": 330.60455322265625,
+              "endFrame": 3270,
+              "endTimeSeconds": 330.60455322265625,
+              "durationSeconds": 7.100433349609375
+            },
+            {
+              "startTimeSeconds": 358.40625,
+              "startFrame": 3548,
+              "lastTime": 360.00634765625,
+              "endFrame": 3564,
+              "endTimeSeconds": 360.00634765625,
+              "durationSeconds": 1.60009765625
+            }
+          ]
+        },
+        {
+          "detectorId": "kickoff.speed",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 2,
+          "measurements": {
+            "meanTimeToBallSeconds": 1.9184112548828125,
+            "fastestTimeToBallSeconds": 1.9031982421875,
+            "slowestTimeToBallSeconds": 1.933624267578125
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 154.05947875976562,
+              "timeToBallSeconds": 1.933624267578125,
+              "spawnPosition": "diagonal_right",
+              "approach": "diagonal_flip",
+              "contactGap": 15.565040588378906,
+              "outcome": "team_zero_win"
+            },
+            {
+              "startTimeSeconds": 400.8632507324219,
+              "timeToBallSeconds": 1.9031982421875,
+              "spawnPosition": "diagonal_right",
+              "approach": "diagonal_flip",
+              "contactGap": 17.24622344970703,
+              "outcome": "team_zero_win"
+            }
+          ]
+        },
+        {
+          "detectorId": "possession.first_touch",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 30,
+          "measurements": {
+            "actionCounts": {
+              "unclassified": 9,
+              "clear": 6,
+              "boom": 9,
+              "shot": 2,
+              "save": 3,
+              "pass": 1
+            }
+          },
+          "evidence": [
+            {
+              "timeSeconds": 11.45977783203125,
+              "frame": 218,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 1196.246337890625
+            },
+            {
+              "timeSeconds": 18.84645652770996,
+              "frame": 426,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 2983.8564453125
+            },
+            {
+              "timeSeconds": 21.681884765625,
+              "frame": 506,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 2314.143310546875
+            },
+            {
+              "timeSeconds": 23.668258666992188,
+              "frame": 562,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 1642.6317138671875
+            },
+            {
+              "timeSeconds": 47.47006607055664,
+              "frame": 1231,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 1996.326904296875
+            },
+            {
+              "timeSeconds": 61.18994140625,
+              "frame": 1617,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 2505.350341796875
+            },
+            {
+              "timeSeconds": 103.05675506591797,
+              "frame": 2638,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 2024.394287109375
+            },
+            {
+              "timeSeconds": 143.97438049316406,
+              "frame": 3729,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 1804.3580322265625
+            },
+            {
+              "timeSeconds": 159.4637451171875,
+              "frame": 4064,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 3451.118408203125
+            },
+            {
+              "timeSeconds": 167.9217529296875,
+              "frame": 4302,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 2728.846923828125
+            },
+            {
+              "timeSeconds": 187.81748962402344,
+              "frame": 4775,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 2143.9814453125
+            },
+            {
+              "timeSeconds": 197.2153778076172,
+              "frame": 5040,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 8.46755313873291
+            },
+            {
+              "timeSeconds": 218.5432891845703,
+              "frame": 5622,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 1785.2413330078125
+            },
+            {
+              "timeSeconds": 225.79185485839844,
+              "frame": 5825,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 14.655069351196289
+            },
+            {
+              "timeSeconds": 228.6979522705078,
+              "frame": 5906,
+              "role": "unknown",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 2.276210069656372
+            },
+            {
+              "timeSeconds": 241.05870056152344,
+              "frame": 6253,
+              "role": "ambiguous",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 3298.056396484375
+            },
+            {
+              "timeSeconds": 252.8448486328125,
+              "frame": 6588,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                }
+              ],
+              "ballSpeedChange": 3376.795654296875
+            },
+            {
+              "timeSeconds": 267.2089538574219,
+              "frame": 6964,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                }
+              ],
+              "ballSpeedChange": 13.716782569885254
+            },
+            {
+              "timeSeconds": 269.8614501953125,
+              "frame": 7039,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 1.7166916131973267
+            },
+            {
+              "timeSeconds": 279.4656982421875,
+              "frame": 7308,
+              "role": "ambiguous",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 3619.27978515625
+            }
+          ]
+        },
+        {
+          "detectorId": "challenge.dive",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 5,
+          "measurements": {
+            "beatenToBall": 3,
+            "aerial": 4
+          },
+          "evidence": [
+            {
+              "timeSeconds": 21.22991943359375,
+              "frame": 493,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 110.264892578125,
+              "approachSpeed": 1786.3193359375,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 60.83187484741211,
+              "frame": 1607,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 91.69269561767578,
+              "approachSpeed": 1245.9068603515625,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 135.09365844726562,
+              "frame": 3480,
+              "kind": "whiff",
+              "closestApproachDistance": 193.42306518554688,
+              "approachSpeed": 1528.2130126953125,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 185.80972290039062,
+              "frame": 4719,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 192.01611328125,
+              "approachSpeed": 1580.9423828125,
+              "aerial": false
+            },
+            {
+              "timeSeconds": 202.11483764648438,
+              "frame": 5178,
+              "kind": "whiff",
+              "closestApproachDistance": 121.4404067993164,
+              "approachSpeed": 1054.4169921875,
+              "aerial": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "replayFingerprint": "215a4e006a25d263",
+      "mode": "Ranked Doubles",
+      "gameVersion": "260114.55864.507183",
+      "playerCount": 4,
+      "sampledFrames": 3480,
+      "frameCoverage": {
+        "ball": 1,
+        "players": 1
+      },
+      "parserEvents": 5877,
+      "decisionEvents": 1210,
+      "shadowRuns": [
+        {
+          "detectorId": "boost.zero_duration",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 15,
+          "measurements": {
+            "totalSeconds": 40.102006912231445,
+            "longestSeconds": 5.700347900390625
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 22.71139907836914,
+              "startFrame": 174,
+              "lastTime": 25.211408615112305,
+              "endFrame": 199,
+              "endTimeSeconds": 25.211408615112305,
+              "durationSeconds": 2.500009536743164
+            },
+            {
+              "startTimeSeconds": 47.111202239990234,
+              "startFrame": 418,
+              "lastTime": 50.01115798950195,
+              "endFrame": 447,
+              "endTimeSeconds": 50.01115798950195,
+              "durationSeconds": 2.8999557495117188
+            },
+            {
+              "startTimeSeconds": 95.31047058105469,
+              "startFrame": 900,
+              "lastTime": 96.31045532226562,
+              "endFrame": 910,
+              "endTimeSeconds": 96.31045532226562,
+              "durationSeconds": 0.9999847412109375
+            },
+            {
+              "startTimeSeconds": 132.9102783203125,
+              "startFrame": 1276,
+              "lastTime": 134.5103759765625,
+              "endFrame": 1292,
+              "endTimeSeconds": 134.5103759765625,
+              "durationSeconds": 1.60009765625
+            },
+            {
+              "startTimeSeconds": 147.51116943359375,
+              "startFrame": 1422,
+              "lastTime": 151.51141357421875,
+              "endFrame": 1462,
+              "endTimeSeconds": 151.51141357421875,
+              "durationSeconds": 4.000244140625
+            },
+            {
+              "startTimeSeconds": 155.3116455078125,
+              "startFrame": 1500,
+              "lastTime": 157.11175537109375,
+              "endFrame": 1518,
+              "endTimeSeconds": 157.11175537109375,
+              "durationSeconds": 1.80010986328125
+            },
+            {
+              "startTimeSeconds": 178.81307983398438,
+              "startFrame": 1735,
+              "lastTime": 184.513427734375,
+              "endFrame": 1792,
+              "endTimeSeconds": 184.513427734375,
+              "durationSeconds": 5.700347900390625
+            },
+            {
+              "startTimeSeconds": 196.21414184570312,
+              "startFrame": 1909,
+              "lastTime": 201.314453125,
+              "endFrame": 1960,
+              "endTimeSeconds": 201.314453125,
+              "durationSeconds": 5.100311279296875
+            },
+            {
+              "startTimeSeconds": 232.31634521484375,
+              "startFrame": 2270,
+              "lastTime": 233.11639404296875,
+              "endFrame": 2278,
+              "endTimeSeconds": 233.11639404296875,
+              "durationSeconds": 0.800048828125
+            },
+            {
+              "startTimeSeconds": 233.51641845703125,
+              "startFrame": 2282,
+              "lastTime": 235.716552734375,
+              "endFrame": 2304,
+              "endTimeSeconds": 235.716552734375,
+              "durationSeconds": 2.20013427734375
+            },
+            {
+              "startTimeSeconds": 251.01748657226562,
+              "startFrame": 2457,
+              "lastTime": 255.91778564453125,
+              "endFrame": 2506,
+              "endTimeSeconds": 255.91778564453125,
+              "durationSeconds": 4.900299072265625
+            },
+            {
+              "startTimeSeconds": 266.91845703125,
+              "startFrame": 2616,
+              "lastTime": 269.91864013671875,
+              "endFrame": 2646,
+              "endTimeSeconds": 269.91864013671875,
+              "durationSeconds": 3.00018310546875
+            },
+            {
+              "startTimeSeconds": 291.2199401855469,
+              "startFrame": 2859,
+              "lastTime": 292.72003173828125,
+              "endFrame": 2874,
+              "endTimeSeconds": 292.72003173828125,
+              "durationSeconds": 1.500091552734375
+            },
+            {
+              "startTimeSeconds": 304.4207458496094,
+              "startFrame": 2991,
+              "lastTime": 306.8208923339844,
+              "endFrame": 3015,
+              "endTimeSeconds": 306.8208923339844,
+              "durationSeconds": 2.400146484375
+            },
+            {
+              "startTimeSeconds": 318.8216247558594,
+              "startFrame": 3135,
+              "lastTime": 319.52166748046875,
+              "endFrame": 3142,
+              "endTimeSeconds": 319.52166748046875,
+              "durationSeconds": 0.700042724609375
+            }
+          ]
+        },
+        {
+          "detectorId": "kickoff.speed",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 3,
+          "measurements": {
+            "meanTimeToBallSeconds": 2.07037353515625,
+            "fastestTimeToBallSeconds": 1.9273834228515625,
+            "slowestTimeToBallSeconds": 2.24847412109375
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 142.32589721679688,
+              "timeToBallSeconds": 2.0352630615234375,
+              "spawnPosition": "diagonal_right",
+              "approach": "speed_flip",
+              "contactGap": 1.5095748901367188,
+              "outcome": "team_one_win"
+            },
+            {
+              "startTimeSeconds": 246.0417022705078,
+              "timeToBallSeconds": 1.9273834228515625,
+              "spawnPosition": "diagonal_left",
+              "approach": "speed_flip",
+              "contactGap": 35.4906005859375,
+              "outcome": "team_zero_win"
+            },
+            {
+              "startTimeSeconds": 297.6085510253906,
+              "timeToBallSeconds": 2.24847412109375,
+              "spawnPosition": "off_center_left",
+              "approach": "speed_flip",
+              "contactGap": 129.12765502929688,
+              "outcome": "team_one_win"
+            }
+          ]
+        },
+        {
+          "detectorId": "possession.first_touch",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 37,
+          "measurements": {
+            "actionCounts": {
+              "clear": 7,
+              "boom": 6,
+              "unclassified": 18,
+              "save": 2,
+              "shot": 2,
+              "pass": 2
+            }
+          },
+          "evidence": [
+            {
+              "timeSeconds": 28.490924835205078,
+              "frame": 647,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 2082.18603515625
+            },
+            {
+              "timeSeconds": 32.096744537353516,
+              "frame": 748,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 1870.039306640625
+            },
+            {
+              "timeSeconds": 40.19805145263672,
+              "frame": 975,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 2176.033935546875
+            },
+            {
+              "timeSeconds": 44.727935791015625,
+              "frame": 1102,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 1662.3809814453125
+            },
+            {
+              "timeSeconds": 47.62071228027344,
+              "frame": 1183,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 2431.336181640625
+            },
+            {
+              "timeSeconds": 55.22657775878906,
+              "frame": 1396,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 1937.1201171875
+            },
+            {
+              "timeSeconds": 69.2573013305664,
+              "frame": 1789,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 10.572696685791016
+            },
+            {
+              "timeSeconds": 79.96495056152344,
+              "frame": 2089,
+              "role": "second_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 3047.412109375
+            },
+            {
+              "timeSeconds": 85.03034210205078,
+              "frame": 2231,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 1027.218017578125
+            },
+            {
+              "timeSeconds": 100.35334777832031,
+              "frame": 2660,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 12.45907211303711
+            },
+            {
+              "timeSeconds": 106.24603271484375,
+              "frame": 2825,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 3326.991943359375
+            },
+            {
+              "timeSeconds": 108.71017456054688,
+              "frame": 2894,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 1427.847900390625
+            },
+            {
+              "timeSeconds": 125.1780014038086,
+              "frame": 3355,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                }
+              ],
+              "ballSpeedChange": 7.87599515914917
+            },
+            {
+              "timeSeconds": 129.13816833496094,
+              "frame": 3466,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 1958.233642578125
+            },
+            {
+              "timeSeconds": 147.37075805664062,
+              "frame": 3874,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 1352.12646484375
+            },
+            {
+              "timeSeconds": 159.2999725341797,
+              "frame": 4208,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 2782.455322265625
+            },
+            {
+              "timeSeconds": 173.83322143554688,
+              "frame": 4615,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 2250.83154296875
+            },
+            {
+              "timeSeconds": 178.3297119140625,
+              "frame": 4741,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 1093.8157958984375
+            },
+            {
+              "timeSeconds": 181.83314514160156,
+              "frame": 4839,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 1123.6416015625
+            },
+            {
+              "timeSeconds": 185.04736328125,
+              "frame": 4929,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                }
+              ],
+              "ballSpeedChange": 1901.6968994140625
+            }
+          ]
+        },
+        {
+          "detectorId": "challenge.dive",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 5,
+          "measurements": {
+            "beatenToBall": 1,
+            "aerial": 5
+          },
+          "evidence": [
+            {
+              "timeSeconds": 23.95672035217285,
+              "frame": 520,
+              "kind": "whiff",
+              "closestApproachDistance": 209.16259765625,
+              "approachSpeed": 2295,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 57.976173400878906,
+              "frame": 1473,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 216.41921997070312,
+              "approachSpeed": 381.2490234375,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 116.32028198242188,
+              "frame": 3107,
+              "kind": "whiff",
+              "closestApproachDistance": 209.28726196289062,
+              "approachSpeed": 945.7010498046875,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 177.258544921875,
+              "frame": 4711,
+              "kind": "whiff",
+              "closestApproachDistance": 107.43135833740234,
+              "approachSpeed": 763.1141357421875,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 325.1708679199219,
+              "frame": 8742,
+              "kind": "whiff",
+              "closestApproachDistance": 109.16584777832031,
+              "approachSpeed": 1794.146728515625,
+              "aerial": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "replayFingerprint": "d8e920fb76216d6e",
+      "mode": "Ranked Doubles",
+      "gameVersion": "260114.55864.507183",
+      "playerCount": 4,
+      "sampledFrames": 3467,
+      "frameCoverage": {
+        "ball": 1,
+        "players": 1
+      },
+      "parserEvents": 6659,
+      "decisionEvents": 1484,
+      "shadowRuns": [
+        {
+          "detectorId": "boost.zero_duration",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 13,
+          "measurements": {
+            "totalSeconds": 24.701108932495117,
+            "longestSeconds": 6.100372314453125
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 24.331174850463867,
+              "startFrame": 206,
+              "lastTime": 28.63119125366211,
+              "endFrame": 249,
+              "endTimeSeconds": 28.63119125366211,
+              "durationSeconds": 4.300016403198242
+            },
+            {
+              "startTimeSeconds": 51.430908203125,
+              "startFrame": 477,
+              "lastTime": 52.03089904785156,
+              "endFrame": 483,
+              "endTimeSeconds": 52.03089904785156,
+              "durationSeconds": 0.5999908447265625
+            },
+            {
+              "startTimeSeconds": 115.02993774414062,
+              "startFrame": 1113,
+              "lastTime": 115.82992553710938,
+              "endFrame": 1121,
+              "endTimeSeconds": 115.82992553710938,
+              "durationSeconds": 0.79998779296875
+            },
+            {
+              "startTimeSeconds": 117.22990417480469,
+              "startFrame": 1135,
+              "lastTime": 117.82989501953125,
+              "endFrame": 1141,
+              "endTimeSeconds": 117.82989501953125,
+              "durationSeconds": 0.5999908447265625
+            },
+            {
+              "startTimeSeconds": 135.5301971435547,
+              "startFrame": 1318,
+              "lastTime": 140.3304901123047,
+              "endFrame": 1366,
+              "endTimeSeconds": 140.3304901123047,
+              "durationSeconds": 4.80029296875
+            },
+            {
+              "startTimeSeconds": 143.9307098388672,
+              "startFrame": 1402,
+              "lastTime": 145.43080139160156,
+              "endFrame": 1417,
+              "endTimeSeconds": 145.43080139160156,
+              "durationSeconds": 1.500091552734375
+            },
+            {
+              "startTimeSeconds": 157.9315643310547,
+              "startFrame": 1542,
+              "lastTime": 159.5316619873047,
+              "endFrame": 1558,
+              "endTimeSeconds": 159.5316619873047,
+              "durationSeconds": 1.60009765625
+            },
+            {
+              "startTimeSeconds": 160.0316925048828,
+              "startFrame": 1563,
+              "lastTime": 160.93174743652344,
+              "endFrame": 1572,
+              "endTimeSeconds": 160.93174743652344,
+              "durationSeconds": 0.900054931640625
+            },
+            {
+              "startTimeSeconds": 161.43177795410156,
+              "startFrame": 1577,
+              "lastTime": 162.0318145751953,
+              "endFrame": 1583,
+              "endTimeSeconds": 162.0318145751953,
+              "durationSeconds": 0.60003662109375
+            },
+            {
+              "startTimeSeconds": 259.7377624511719,
+              "startFrame": 2560,
+              "lastTime": 265.838134765625,
+              "endFrame": 2621,
+              "endTimeSeconds": 265.838134765625,
+              "durationSeconds": 6.100372314453125
+            },
+            {
+              "startTimeSeconds": 311.3409118652344,
+              "startFrame": 3076,
+              "lastTime": 313.041015625,
+              "endFrame": 3093,
+              "endTimeSeconds": 313.041015625,
+              "durationSeconds": 1.700103759765625
+            },
+            {
+              "startTimeSeconds": 320.04144287109375,
+              "startFrame": 3163,
+              "lastTime": 320.7414855957031,
+              "endFrame": 3170,
+              "endTimeSeconds": 320.7414855957031,
+              "durationSeconds": 0.700042724609375
+            },
+            {
+              "startTimeSeconds": 334.1423034667969,
+              "startFrame": 3304,
+              "lastTime": 334.642333984375,
+              "endFrame": 3309,
+              "endTimeSeconds": 334.642333984375,
+              "durationSeconds": 0.500030517578125
+            }
+          ]
+        },
+        {
+          "detectorId": "kickoff.speed",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 2,
+          "measurements": {
+            "meanTimeToBallSeconds": 2.031977653503418,
+            "fastestTimeToBallSeconds": 1.9704341888427734,
+            "slowestTimeToBallSeconds": 2.0935211181640625
+          },
+          "evidence": [
+            {
+              "startTimeSeconds": 19.37257957458496,
+              "timeToBallSeconds": 1.9704341888427734,
+              "spawnPosition": "diagonal_left",
+              "approach": "diagonal_flip",
+              "contactGap": 0.1906585693359375,
+              "outcome": "team_one_win"
+            },
+            {
+              "startTimeSeconds": 152.8739471435547,
+              "timeToBallSeconds": 2.0935211181640625,
+              "spawnPosition": "diagonal_right",
+              "approach": "diagonal_flip",
+              "contactGap": 104.05775451660156,
+              "outcome": "team_one_win"
+            }
+          ]
+        },
+        {
+          "detectorId": "possession.first_touch",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 39,
+          "measurements": {
+            "actionCounts": {
+              "unclassified": 19,
+              "shot": 3,
+              "clear": 3,
+              "save": 4,
+              "boom": 9,
+              "pass": 1
+            }
+          },
+          "evidence": [
+            {
+              "timeSeconds": 10.563347816467285,
+              "frame": 198,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 178.14414978027344
+            },
+            {
+              "timeSeconds": 13.647574424743652,
+              "frame": 286,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                }
+              ],
+              "ballSpeedChange": 1009.3427734375
+            },
+            {
+              "timeSeconds": 24.307680130004883,
+              "frame": 566,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "medium_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 392.410888671875
+            },
+            {
+              "timeSeconds": 29.58597755432129,
+              "frame": 716,
+              "role": "unknown",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "clear"
+                }
+              ],
+              "ballSpeedChange": 2835.15185546875
+            },
+            {
+              "timeSeconds": 36.800785064697266,
+              "frame": 923,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                }
+              ],
+              "ballSpeedChange": 1555.95166015625
+            },
+            {
+              "timeSeconds": 50.393428802490234,
+              "frame": 1261,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                }
+              ],
+              "ballSpeedChange": 24.3518009185791
+            },
+            {
+              "timeSeconds": 53.19118118286133,
+              "frame": 1342,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "medium_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 689.6644287109375
+            },
+            {
+              "timeSeconds": 59.87086868286133,
+              "frame": 1536,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 1724.5328369140625
+            },
+            {
+              "timeSeconds": 66.0904769897461,
+              "frame": 1716,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "high_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 1691.2628173828125
+            },
+            {
+              "timeSeconds": 77.72271728515625,
+              "frame": 2050,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 1287.8116455078125
+            },
+            {
+              "timeSeconds": 78.06425476074219,
+              "frame": 2060,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 2603.711181640625
+            },
+            {
+              "timeSeconds": 85.14895629882812,
+              "frame": 2265,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "shot"
+                }
+              ],
+              "ballSpeedChange": 3940.8369140625
+            },
+            {
+              "timeSeconds": 109.08016204833984,
+              "frame": 2953,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 1853.91845703125
+            },
+            {
+              "timeSeconds": 128.70777893066406,
+              "frame": 3505,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "medium_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                }
+              ],
+              "ballSpeedChange": 584.3301391601562
+            },
+            {
+              "timeSeconds": 131.5855712890625,
+              "frame": 3587,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "medium_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 543.6448364257812
+            },
+            {
+              "timeSeconds": 136.3772735595703,
+              "frame": 3724,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "boom"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 3414.77685546875
+            },
+            {
+              "timeSeconds": 138.27386474609375,
+              "frame": 3778,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 2122.678466796875
+            },
+            {
+              "timeSeconds": 142.1329345703125,
+              "frame": 3889,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "hard_hit"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "wall"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "no_dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "possession",
+                  "value": "control"
+                }
+              ],
+              "ballSpeedChange": 1675.927001953125
+            },
+            {
+              "timeSeconds": 157.97576904296875,
+              "frame": 4249,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "ground"
+                },
+                {
+                  "group": "surface",
+                  "value": "ground"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "contested",
+                  "value": "contested"
+                }
+              ],
+              "ballSpeedChange": 10.843183517456055
+            },
+            {
+              "timeSeconds": 169.0110626220703,
+              "frame": 4565,
+              "role": "first_man",
+              "tags": [
+                {
+                  "group": "kind",
+                  "value": "control"
+                },
+                {
+                  "group": "height_band",
+                  "value": "low_air"
+                },
+                {
+                  "group": "surface",
+                  "value": "air"
+                },
+                {
+                  "group": "dodge_state",
+                  "value": "dodge"
+                },
+                {
+                  "group": "reception",
+                  "value": "first_touch"
+                },
+                {
+                  "group": "action",
+                  "value": "save"
+                }
+              ],
+              "ballSpeedChange": 23.892974853515625
+            }
+          ]
+        },
+        {
+          "detectorId": "challenge.dive",
+          "detectorVersion": "0.1.0",
+          "status": "observed",
+          "candidateCount": 7,
+          "measurements": {
+            "beatenToBall": 3,
+            "aerial": 5
+          },
+          "evidence": [
+            {
+              "timeSeconds": 59.9391975402832,
+              "frame": 1538,
+              "kind": "whiff",
+              "closestApproachDistance": 96.0993423461914,
+              "approachSpeed": 482.1756591796875,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 96.36695098876953,
+              "frame": 2589,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 207.3828125,
+              "approachSpeed": 1474.20654296875,
+              "aerial": false
+            },
+            {
+              "timeSeconds": 96.43439483642578,
+              "frame": 2591,
+              "kind": "whiff",
+              "closestApproachDistance": 142.06661987304688,
+              "approachSpeed": 1227.9912109375,
+              "aerial": false
+            },
+            {
+              "timeSeconds": 157.83987426757812,
+              "frame": 4245,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 134.59927368164062,
+              "approachSpeed": 2193.2021484375,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 196.2575225830078,
+              "frame": 5332,
+              "kind": "whiff",
+              "closestApproachDistance": 138.5422821044922,
+              "approachSpeed": 1333.6185302734375,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 221.80999755859375,
+              "frame": 6066,
+              "kind": "beaten_to_ball",
+              "closestApproachDistance": 107.69230651855469,
+              "approachSpeed": 1590.681396484375,
+              "aerial": true
+            },
+            {
+              "timeSeconds": 231.55215454101562,
+              "frame": 6346,
+              "kind": "whiff",
+              "closestApproachDistance": 81.81763458251953,
+              "approachSpeed": 1402.6954345703125,
+              "aerial": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "detectors": [
+    {
+      "detectorId": "boost.zero_duration",
+      "detectorVersion": "0.1.0",
+      "replayRuns": 6,
+      "executionErrors": 0,
+      "replaysWithSignal": 6,
+      "candidateCount": 91,
+      "signalReplayRate": 1,
+      "publicQualityGate": {
+        "eligible": false,
+        "checks": [
+          {
+            "id": "replay_coverage",
+            "passed": false
+          },
+          {
+            "id": "reviewed_positives",
+            "passed": false
+          },
+          {
+            "id": "reviewed_negatives",
+            "passed": false
+          },
+          {
+            "id": "precision",
+            "passed": false
+          },
+          {
+            "id": "false_positive_rate",
+            "passed": false
+          },
+          {
+            "id": "timestamp_verification",
+            "passed": false
+          },
+          {
+            "id": "rank_mode_cohorts",
+            "passed": false
+          },
+          {
+            "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "expert_labels",
+            "passed": false
+          },
+          {
+            "id": "abstention_rule",
+            "passed": false
+          }
+        ],
+        "blockedBy": [
+          "replay_coverage",
+          "reviewed_positives",
+          "reviewed_negatives",
+          "precision",
+          "false_positive_rate",
+          "timestamp_verification",
+          "rank_mode_cohorts",
+          "patch_regression",
+          "expert_labels",
+          "abstention_rule"
+        ],
+        "gate": {
+          "minimumReplays": 50,
+          "minimumReviewedPositives": 30,
+          "minimumReviewedNegatives": 30,
+          "minimumPrecision": 0.9,
+          "maximumFalsePositiveRate": 0.05,
+          "minimumTimestampVerifiedRate": 0.95,
+          "minimumRankModeCohorts": 3
+        }
+      }
+    },
+    {
+      "detectorId": "kickoff.speed",
+      "detectorVersion": "0.1.0",
+      "replayRuns": 6,
+      "executionErrors": 0,
+      "replaysWithSignal": 6,
+      "candidateCount": 13,
+      "signalReplayRate": 1,
+      "publicQualityGate": {
+        "eligible": false,
+        "checks": [
+          {
+            "id": "replay_coverage",
+            "passed": false
+          },
+          {
+            "id": "reviewed_positives",
+            "passed": false
+          },
+          {
+            "id": "reviewed_negatives",
+            "passed": false
+          },
+          {
+            "id": "precision",
+            "passed": false
+          },
+          {
+            "id": "false_positive_rate",
+            "passed": false
+          },
+          {
+            "id": "timestamp_verification",
+            "passed": false
+          },
+          {
+            "id": "rank_mode_cohorts",
+            "passed": false
+          },
+          {
+            "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "expert_labels",
+            "passed": false
+          },
+          {
+            "id": "abstention_rule",
+            "passed": false
+          }
+        ],
+        "blockedBy": [
+          "replay_coverage",
+          "reviewed_positives",
+          "reviewed_negatives",
+          "precision",
+          "false_positive_rate",
+          "timestamp_verification",
+          "rank_mode_cohorts",
+          "patch_regression",
+          "expert_labels",
+          "abstention_rule"
+        ],
+        "gate": {
+          "minimumReplays": 50,
+          "minimumReviewedPositives": 30,
+          "minimumReviewedNegatives": 30,
+          "minimumPrecision": 0.9,
+          "maximumFalsePositiveRate": 0.05,
+          "minimumTimestampVerifiedRate": 0.95,
+          "minimumRankModeCohorts": 3
+        }
+      }
+    },
+    {
+      "detectorId": "possession.first_touch",
+      "detectorVersion": "0.1.0",
+      "replayRuns": 6,
+      "executionErrors": 0,
+      "replaysWithSignal": 6,
+      "candidateCount": 186,
+      "signalReplayRate": 1,
+      "publicQualityGate": {
+        "eligible": false,
+        "checks": [
+          {
+            "id": "replay_coverage",
+            "passed": false
+          },
+          {
+            "id": "reviewed_positives",
+            "passed": false
+          },
+          {
+            "id": "reviewed_negatives",
+            "passed": false
+          },
+          {
+            "id": "precision",
+            "passed": false
+          },
+          {
+            "id": "false_positive_rate",
+            "passed": false
+          },
+          {
+            "id": "timestamp_verification",
+            "passed": false
+          },
+          {
+            "id": "rank_mode_cohorts",
+            "passed": false
+          },
+          {
+            "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "expert_labels",
+            "passed": false
+          },
+          {
+            "id": "abstention_rule",
+            "passed": false
+          }
+        ],
+        "blockedBy": [
+          "replay_coverage",
+          "reviewed_positives",
+          "reviewed_negatives",
+          "precision",
+          "false_positive_rate",
+          "timestamp_verification",
+          "rank_mode_cohorts",
+          "patch_regression",
+          "expert_labels",
+          "abstention_rule"
+        ],
+        "gate": {
+          "minimumReplays": 50,
+          "minimumReviewedPositives": 30,
+          "minimumReviewedNegatives": 30,
+          "minimumPrecision": 0.9,
+          "maximumFalsePositiveRate": 0.05,
+          "minimumTimestampVerifiedRate": 0.95,
+          "minimumRankModeCohorts": 3
+        }
+      }
+    },
+    {
+      "detectorId": "challenge.dive",
+      "detectorVersion": "0.1.0",
+      "replayRuns": 6,
+      "executionErrors": 0,
+      "replaysWithSignal": 6,
+      "candidateCount": 32,
+      "signalReplayRate": 1,
+      "publicQualityGate": {
+        "eligible": false,
+        "checks": [
+          {
+            "id": "replay_coverage",
+            "passed": false
+          },
+          {
+            "id": "reviewed_positives",
+            "passed": false
+          },
+          {
+            "id": "reviewed_negatives",
+            "passed": false
+          },
+          {
+            "id": "precision",
+            "passed": false
+          },
+          {
+            "id": "false_positive_rate",
+            "passed": false
+          },
+          {
+            "id": "timestamp_verification",
+            "passed": false
+          },
+          {
+            "id": "rank_mode_cohorts",
+            "passed": false
+          },
+          {
+            "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "expert_labels",
+            "passed": false
+          },
+          {
+            "id": "abstention_rule",
+            "passed": false
+          }
+        ],
+        "blockedBy": [
+          "replay_coverage",
+          "reviewed_positives",
+          "reviewed_negatives",
+          "precision",
+          "false_positive_rate",
+          "timestamp_verification",
+          "rank_mode_cohorts",
+          "patch_regression",
+          "expert_labels",
+          "abstention_rule"
+        ],
+        "gate": {
+          "minimumReplays": 50,
+          "minimumReviewedPositives": 30,
+          "minimumReviewedNegatives": 30,
+          "minimumPrecision": 0.9,
+          "maximumFalsePositiveRate": 0.05,
+          "minimumTimestampVerifiedRate": 0.95,
+          "minimumRankModeCohorts": 3
+        }
+      }
+    }
+  ],
+  "failures": [],
+  "conclusions": {
+    "parserCoverageEstablished": true,
+    "publicDetectorsEnabled": 0,
+    "nextGate": "Add timestamp-reviewed expert labels across representative rank and mode cohorts."
+  }
+}
