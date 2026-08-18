@@ -51,6 +51,25 @@ Analyze broadly in shadow mode, but start public coaching with a small reliable
 detector set. The UI already supports abstention and limitations. "One primary
 leak" is a report-prioritization rule, not a restriction to one internal detector.
 
+## Current private calibration system
+
+Eight versioned shadow probes currently cover boost reserve, supersonic boost
+waste, kickoff timing, first-touch outcomes, challenge dives, teammate spacing,
+double commitments and recovery momentum loss. They execute over the full
+normalized replay state and create review candidates only; none is public by
+default.
+
+Every checked-in candidate has a matching anonymized replay-moment window for
+the owner-only `/admin/rl-review` lab. The viewer reconstructs the top-down
+field, ball and player motion around the timestamp without retaining original
+player names or platform identifiers. Expert verdicts and timestamp checks are
+stored separately as an auditable versioned label set.
+
+Public promotion additionally uses a conservative Wilson confidence floor so a
+small apparently perfect sample cannot pass. The deterministic coaching
+composer consumes only promoted findings, outputs one primary behavior with a
+practice and verification plan, and otherwise abstains.
+
 ## Versioning
 
 Pin and record:

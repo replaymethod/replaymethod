@@ -67,7 +67,8 @@ The live product foundation includes:
 - Private file storage and persistent analysis jobs
 - Private report links and report history
 - Feedback, funnel analytics, and admin monitoring
-- Retry, report review and private Rocket League detector-calibration workflows
+- Retry, report review and a private Rocket League detector-calibration lab with
+  anonymized interactive replay moments
 - Privacy and beta terms
 
 Important limitations today:

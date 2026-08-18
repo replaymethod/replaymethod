@@ -15,6 +15,7 @@
     "rl-engine:test": "node --test services/rl-engine/*.test.mjs",
     "rl-engine:calibrate": "node scripts/calibrate-rl-engine.mjs",
     "rl-engine:review-queue": "node scripts/build-rl-review-queue.mjs",
+    "rl-engine:review-moments": "node scripts/build-rl-review-moments.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"

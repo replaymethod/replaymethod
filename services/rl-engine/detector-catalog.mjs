@@ -88,9 +88,13 @@ const definitions = [
 
 const shadowDetectorIds = new Set([
   "boost.zero_duration",
+  "boost.supersonic_waste",
   "kickoff.speed",
   "possession.first_touch",
   "challenge.dive",
+  "rotation.spacing_too_close",
+  "teamplay.double_commit",
+  "recovery.momentum_loss",
 ]);
 
 export const ROCKET_LEAGUE_DETECTOR_CATALOG = Object.freeze(definitions.map(
