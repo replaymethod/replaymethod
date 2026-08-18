@@ -1,4 +1,5 @@
 import { inspectReplay, NORMALIZER_VERSION, PARSER_VERSION, ReplayInputError } from "./parser.mjs";
+import { detectorCatalogSummary } from "./detector-catalog.mjs";
 
 export const ANALYZER_VERSION = "rocket-league-analyzer@0.1.0";
 export const DETECTOR_VERSION = "rocket-league-detectors@0.0.0-disabled";
@@ -24,6 +25,7 @@ export function analyzeReplay(bytes, requestedIdentity, rank) {
         coaching: COACHING_VERSION,
         schema: "coaching.v1",
       },
+      detectorCatalog: detectorCatalogSummary(),
     }),
   );
 }
