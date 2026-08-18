@@ -4,12 +4,15 @@ import {
   get_ndarray_with_info,
   get_replay_info,
   get_replay_meta,
+  get_stats_timeline,
   initSync,
   validate_replay,
 } from "@rlrml/subtr-actor";
+import { episodeTimelineSummary, normalizeEpisodeTimeline } from "./episode-timeline.mjs";
+import { frameStateSummary, normalizeFrameState } from "./frame-state.mjs";
 
 export const PARSER_VERSION = "subtr-actor@1.2.0";
-export const NORMALIZER_VERSION = "rocket-league-normalizer@0.1.0";
+export const NORMALIZER_VERSION = "rocket-league-normalizer@0.2.0";
 
 let initialized = false;
 
@@ -103,16 +106,39 @@ function replayMode(meta) {
 
 function playerNames(meta) {
   const teams = [
-    ...((Array.isArray(meta?.team_zero) && meta.team_zero) || []),
-    ...((Array.isArray(meta?.team_one) && meta.team_one) || []),
+    ...(((Array.isArray(meta?.team_zero) && meta.team_zero) || []).map((player) => ({ player, team: 0 }))),
+    ...(((Array.isArray(meta?.team_one) && meta.team_one) || []).map((player) => ({ player, team: 1 }))),
   ];
   return teams
-    .map((player) => ({
+    .map(({ player, team }) => ({
       name: text(player?.name ?? player?.player_name),
       id: remotePlayerId(player),
+      team,
       raw: player,
     }))
     .filter((player) => player.name);
+}
+
+export function inspectReplayRoster(bytes) {
+  initializeParser();
+  const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const checked = validity(validate_replay(data));
+  if (!checked.valid) {
+    throw new ReplayInputError(
+      "invalid_replay",
+      "This file is not a supported Rocket League replay or it is corrupted.",
+      checked.error,
+    );
+  }
+  const info = plain(get_replay_info(data));
+  const metaResult = plain(get_replay_meta(data, [], []));
+  const normalized = normalizeReplayMetadata(metaResult, info);
+  return {
+    players: normalized.players.map(({ name, id, team }) => ({ name, id, team })),
+    mode: normalized.mode || null,
+    gameVersion: normalized.gameVersion || null,
+    occurredAt: normalized.occurredAt || null,
+  };
 }
 
 export function normalizeReplayMetadata(metaResult, info = {}) {
@@ -168,18 +194,21 @@ function resolvePlayer(meta, requestedIdentity) {
   );
 }
 
-function safeReplayMetadata(info, meta, subject, playerCount, sampledFrames) {
+function safeReplayMetadata(info, meta, subject, playerCount, frameState, episodeTimeline) {
   return {
     replayInfo: info,
     gameType: meta?.game_type ?? null,
     season: meta?.season ?? null,
     subject: { name: subject.name, id: subject.id || null },
     playerCount,
-    sampledFrames,
+    evidenceEngine: {
+      frameState: frameStateSummary(frameState),
+      episodeTimeline: episodeTimelineSummary(episodeTimeline),
+    },
   };
 }
 
-export function inspectReplay(bytes, requestedIdentity, rank = "") {
+export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
   initializeParser();
   const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   const checked = validity(validate_replay(data));
@@ -201,8 +230,11 @@ export function inspectReplay(bytes, requestedIdentity, rank = "") {
     ["PlayerBoost", "PlayerBallDistance", "PlayerRigidBody"],
     10,
   ));
+  const frameState = normalizeFrameState(ndarray, normalizedMeta.meta, 10);
+  const statsTimeline = plain(get_stats_timeline(data));
+  const episodeTimeline = normalizeEpisodeTimeline(statsTimeline, player.id || player.name);
 
-  return {
+  const normalized = {
     schemaVersion: "game-data.v1",
     game: "rocket-league",
     source: "rocket-league-replay",
@@ -217,11 +249,18 @@ export function inspectReplay(bytes, requestedIdentity, rank = "") {
       normalizedMeta.meta,
       player,
       players.length,
-      Array.isArray(ndarray?.array_data) ? ndarray.array_data.length : 0,
+      frameState,
+      episodeTimeline,
     ),
     derivedMetrics: [],
     limitations: [
       "This parser checkpoint proves replay compatibility and player attribution; public coaching detectors remain disabled until precision calibration passes.",
     ],
   };
+
+  return { normalized, frameState, episodeTimeline };
+}
+
+export function inspectReplay(bytes, requestedIdentity, rank = "") {
+  return buildReplayEvidence(bytes, requestedIdentity, rank).normalized;
 }

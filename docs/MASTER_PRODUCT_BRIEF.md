@@ -273,7 +273,7 @@ coach-worthy moments.
 
 1. finish and publish the revised evidence-first landing and post-report journey;
 2. secure representative legal replay fixtures;
-3. finish frame-state and episode extraction;
+3. expand the completed frame-state and episode extraction regression corpus;
 4. calibrate the first small high-precision public detector set while the broad
    catalog runs in shadow mode;
 5. add accounts, saved reports, entitlements, usage counters and reset dates;
@@ -327,6 +327,10 @@ At the time of this consolidation:
 - no paid checkout is active;
 - the Rocket League catalog is broad, but discovery entries must not be marketed
   as calibrated public detectors;
+- Rocket League frame-state and episode extraction now run on real replays;
+- four private shadow probes execute behind explicit public quality gates;
+- the first six-replay baseline parsed without failures and produced 251
+  anonymized review candidates, but none has expert labels yet;
 - League of Legends and VALORANT automated ingestion still depend on approved
   official Riot access.
 

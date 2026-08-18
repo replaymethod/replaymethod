@@ -22,12 +22,13 @@ test("unvalidated detector candidates are private and lifecycle-safe", () => {
   for (const detector of ROCKET_LEAGUE_DETECTOR_CATALOG) {
     assert.ok(DETECTOR_LIFECYCLE.includes(detector.lifecycle));
     assert.equal(detector.public, false);
-    assert.equal(detector.lifecycle, "discovery");
+    assert.ok(["discovery", "shadow"].includes(detector.lifecycle));
     assert.ok(detector.requirements.includes("expert-labels"));
     assert.ok(detector.requirements.includes("rank-mode-baseline"));
   }
 
   const summary = detectorCatalogSummary();
   assert.equal(summary.public, 0);
-  assert.equal(summary.byLifecycle.discovery, summary.total);
+  assert.equal(summary.byLifecycle.shadow, 4);
+  assert.equal(summary.byLifecycle.discovery, summary.total - 4);
 });

@@ -102,6 +102,7 @@ Important limitations today:
 - `db/` and `drizzle/` — portable schema and versioned migrations
 - `worker/` — Cloudflare request entry point and background scheduling hook
 - `services/rl-engine/` — standalone Rocket League replay service
+- `scripts/calibrate-rl-engine.mjs` — real-replay shadow calibration runner
 - `tests/` — build, route and engine regression checks
 
 Architecture and operating details live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), [docs/ROCKET_LEAGUE_ENGINE.md](docs/ROCKET_LEAGUE_ENGINE.md), and [docs/RIOT_INTEGRATION.md](docs/RIOT_INTEGRATION.md).
@@ -111,6 +112,8 @@ The durable product source of truth is
 detector strategy is grounded in a review of 22 coaching,
 analytics, replay, training and video products documented in
 [docs/COMPETITIVE_INTELLIGENCE.md](docs/COMPETITIVE_INTELLIGENCE.md).
+Current Rocket League parser, shadow-detector and calibration status is tracked
+in [docs/RL_ENGINE_STATUS.md](docs/RL_ENGINE_STATUS.md).
 
 ## Local development
 

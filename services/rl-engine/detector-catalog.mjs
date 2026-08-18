@@ -86,13 +86,20 @@ const definitions = [
   ["teamplay.transition_balance", "teamplay", "Transition lacks attack-defense balance", 3],
 ];
 
+const shadowDetectorIds = new Set([
+  "boost.zero_duration",
+  "kickoff.speed",
+  "possession.first_touch",
+  "challenge.dive",
+]);
+
 export const ROCKET_LEAGUE_DETECTOR_CATALOG = Object.freeze(definitions.map(
   ([id, category, title, phase]) => Object.freeze({
     id,
     category,
     title,
     phase,
-    lifecycle: "discovery",
+    lifecycle: shadowDetectorIds.has(id) ? "shadow" : "discovery",
     public: false,
     requirements: Object.freeze([
       "frame-state",
