@@ -62,8 +62,12 @@ export function isRlReviewVerdict(value: unknown): value is RlReviewVerdict {
 export function detectorName(detectorId: string) {
   return ({
     "boost.zero_duration": "Zero-boost exposure",
+    "boost.supersonic_waste": "Supersonic boost waste",
     "kickoff.speed": "Kickoff arrival",
     "possession.first_touch": "First-touch control",
-    "challenge.dive": "Risky challenge"
+    "challenge.dive": "Risky challenge",
+    "rotation.spacing_too_close": "Compressed spacing",
+    "teamplay.double_commit": "Double commit",
+    "recovery.momentum_loss": "Momentum loss"
   } as Record<string, string>)[detectorId] ?? detectorId;
 }

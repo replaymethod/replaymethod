@@ -43,6 +43,7 @@ export default function ReviewCandidateForm({ candidate }: { candidate: Candidat
   }
 
   return <form className="rl-review-form" onSubmit={save}>
+    <div className="rl-verdict-shortcuts" aria-label="Quick verdict"><button type="button" className={verdict === "confirmed" ? "active confirmed" : ""} onClick={() => setVerdict("confirmed")}>✓ Confirm signal</button><button type="button" className={verdict === "rejected" ? "active rejected" : ""} onClick={() => setVerdict("rejected")}>× False positive</button><button type="button" className={verdict === "uncertain" ? "active uncertain" : ""} onClick={() => setVerdict("uncertain")}>? Uncertain</button></div>
     <div className="rl-review-controls">
       <label><span>VERDICT</span><select value={verdict} onChange={event => setVerdict(event.target.value)}><option value="unreviewed">Unreviewed</option><option value="confirmed">Confirmed signal</option><option value="rejected">False positive</option><option value="uncertain">Uncertain</option></select></label>
       <label><span>TIMESTAMP</span><select value={timestampVerified} onChange={event => setTimestampVerified(event.target.value)}><option value="unknown">Not checked</option><option value="yes">Verified</option><option value="no">Incorrect</option></select></label>

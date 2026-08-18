@@ -1,13 +1,18 @@
 import { assessPublicDetectorGate } from "./quality-gates.mjs";
+import { wilsonLowerBound } from "./quality-gates.mjs";
 
 export const CALIBRATION_REPORT_VERSION = "rocket-league-calibration-report.v1";
 export const REVIEW_QUEUE_VERSION = "rocket-league-review-queue.v1";
 
 const reviewQuestions = Object.freeze({
   "boost.zero_duration": "Did zero boost materially reduce this player's useful options in this moment?",
+  "boost.supersonic_waste": "Was boost spent without creating useful additional speed or positional value?",
   "kickoff.speed": "Was this kickoff arrival or contact meaningfully late for the spawn and approach?",
   "possession.first_touch": "Did this first touch give away a stronger controllable option?",
   "challenge.dive": "Was this commitment avoidable and did it create meaningful team risk?",
+  "rotation.spacing_too_close": "Did this spacing duplicate a teammate's coverage or reduce reaction time?",
+  "teamplay.double_commit": "Did both teammates commit to the same ball without enough layered coverage?",
+  "recovery.momentum_loss": "Was this low-speed interval avoidable and did it delay useful re-entry?",
 });
 
 export function aggregateCalibrationRuns(entries, failures = []) {
@@ -105,6 +110,7 @@ export function calibrationMetricsFromLabels(reviewQueue, detectorId) {
     reviewedPositives: confirmed.length,
     reviewedNegatives: rejected.length,
     precision: reviewed.length ? confirmed.length / reviewed.length : null,
+    precisionLowerBound: wilsonLowerBound(confirmed.length, reviewed.length),
     falsePositiveRate: reviewed.length ? rejected.length / reviewed.length : null,
     timestampVerifiedRate: timestampReviewed.length
       ? timestampReviewed.filter((candidate) => candidate.timestampVerified).length / timestampReviewed.length

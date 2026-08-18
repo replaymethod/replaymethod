@@ -46,14 +46,35 @@ test("aggregates replay coverage while keeping public quality gates closed", () 
 test("checked-in review queue is unique, private and ready for expert labeling", async () => {
   const queue = JSON.parse(await readFile(new URL("../../docs/RL_REVIEW_QUEUE.json", import.meta.url), "utf8"));
   assert.equal(queue.schemaVersion, "rocket-league-review-queue.v1");
-  assert.equal(queue.candidates.length, 251);
+  assert.equal(queue.candidates.length, 515);
   assert.equal(new Set(queue.candidates.map(candidate => candidate.id)).size, queue.candidates.length);
   assert.deepEqual(new Set(queue.candidates.map(candidate => candidate.detectorId)), new Set([
     "boost.zero_duration",
+    "boost.supersonic_waste",
     "kickoff.speed",
     "possession.first_touch",
     "challenge.dive",
+    "rotation.spacing_too_close",
+    "teamplay.double_commit",
+    "recovery.momentum_loss",
   ]));
   assert.ok(queue.candidates.every(candidate => candidate.label === null));
   assert.ok(queue.candidates.every(candidate => candidate.replayFingerprint && candidate.reviewQuestion));
+});
+
+test("checked-in replay moments cover every candidate without player identifiers", async () => {
+  const queue = JSON.parse(await readFile(new URL("../../docs/RL_REVIEW_QUEUE.json", import.meta.url), "utf8"));
+  const artifact = JSON.parse(await readFile(new URL("../../docs/RL_REVIEW_MOMENTS.json", import.meta.url), "utf8"));
+  assert.equal(artifact.schemaVersion, "rocket-league-review-moments.v1");
+  assert.equal(artifact.replayCount, 6);
+  assert.equal(artifact.candidateCount, queue.candidates.length);
+  assert.equal(artifact.missingCandidateCount, 0);
+  assert.deepEqual(artifact.missingReplays, []);
+  for (const candidate of queue.candidates) {
+    const moment = artifact.moments[candidate.id];
+    assert.ok(moment, `missing moment ${candidate.id}`);
+    assert.ok(moment.frames.length >= 10);
+    assert.ok(moment.roster.every((player) => /^P\d+$/.test(player.id)));
+    assert.equal(moment.roster.filter((player) => player.subject).length, 1);
+  }
 });

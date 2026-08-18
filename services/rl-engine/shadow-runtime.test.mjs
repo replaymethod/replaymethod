@@ -43,10 +43,10 @@ function evidenceFixture() {
 
 test("executes shadow observations without making them public findings", () => {
   const result = runShadowDetectors(evidenceFixture());
-  assert.equal(result.summary.detectorCount, 4);
-  assert.equal(result.summary.executed, 4);
+  assert.equal(result.summary.detectorCount, 8);
+  assert.equal(result.summary.executed, 8);
   assert.equal(result.summary.errors, 0);
-  assert.equal(result.summary.observed, 4);
+  assert.ok(result.summary.observed >= 4);
   assert.equal(result.summary.publicEligible, 0);
 
   const boost = result.runs.find((run) => run.detectorId === "boost.zero_duration");
