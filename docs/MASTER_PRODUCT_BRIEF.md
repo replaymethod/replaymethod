@@ -195,6 +195,13 @@ The strongest positioning line is:
 
 > We do not just explain the loss. We help you stop losing for the same reason.
 
+The current owner-supplied commercial hypotheses and their safe implementation
+order are preserved in `docs/GROWTH_AND_MONETIZATION_BACKLOG.md`. It includes
+landing-page upload, post-value email capture, onboarding, price packaging,
+checkout readiness, content channels and paid acquisition. Community promotion
+must be transparent; Replay Method will not impersonate independent customers
+or manufacture endorsements.
+
 ## Rocket League engine direction
 
 Rocket League is the first deep replay adapter. The target is not a single
