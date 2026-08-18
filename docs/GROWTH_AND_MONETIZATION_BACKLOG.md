@@ -8,10 +8,14 @@ and consistent with the evidence-first product promise.
 
 ## Immediate product hypotheses
 
-1. Reduce time-to-value: place the supported replay drop zone on the landing
-   page and let a visitor begin before creating an account or giving an email.
-2. Ask for email after the first useful result, when saving the report or
-   starting the improvement loop has clear value.
+1. **Implemented in the current web batch:** reduce time-to-value by placing the
+   supported Rocket League replay drop zone in the first landing-page viewport.
+   The visitor chooses the match before any identity or delivery field appears.
+2. **Staged safely:** email is now the final field after replay selection and
+   player context, and marketing remains a separate unchecked opt-in. Moving
+   report ownership fully after the first result still requires a proper
+   anonymous device identity and secure report-claim flow; do not simulate that
+   model with fake email addresses or public report identifiers.
 3. Add a short visual "how it works" path beside the upload control, with input
    requirements, privacy, processing state and the expected report outcome.
 4. Make the interface feel responsive and game-native through purposeful
@@ -57,8 +61,8 @@ experiments, entitlement/payment infrastructure and measured technical results.
 ## Research and implementation order
 
 1. Finish the reliable Rocket League analysis and owner review workflow.
-2. Instrument upload start, successful report, usefulness, save/email intent,
-   upgrade intent and follow-up match.
+2. Instrument upload start, analysis start/submission/failure, successful
+   report, usefulness, save/email intent, upgrade intent and follow-up match.
 3. Deep-review mobile UI/UX and benchmark high-converting, youth-appropriate
    onboarding without manipulative dark patterns; include Framer examples as
    visual references, not templates to copy.

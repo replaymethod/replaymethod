@@ -62,7 +62,8 @@ Replay Method is in early development and beta validation.
 
 The live product foundation includes:
 
-- Responsive landing and game-selection flows
+- Responsive landing and game-selection flows, including an above-the-fold
+  Rocket League replay drop zone with email last in the intake
 - Analysis intake and Rocket League `.replay` uploads
 - Private file storage and persistent analysis jobs
 - Private report links and report history

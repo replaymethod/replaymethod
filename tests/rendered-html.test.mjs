@@ -32,4 +32,6 @@ test("renders production social metadata and the evidence-first promise", async 
   const html = await response.text();
   assert.match(html, socialImageMeta);
   assert.match(html, /Stop losing for the same reason\./i);
+  assert.match(html, /Drop your \.replay here/i);
+  assert.match(html, /Upload first, email last/i);
 });
