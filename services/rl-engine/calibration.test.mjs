@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   aggregateCalibrationRuns,
@@ -40,4 +41,19 @@ test("aggregates replay coverage while keeping public quality gates closed", () 
   assert.equal(metrics.reviewedPositives, 1);
   assert.equal(metrics.precision, 1);
   assert.equal(metrics.timestampVerifiedRate, 1);
+});
+
+test("checked-in review queue is unique, private and ready for expert labeling", async () => {
+  const queue = JSON.parse(await readFile(new URL("../../docs/RL_REVIEW_QUEUE.json", import.meta.url), "utf8"));
+  assert.equal(queue.schemaVersion, "rocket-league-review-queue.v1");
+  assert.equal(queue.candidates.length, 251);
+  assert.equal(new Set(queue.candidates.map(candidate => candidate.id)).size, queue.candidates.length);
+  assert.deepEqual(new Set(queue.candidates.map(candidate => candidate.detectorId)), new Set([
+    "boost.zero_duration",
+    "kickoff.speed",
+    "possession.first_touch",
+    "challenge.dive",
+  ]));
+  assert.ok(queue.candidates.every(candidate => candidate.label === null));
+  assert.ok(queue.candidates.every(candidate => candidate.replayFingerprint && candidate.reviewQuestion));
 });
