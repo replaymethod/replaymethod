@@ -46,6 +46,9 @@ Generated evidence:
 - `docs/RL_ENGINE_BASELINE.json` contains the reproducible corpus run;
 - `docs/RL_REVIEW_QUEUE.json` contains anonymized timestamp candidates for
   expert review.
+- `/admin/rl-review` imports those candidates into D1, provides private
+  detector/replay/verdict filters, and writes every owner decision to the
+  versioned `rocket-league-expert-labels.v1` audit history.
 
 ## Quality gate
 
@@ -65,10 +68,10 @@ review queue is unlabeled. That is expected and prevents fake confidence.
 
 ## Next engine milestone
 
-1. add a private moment-review interface for the 251 candidates;
+1. use the private review interface to confirm timestamps and labels;
 2. obtain representative 1v1, 2v2 and 3v3 replays across rank cohorts;
-3. have qualified reviewers confirm timestamps and labels;
-4. calculate precision and false-positive reports per detector version;
+3. calculate precision and false-positive reports per detector version;
+4. run patch-regression and abstention tests over the labeled corpus;
 5. promote only passing detectors from `shadow` to `enabled`;
 6. rank enabled findings by recurrence, impact, confidence and trainability;
 7. verify the same behavior over later matches.

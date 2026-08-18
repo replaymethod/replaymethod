@@ -226,3 +226,44 @@ export const analysisReviews = sqliteTable("analysis_reviews", {
   index("analysis_reviews_request_idx").on(table.analysisRequestId),
   index("analysis_reviews_finding_idx").on(table.findingId)
 ]);
+
+export const rlReviewCandidates = sqliteTable("rl_review_candidates", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  candidateKey: text("candidate_key").notNull(),
+  replayFingerprint: text("replay_fingerprint").notNull(),
+  mode: text("mode"),
+  gameVersion: text("game_version"),
+  detectorId: text("detector_id").notNull(),
+  detectorVersion: text("detector_version").notNull(),
+  reviewQuestion: text("review_question").notNull(),
+  timestampSeconds: real("timestamp_seconds"),
+  frame: integer("frame"),
+  observationJson: text("observation_json").notNull(),
+  verdict: text("verdict").notNull().default("unreviewed"),
+  timestampVerified: integer("timestamp_verified", { mode: "boolean" }),
+  notes: text("notes"),
+  reviewerEmail: text("reviewer_email"),
+  labelSetVersion: text("label_set_version"),
+  reviewedAt: text("reviewed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("rl_review_candidates_key_unique").on(table.candidateKey),
+  index("rl_review_candidates_detector_verdict_idx").on(table.detectorId, table.verdict),
+  index("rl_review_candidates_replay_idx").on(table.replayFingerprint),
+  index("rl_review_candidates_reviewed_at_idx").on(table.reviewedAt)
+]);
+
+export const rlReviewLabels = sqliteTable("rl_review_labels", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  candidateId: integer("candidate_id").notNull().references(() => rlReviewCandidates.id),
+  reviewerEmail: text("reviewer_email").notNull(),
+  verdict: text("verdict").notNull(),
+  timestampVerified: integer("timestamp_verified", { mode: "boolean" }),
+  notes: text("notes"),
+  labelSetVersion: text("label_set_version").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  index("rl_review_labels_candidate_idx").on(table.candidateId),
+  index("rl_review_labels_created_at_idx").on(table.createdAt)
+]);

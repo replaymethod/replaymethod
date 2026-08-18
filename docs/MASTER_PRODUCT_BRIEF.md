@@ -330,7 +330,11 @@ At the time of this consolidation:
 - Rocket League frame-state and episode extraction now run on real replays;
 - four private shadow probes execute behind explicit public quality gates;
 - the first six-replay baseline parsed without failures and produced 251
-  anonymized review candidates, but none has expert labels yet;
+  anonymized review candidates;
+- a private D1-backed Rocket League review lab now filters those candidates,
+  records versioned expert decisions and timestamp checks, preserves an audit
+  history, and shows detector-level acceptance metrics; the initial queue still
+  needs qualified human labels before any detector can become public;
 - League of Legends and VALORANT automated ingestion still depend on approved
   official Riot access.
 
