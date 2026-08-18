@@ -58,6 +58,49 @@ function text(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function scalarText(value) {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "bigint") return String(value);
+  return "";
+}
+
+function replayMetaPayload(meta) {
+  return meta?.replay_meta && typeof meta.replay_meta === "object"
+    ? meta.replay_meta
+    : (meta ?? {});
+}
+
+function remotePlayerId(player) {
+  const remote = player?.remote_id ?? player?.online_id ?? player?.id;
+  const direct = scalarText(remote);
+  if (direct) return direct;
+  if (remote && typeof remote === "object") {
+    const entry = Object.entries(remote).find(([, value]) => scalarText(value));
+    if (entry) return `${entry[0].toLowerCase()}:${scalarText(entry[1])}`;
+  }
+  return scalarText(player?.stats?.OnlineID);
+}
+
+function headerValue(meta, name) {
+  const headers = Array.isArray(meta?.all_headers) ? meta.all_headers : [];
+  const entry = headers.find((item) => Array.isArray(item) && item[0] === name);
+  return entry?.[1];
+}
+
+function replayMode(meta) {
+  const gameType = meta?.game_type;
+  const direct = text(gameType);
+  if (direct) return direct;
+
+  const playlistId = Number(gameType?.playlist_id);
+  const playlists = new Map([
+    [10, "Ranked Duel"],
+    [11, "Ranked Doubles"],
+    [13, "Ranked Standard"],
+  ]);
+  return playlists.get(playlistId) ?? text(gameType?.game_type);
+}
+
 function playerNames(meta) {
   const teams = [
     ...((Array.isArray(meta?.team_zero) && meta.team_zero) || []),
@@ -66,10 +109,24 @@ function playerNames(meta) {
   return teams
     .map((player) => ({
       name: text(player?.name ?? player?.player_name),
-      id: text(player?.remote_id ?? player?.online_id ?? player?.id),
+      id: remotePlayerId(player),
       raw: player,
     }))
     .filter((player) => player.name);
+}
+
+export function normalizeReplayMetadata(metaResult, info = {}) {
+  const meta = replayMetaPayload(metaResult);
+  return {
+    meta,
+    players: playerNames(meta),
+    mode: replayMode(meta),
+    gameVersion: text(info?.build_version ?? info?.game_version ?? info?.version)
+      || scalarText(headerValue(meta, "BuildVersion"))
+      || scalarText(headerValue(meta, "GameVersion")),
+    occurredAt: text(info?.date ?? info?.recorded_at)
+      || scalarText(headerValue(meta, "Date")),
+  };
 }
 
 function identityCandidates(input) {
@@ -135,8 +192,9 @@ export function inspectReplay(bytes, requestedIdentity, rank = "") {
   }
 
   const info = plain(get_replay_info(data));
-  const meta = plain(get_replay_meta(data, ["CurrentTime", "SecondsRemaining"], ["PlayerBoost", "PlayerBallDistance"]));
-  const { player, players } = resolvePlayer(meta, requestedIdentity);
+  const metaResult = plain(get_replay_meta(data, ["CurrentTime", "SecondsRemaining"], ["PlayerBoost", "PlayerBallDistance"]));
+  const normalizedMeta = normalizeReplayMetadata(metaResult, info);
+  const { player, players } = resolvePlayer(normalizedMeta.meta, requestedIdentity);
   const ndarray = plain(get_ndarray_with_info(
     data,
     ["CurrentTime", "SecondsRemaining", "BallRigidBody"],
@@ -150,13 +208,13 @@ export function inspectReplay(bytes, requestedIdentity, rank = "") {
     source: "rocket-league-replay",
     subjectPlayerId: player.id || player.name,
     subjectDisplayName: player.name,
-    mode: text(meta?.game_type) || undefined,
+    mode: normalizedMeta.mode || undefined,
     rank: text(rank) || undefined,
-    gameVersion: text(info?.build_version ?? info?.game_version ?? info?.version) || undefined,
-    occurredAt: text(info?.date ?? info?.recorded_at) || undefined,
+    gameVersion: normalizedMeta.gameVersion || undefined,
+    occurredAt: normalizedMeta.occurredAt || undefined,
     metadata: safeReplayMetadata(
       info,
-      meta,
+      normalizedMeta.meta,
       player,
       players.length,
       Array.isArray(ndarray?.array_data) ? ndarray.array_data.length : 0,
