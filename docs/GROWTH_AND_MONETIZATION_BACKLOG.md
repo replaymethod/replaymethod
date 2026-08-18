@@ -36,7 +36,7 @@ and consistent with the evidence-first product promise.
   clauses. Any guarantee must have plain, fair, measurable conditions and a
   modeled loss ceiling.
 
-## Distribution experiments
+## Owner actions: distribution and community
 
 - Create a consistent brand presence on Discord, TikTok, Instagram and X with a
   credible initial content library combining useful analysis, educational clips
@@ -49,6 +49,10 @@ and consistent with the evidence-first product promise.
 - Do not impersonate independent customers, manufacture testimonials, spam
   communities or mass-follow scraped audiences. These tactics create platform,
   consumer-protection and brand risk.
+
+The owner operates these channels and creates/publishes the content. Codex owns
+the supporting product work: conversion flow, analytics events, landing-page
+experiments, entitlement/payment infrastructure and measured technical results.
 
 ## Research and implementation order
 
