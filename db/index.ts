@@ -53,6 +53,33 @@ export async function ensureProductSchema(database: D1Database) {
       )`),
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS players_public_id_unique ON players (public_id)"),
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS players_email_unique ON players (email)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS player_claims (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        token_hash text NOT NULL,
+        player_id integer NOT NULL,
+        analysis_request_id integer NOT NULL,
+        expires_at text NOT NULL,
+        consumed_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id),
+        FOREIGN KEY (analysis_request_id) REFERENCES analysis_requests(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_claims_token_hash_unique ON player_claims (token_hash)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_claims_player_idx ON player_claims (player_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_claims_expires_at_idx ON player_claims (expires_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS player_sessions (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        token_hash text NOT NULL,
+        player_id integer NOT NULL,
+        expires_at text NOT NULL,
+        last_seen_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        revoked_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_sessions_token_hash_unique ON player_sessions (token_hash)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_sessions_player_idx ON player_sessions (player_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_sessions_expires_at_idx ON player_sessions (expires_at)"),
       database.prepare(`CREATE TABLE IF NOT EXISTS game_accounts (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         public_id text NOT NULL,

@@ -84,6 +84,34 @@ export const players = sqliteTable("players", {
   uniqueIndex("players_email_unique").on(table.email)
 ]);
 
+export const playerClaims = sqliteTable("player_claims", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  tokenHash: text("token_hash").notNull(),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id),
+  expiresAt: text("expires_at").notNull(),
+  consumedAt: text("consumed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_claims_token_hash_unique").on(table.tokenHash),
+  index("player_claims_player_idx").on(table.playerId),
+  index("player_claims_expires_at_idx").on(table.expiresAt)
+]);
+
+export const playerSessions = sqliteTable("player_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  tokenHash: text("token_hash").notNull(),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  expiresAt: text("expires_at").notNull(),
+  lastSeenAt: text("last_seen_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  revokedAt: text("revoked_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_sessions_token_hash_unique").on(table.tokenHash),
+  index("player_sessions_player_idx").on(table.playerId),
+  index("player_sessions_expires_at_idx").on(table.expiresAt)
+]);
+
 export const gameAccounts = sqliteTable("game_accounts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   publicId: text("public_id").notNull(),

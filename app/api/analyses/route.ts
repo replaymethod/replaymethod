@@ -1,8 +1,9 @@
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { analysisJobs, analysisRequests, gameAccounts, players, waitlist } from "../../../db/schema";
+import { analysisJobs, analysisRequests, gameAccounts, playerClaims, players, waitlist } from "../../../db/schema";
 import { cleanText, emailPattern, isAnalysisGame, reportUrl } from "../../../lib/analysis";
 import { sendAnalysisReceived } from "../../../lib/email";
+import { createPlayerToken, expiresAt, hashPlayerToken, PLAYER_CLAIM_SECONDS } from "../../../lib/player-identity.mjs";
 
 export const runtime = "edge";
 
@@ -155,8 +156,16 @@ export async function POST(request: Request) {
     }
 
     const url = reportUrl(request.url, publicId);
+    const claimToken = createPlayerToken();
+    await db.insert(playerClaims).values({
+      tokenHash: await hashPlayerToken(claimToken),
+      playerId: player.id,
+      analysisRequestId: inserted.id,
+      expiresAt: expiresAt(PLAYER_CLAIM_SECONDS)
+    });
+    const ownershipUrl = new URL(`/access/${claimToken}`, request.url).toString();
     let emailSent = false;
-    try { emailSent = await sendAnalysisReceived({ email, game, url }); } catch { /* status link remains the delivery fallback */ }
+    try { emailSent = await sendAnalysisReceived({ email, game, url: ownershipUrl }); } catch { /* status link remains the delivery fallback */ }
 
     return Response.json({ publicId, jobPublicId, url, emailSent }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
