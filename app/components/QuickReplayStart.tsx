@@ -71,6 +71,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     const problem = fileProblem(file);
     setMessage(problem);
     if (problem) {
+      setStatus("error");
       setReplay(null);
       setDetailsOpen(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -137,7 +138,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     }
   }
 
-  return <form id="replay-upload" className={`quick-replay ${replay ? "has-file" : ""}`} onSubmit={submit}>
+  return <form id="replay-upload" className={`quick-replay ${replay ? "has-file" : ""}`} aria-busy={status === "loading"} onSubmit={submit}>
     <div className="quick-replay-head"><div><span>ROCKET LEAGUE · LIVE BETA</span><b>Drop one replay. Get one priority.</b></div><i>$0</i></div>
     <label
       className={`quick-drop ${dragging ? "dragging" : ""}`}
@@ -170,7 +171,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       <p className="quick-email-note">Upload first, email last. Used to deliver and recover this private report—not for marketing unless you choose it below.</p>
       <label className="quick-check"><input type="checkbox" checked={dataConsent} onChange={event => setDataConsent(event.target.checked)} required /><span>Process this replay and email to deliver my private beta analysis. <a href="/privacy" target="_blank">Privacy</a></span></label>
       <label className="quick-check optional"><input type="checkbox" checked={updatesConsent} onChange={event => setUpdatesConsent(event.target.checked)} /><span>Also send product updates and founding access. Optional.</span></label>
-      <button className="quick-submit" disabled={status === "loading"}>{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "START FREE ANALYSIS →"}</button>
+      <button className="quick-submit" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "START FREE ANALYSIS →"}</span></button>
       <small>No card · Private status link appears immediately · The engine stops instead of guessing</small>
     </div>}
 
