@@ -228,7 +228,12 @@ export default function Landing({ game = "general" }: { game?: GameKey }) {
     </section>
 
     <section className="proof-ribbon"><div className="shell"><span><b>01</b> REPLAY</span><i>→</i><span><b>02</b> REVEAL</span><i>→</i><span><b>03</b> PRACTICE</span><i>→</i><span><b>04</b> PROVE</span></div></section>
-    <HardstuckHook />
+        <HardstuckHook
+          analysisHref={analysisHref}
+          onAnalysisStart={() =>
+            trackEvent(game, "analysis_start", "hardstuck_hook")
+          }
+        />
 
     <section className="free-layer shell"><div className="section-intro"><span className="kicker">VALUE BEFORE PAYMENT</span><h2>Don’t take our word for it.<br />Use the method for free.</h2><p>Submit a real match and receive one evidence-backed correction before deciding whether Replay Method deserves your money.</p></div><div className="free-layer-grid"><a className="free-card featured" href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "free_layer_analysis")}><span>FREE FOUNDING BETA</span><h3>Real match analysis</h3><p>Send one match, replay or VOD. Get your highest-impact repeated mistake, evidence moments and a focused next-queue plan.</p><b>Submit my match →</b></a><a className="free-card" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "free_layer_check")}><span>60-SECOND SELF CHECK</span><h3>Climb Leak Check</h3><p>No match ready? Find a likely leak class and leave with one immediate focus.</p><b>Run the check →</b></a><a className="free-card" href="/guides"><span>FREE REVIEW SYSTEM</span><h3>Replay & VOD checklists</h3><p>Review the moments that decide games instead of watching an entire match without structure.</p><b>Open the guide library →</b></a></div></section>
 
