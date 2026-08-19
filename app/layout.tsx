@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://replaymethod.xyz"),
   title: "Replay Method — Turn every match into progress",
-  description: "AI coaching that turns your real matches into one clear diagnosis, one focused training plan and measurable progress.",
+  description: "Evidence-first match coaching designed to turn supported gameplay patterns into one focused training plan and measurable progress.",
   applicationName: "Replay Method",
   alternates: { canonical: "/" },
   keywords: ["AI gaming coach", "League of Legends coaching", "VALORANT coaching", "Rocket League replay analysis", "rank up", "VOD review"],
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Replay Method — Turn every match into progress",
-    description: "AI coaching for players who are done grinding blind.",
+    description: "Evidence-first coaching for players who are done grinding blind.",
     images: ["/og.png"]
   },
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" }

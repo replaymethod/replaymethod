@@ -3,7 +3,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Waitlist terms — Replay Method",
-  description: "The terms for joining the Replay Method beta waitlist."
+  description: "The terms for joining the Replay Method beta waitlist.",
+  alternates: { canonical: "/terms" }
 };
 
 export default function TermsPage() {

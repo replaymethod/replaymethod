@@ -32,11 +32,13 @@ const patterns = [
 type HardstuckHookProps = {
   analysisHref?: string;
   onAnalysisStart?: () => void;
+  requestOnly?: boolean;
 };
 
 export default function HardstuckHook({
   analysisHref = "/analyze",
   onAnalysisStart,
+  requestOnly = false,
 }: HardstuckHookProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const selectedPattern = selected === null ? null : patterns[selected];
@@ -125,10 +127,12 @@ export default function HardstuckHook({
             </div>
 
             <a className="hardstuck-cta" href={selectedAnalysisHref} onClick={onAnalysisStart}>
-              {selectedPattern ? "Test this on my replay" : "Analyze my replay"}
+              {requestOnly
+                ? selectedPattern ? "Carry this into my Riot request" : "Save a Riot beta request"
+                : selectedPattern ? "Test this in the replay beta" : "Start a replay evidence check"}
               <span aria-hidden="true">→</span>
             </a>
-            <small className="hardstuck-trust">One real match · private report · no card</small>
+            <small className="hardstuck-trust">{requestOnly ? "Official access pending · private request · no card" : "One real match · private status · no card"}</small>
           </div>
         </div>
       </div>

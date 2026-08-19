@@ -139,7 +139,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
   }
 
   return <form id="replay-upload" className={`quick-replay ${replay ? "has-file" : ""}`} aria-busy={status === "loading"} onSubmit={submit}>
-    <div className="quick-replay-head"><div><span>ROCKET LEAGUE · LIVE BETA</span><b>Drop one replay. Get one priority.</b></div><i>$0</i></div>
+    <div className="quick-replay-head"><div><span>ROCKET LEAGUE · QUALITY BETA</span><b>Drop one replay. Test the evidence pipeline.</b></div><i>$0</i></div>
     <label
       className={`quick-drop ${dragging ? "dragging" : ""}`}
       onDragEnter={() => setDragging(true)}
@@ -158,7 +158,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       <div className="replay-value-head"><span>REPLAY VALIDATED</span><strong>Supported match file recognized.</strong><p>No gameplay claim has been made. This confirms the file is ready for secure parser checks.</p></div>
       <div className="replay-value-facts"><div><span>FORMAT</span><b>.replay</b><small>recognized</small></div><div><span>FILE SIZE</span><b>{fileSizeLabel(replay.size)}</b><small>non-empty</small></div><div><span>UPLOAD LIMIT</span><b>PASS</b><small>16 MB maximum</small></div></div>
       <div className="replay-value-plan"><span>NEXT: EVIDENCE CHECKS</span><p>Replay Method will verify the player and match structure, then test recurring decisions against real match evidence. It stops when evidence is insufficient.</p></div>
-      {!detailsOpen && <button className="quick-value-continue" type="button" aria-expanded="false" aria-controls="quick-replay-details" onClick={continueToDetails}>CONTINUE TO PRIVATE REPORT SETUP <span>→</span></button>}
+      {!detailsOpen && <button className="quick-value-continue" type="button" aria-expanded="false" aria-controls="quick-replay-details" onClick={continueToDetails}>CONTINUE TO PRIVATE STATUS SETUP <span>→</span></button>}
     </div>}
 
     {replay && detailsOpen && <div className="quick-details" id="quick-replay-details">
@@ -167,11 +167,11 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
         <label><span>Exact player name *</span><input value={playerContext} onChange={event => setPlayerContext(event.target.value)} placeholder="as shown in the replay" maxLength={160} required /></label>
       </div>
       <label className="quick-notes"><span>What felt wrong? <i>optional</i></span><input value={notes} onChange={event => setNotes(event.target.value)} placeholder="We still scan the whole match." maxLength={500} /></label>
-      <label className="quick-email"><span>Private report email *</span><input type="email" autoComplete="email" inputMode="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@email.com" required /></label>
-      <p className="quick-email-note">Upload first, email last. Used to deliver and recover this private report—not for marketing unless you choose it below.</p>
+      <label className="quick-email"><span>Private status email *</span><input type="email" autoComplete="email" inputMode="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@email.com" required /></label>
+      <p className="quick-email-note">Upload first, email last. Used to deliver and recover this private analysis—not for marketing unless you choose it below.</p>
       <label className="quick-check"><input type="checkbox" checked={dataConsent} onChange={event => setDataConsent(event.target.checked)} required /><span>Process this replay and email to deliver my private beta analysis. <a href="/privacy" target="_blank">Privacy</a></span></label>
       <label className="quick-check optional"><input type="checkbox" checked={updatesConsent} onChange={event => setUpdatesConsent(event.target.checked)} /><span>Also send product updates and beta-access news. Optional.</span></label>
-      <button className="quick-submit" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "START FREE ANALYSIS →"}</span></button>
+      <button className="quick-submit" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "START FREE EVIDENCE CHECK →"}</span></button>
       <small>No card · Private status link appears immediately · The engine stops instead of guessing</small>
     </div>}
 

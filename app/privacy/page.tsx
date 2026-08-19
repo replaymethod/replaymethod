@@ -3,7 +3,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy — Replay Method",
-  description: "How Replay Method handles beta analyses, match evidence, waitlist and website data."
+  description: "How Replay Method handles beta analyses, match evidence, waitlist and website data.",
+  alternates: { canonical: "/privacy" }
 };
 
 export default function PrivacyPage() {

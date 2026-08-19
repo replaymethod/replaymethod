@@ -49,7 +49,7 @@ const paidFeatures = [
   "Unused analyses do not roll over",
 ];
 
-export default function PricingLadder({ analysisHref }: { analysisHref: string }) {
+export default function PricingLadder({ analysisHref, requestOnly = false }: { analysisHref: string; requestOnly?: boolean }) {
   const [loading, setLoading] = useState<PaidPlan | null>(null);
   const [error, setError] = useState("");
 
@@ -83,24 +83,21 @@ export default function PricingLadder({ analysisHref }: { analysisHref: string }
     <section className="pricing-ladder shell" id="pricing" aria-labelledby="pricing-title">
       <div className="pricing-heading">
         <span className="kicker">START WITH PROOF. PAY ONLY TO CONTINUE.</span>
-        <h2 id="pricing-title">One real diagnosis first. Then choose your pace.</h2>
-        <p>The first full-quality analysis is free with no card. Paid plans use the same coaching engine and add frequency, private history and progress checks.</p>
+        <h2 id="pricing-title">{requestOnly ? "Official access first. Payment comes later." : "One supported diagnosis first. Then choose your pace."}</h2>
+        <p>{requestOnly ? "League and VALORANT paid access cannot begin until official opt-in ingestion is active. You can preserve a free beta request without a card today." : "The first completed, full-quality analysis is free with no card. Paid plans use the same evidence standard and add frequency, private history and progress checks."}</p>
       </div>
 
       <div className="pricing-grid">
-        <a className="pricing-card free" href={analysisHref} aria-label="Start one free Replay Method diagnosis">
+        <a className="pricing-card free" href={analysisHref} aria-label={requestOnly ? "Save a free Riot access beta request" : "Start one free Replay Method evidence check"}>
           <div className="pricing-rank"><span>01</span>START WITH PROOF</div>
-          <div className="pricing-price"><b>$0</b><span>first diagnosis</span></div>
-          <p className="pricing-equivalent">One complete report · no card · no renewal</p>
-          <strong className="pricing-saving">Experience the real product first</strong>
-          <p className="pricing-fit">Discover the highest-impact repeated weakness supported by one real match.</p>
+          <div className="pricing-price"><b>$0</b><span>{requestOnly ? "access request" : "first evidence check"}</span></div>
+          <p className="pricing-equivalent">{requestOnly ? "Private request · no card · no renewal" : "Verified outcome · no card · no renewal"}</p>
+          <strong className="pricing-saving">{requestOnly ? "Official ingestion remains pending" : "Experience the quality standard first"}</strong>
+          <p className="pricing-fit">{requestOnly ? "Preserve your opt-in interest without pretending a public profile is authorized match evidence." : "Receive a report only when one real match supports a reliable finding; otherwise see the honest blocked state."}</p>
           <ul>
-            <li>Full evidence-backed report</li>
-            <li>Your primary repeated mistake</li>
-            <li>One next-queue rule</li>
-            <li>Private report history</li>
+            {requestOnly ? <><li>Private beta request</li><li>Game and goal context</li><li>Official-access boundary</li><li>Recoverable status link</li></> : <><li>Evidence-gated report</li><li>One supported primary finding</li><li>One next-queue rule</li><li>Private report history</li></>}
           </ul>
-          <strong className="pricing-free-cta">Analyze my first match →</strong>
+          <strong className="pricing-free-cta">{requestOnly ? "Save my beta request →" : "Start my evidence check →"}</strong>
         </a>
 
         {plans.map(plan => (

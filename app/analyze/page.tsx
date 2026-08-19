@@ -3,8 +3,8 @@ import AnalyzeFlow from "./AnalyzeFlow";
 import { isAnalysisGame } from "../../lib/analysis";
 
 export const metadata: Metadata = {
-  title: "Free match analysis — Replay Method",
-  description: "Submit a real League of Legends, VALORANT or Rocket League match and get one focused Replay Method diagnosis free.",
+  title: "Match evidence & access beta — Replay Method",
+  description: "Upload a Rocket League replay to the evidence-gated beta or preserve an opt-in League or VALORANT request while official Riot access is pending.",
   alternates: { canonical: "/analyze" }
 };
 
