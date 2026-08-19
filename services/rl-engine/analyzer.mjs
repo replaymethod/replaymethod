@@ -10,6 +10,9 @@ export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnab
   const evidence = buildReplayEvidence(bytes, requestedIdentity, rank);
   const normalized = evidence.normalized;
   const shadowRun = runShadowDetectors(evidence);
+  const frameCount = evidence.frameState.summary.frameCount;
+  const playerCount = evidence.frameState.summary.playerCount;
+  const verifiedSummary = `Verified ${normalized.mode || "Rocket League match"}: ${frameCount.toLocaleString("en-US")} sampled frames and ${playerCount} players.`;
 
   // Deliberately no heuristic output here. The first public detectors require a
   // representative fixture corpus, timestamp verification and expert-labelled
@@ -17,8 +20,8 @@ export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnab
   throw new ReplayInputError(
     publicOutputEnabled ? "detectors_not_calibrated" : "public_output_disabled",
     publicOutputEnabled
-      ? "Your replay parsed successfully and the player was identified. Coaching is paused until the evidence detectors pass the beta quality gate."
-      : "Your replay parsed successfully and the player was identified. Public coaching output is paused by an operator safety control.",
+      ? `${verifiedSummary} Coaching is paused until the evidence detectors pass the beta quality gate.`
+      : `${verifiedSummary} The player was identified, but public coaching output remains paused by the detector safety gate.`,
     JSON.stringify({
       mode: normalized.mode ?? null,
       versions: {

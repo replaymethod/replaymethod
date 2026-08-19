@@ -1,15 +1,15 @@
 "use client";
 /* eslint-disable @next/next/no-html-link-for-pages */
 
-import { FormEvent, KeyboardEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import QuickReplayStart from "./QuickReplayStart";
 import HardstuckHook from "./HardstuckHook";
 import PricingLadder from "./PricingLadder";
+import InteractiveEvidencePipeline from "./InteractiveEvidencePipeline";
+import InteractiveReportPreview from "./InteractiveReportPreview";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 
 export type GameKey = "general" | "league" | "valorant" | "rocket-league";
-type DemoTab = "diagnosis" | "plan" | "verify";
-
 type Config = {
   label: string;
   eyebrow: string;
@@ -30,7 +30,7 @@ const configs: Record<GameKey, Config> = {
     eyebrow: "EVIDENCE-FIRST REPLAY COACH · ROCKET LEAGUE QUALITY BETA",
     title: "Stop grinding blind.",
     accent: "Turn one replay into your next clear focus.",
-    lead: "Upload a real Rocket League replay. Replay Method tests repeated decisions against match evidence, returns one focused correction when support is strong—and stops instead of inventing coaching.",
+    lead: "Upload a real Rocket League replay. The quality beta verifies the match, player and evidence timeline today; coaching appears only after a detector earns the right to make a public claim.",
     cta: "Join beta updates",
     diagnosis: "Your decision-making drops when the match gets close.",
     plan: "Slow the game down after a lost fight. Reset before forcing the next play.",
@@ -69,7 +69,7 @@ const configs: Record<GameKey, Config> = {
     eyebrow: "BREAK THE HARDSTUCK LOOP",
     title: "Stop grinding blind.",
     accent: "Turn one replay into your next clear focus.",
-    lead: "Upload one representative PC replay. Replay Method tests repeated decisions against real match evidence, returns one focused correction when support is strong—and stops instead of guessing.",
+    lead: "Upload one representative PC replay. The quality beta verifies the match, player and evidence timeline today; coaching appears only after a detector earns the right to make a public claim.",
     cta: "Join the replay beta list",
     diagnosis: "You follow the play too closely after your teammate commits.",
     plan: "Hold one layer deeper and enter through back post. Stop turning a 1v1 into a double commit.",
@@ -156,7 +156,6 @@ function GameLinks({ current, placement }: { current: GameKey; placement: string
 
 export default function Landing({ game = "general", checkoutOpen = false, engineOpen = false }: { game?: GameKey; checkoutOpen?: boolean; engineOpen?: boolean }) {
   const config = configs[game];
-  const [demoTab, setDemoTab] = useState<DemoTab>("diagnosis");
   const analysisHref = game === "general" ? "/analyze" : `/analyze?game=${game}`;
   const riotRequest = game === "league" || game === "valorant";
   const replayClosed = !riotRequest && !engineOpen;
@@ -179,31 +178,14 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
     document.getElementById("product")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const moveDemoTab = (event: KeyboardEvent<HTMLButtonElement>, current: DemoTab) => {
-    const tabs: DemoTab[] = ["diagnosis", "plan", "verify"];
-    const currentIndex = tabs.indexOf(current);
-    let nextIndex = currentIndex;
-
-    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
-    else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-    else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = tabs.length - 1;
-    else return;
-
-    event.preventDefault();
-    const nextTab = tabs[nextIndex];
-    setDemoTab(nextTab);
-    document.getElementById(`demo-tab-${nextTab}`)?.focus();
-  };
-
   return <main>
     <div className="launch-bar"><strong>{riotRequest ? "RIOT ACCESS BETA" : replayClosed ? "REPLAY BETA ACCESS" : "REPLAY EVIDENCE BETA"}</strong><span>{riotRequest ? "Preserve an opt-in request. Official ingestion is pending." : replayClosed ? "The production quality gate is finishing. No file or card today." : "Submit one real replay. See the verified outcome."}</span><a href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "launch_bar")}>{intakeLabel} →</a></div>
     <nav className="nav shell"><a className="brand" href="/" aria-label="Replay Method home"><span className="logo">↻</span><span>replay<span>method</span></span></a><div className="nav-links"><a href={replayClosed ? "/#join-beta" : "/analyze"}>Beta access</a><a href="#product">Sample report</a><a href="/guides">Guides</a><a href="#pricing">Pricing</a></div><a className="nav-cta" href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "nav_analysis")}>{intakeLabel}</a></nav>
 
     <section className="hero shell">
-      <div className="hero-copy"><div className="eyebrow"><i /> {config.eyebrow}</div><h1>{config.title}<br /><em>{config.accent}</em></h1><p className="lead">{lead}</p><GameLinks current={game} placement="hero_picker" />{(game === "general" || game === "rocket-league") && engineOpen ? <><QuickReplayStart placement={game === "general" ? "home_quick_replay" : "rl_quick_replay"} /><div className="hero-quiet-actions"><button className="hero-secondary" onClick={previewProduct}>See a sample report <span>↓</span></button><a href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "hero_full_intake")}>Use the full intake instead →</a></div></> : <div className="hero-actions"><a className="hero-primary" href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "hero_analysis")}><span>{riotRequest ? "OFFICIAL ACCESS PENDING" : "ENGINE VALIDATION IN PROGRESS"} · NO CARD</span><b>{riotRequest ? "Save my beta request" : "Join the replay beta"} <i>→</i></b></a><button className="hero-secondary" onClick={previewProduct}>See the product vision <span>↓</span></button></div>}<div className="hero-proof"><span>✓ Real match evidence only</span><span>✓ Stops when unsupported</span><span>✓ No card</span></div><div className="hero-route-links"><a className="hero-plan-summary" href="#pricing" onClick={() => trackEvent(game, "cta_click", "hero_pricing")}><span>PLANS</span><b>First check planned free · paid checkout closed</b><i>↓</i></a><a className="hero-beta-link" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "hero_climb_check")}>No replay ready? Run the 60-second Climb Check →</a></div>
+      <div className="hero-copy"><div className="eyebrow"><i /> {config.eyebrow}</div><h1>{config.title}<br /><em>{config.accent}</em></h1><p className="lead">{lead}</p><GameLinks current={game} placement="hero_picker" />{(game === "general" || game === "rocket-league") && engineOpen ? <><QuickReplayStart placement={game === "general" ? "home_quick_replay" : "rl_quick_replay"} /><div className="hero-quiet-actions"><button className="hero-secondary" onClick={previewProduct}>See a sample report <span>↓</span></button><a href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "hero_full_intake")}>Use the full intake instead →</a></div></> : <div className="hero-actions"><a className="hero-primary" href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "hero_analysis")}><span>{riotRequest ? "OFFICIAL ACCESS PENDING" : "ENGINE VALIDATION IN PROGRESS"} · NO CARD</span><b>{riotRequest ? "Save my beta request" : "Join the replay beta"} <i>→</i></b></a><button className="hero-secondary" onClick={previewProduct}>Play the product walkthrough <span>↓</span></button></div>}<div className="hero-proof"><span><i>01</i> Real match evidence</span><span><i>02</i> Honest abstention</span><span><i>03</i> No card</span></div><div className="hero-route-links"><a className="hero-plan-summary" href="#pricing" onClick={() => trackEvent(game, "cta_click", "hero_pricing")}><span>PLANS</span><b>First check planned free · paid checkout closed</b><i>↓</i></a><a className="hero-beta-link" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "hero_climb_check")}>No replay ready? Run the 60-second Climb Check →</a></div>
       </div>
-      <div className="visual-wrap"><div className="orb orb-a" /><div className="orb orb-b" /><div className="example-tag">WHAT HAPPENS TO YOUR REPLAY</div><div className="evidence-console"><div className="evidence-console-head"><div><small>REPLAY METHOD · EVIDENCE PIPELINE</small><strong>{config.label}</strong></div><span><i /> QUALITY GATED</span></div><div className="evidence-file"><i>RL</i><div><small>YOUR ORIGINAL MATCH FILE</small><b>ranked-match.replay</b><span>Private upload · validated before analysis</span></div><strong>READY</strong></div><div className="evidence-route" aria-label="Replay analysis stages"><div className="done"><span>01</span><b>Verify</b><small>File and player</small></div><i>→</i><div className="active"><span>02</span><b>Test</b><small>Repeated decisions</small></div><i>→</i><div><span>03</span><b>Focus</b><small>One supported fix</small></div></div><div className="evidence-gate"><span>EVIDENCE GATE</span><strong>A finding appears only when the match supports it.</strong><p>No fake score. No projected MMR. If confidence is too low, the report says so.</p></div><div className="evidence-output"><div><small>IF SUPPORTED</small><b>One correction for your next queue</b></div><div><small>IF NOT SUPPORTED</small><b>An honest stop—not invented coaching</b></div></div><small className="evidence-disclaimer">Product workflow preview. This is not a claimed player result.</small></div></div>
+      <div className="visual-wrap"><div className="orb orb-a" /><div className="orb orb-b" /><div className="example-tag">PLAY THE EVIDENCE PIPELINE</div><InteractiveEvidencePipeline label={config.label} /></div>
     </section>
 
     <section className="proof-ribbon"><div className="shell"><span><b>01</b> REPLAY</span><i>→</i><span><b>02</b> REVEAL</span><i>→</i><span><b>03</b> PRACTICE</span><i>→</i><span><b>04</b> PROVE</span></div></section>
@@ -217,11 +199,7 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
           }
         />
 
-    <section className="product-section shell" id="product"><div className="section-intro"><span className="kicker">THE PRODUCT, IN ONE LOOP</span><h2>Evidence in. One priority out.<br />Progress verified.</h2><p>When supported evidence produces a finding, the report prioritizes one diagnosis. Later matches can test the same decision instead of assuming it changed.</p></div><div className="product-demo"><div className="demo-sidebar"><span>EXAMPLE PLAYER REPORT</span><strong>{config.label}</strong><div className="demo-tabs" role="tablist" aria-label="Example report views"><button id="demo-tab-diagnosis" role="tab" aria-selected={demoTab === "diagnosis"} aria-controls="demo-panel-diagnosis" tabIndex={demoTab === "diagnosis" ? 0 : -1} className={demoTab === "diagnosis" ? "active" : ""} onKeyDown={(event) => moveDemoTab(event, "diagnosis")} onClick={() => setDemoTab("diagnosis")}>01 Evidence</button><button id="demo-tab-plan" role="tab" aria-selected={demoTab === "plan"} aria-controls="demo-panel-plan" tabIndex={demoTab === "plan" ? 0 : -1} className={demoTab === "plan" ? "active" : ""} onKeyDown={(event) => moveDemoTab(event, "plan")} onClick={() => setDemoTab("plan")}>02 One focus</button><button id="demo-tab-verify" role="tab" aria-selected={demoTab === "verify"} aria-controls="demo-panel-verify" tabIndex={demoTab === "verify" ? 0 : -1} className={demoTab === "verify" ? "active" : ""} onKeyDown={(event) => moveDemoTab(event, "verify")} onClick={() => setDemoTab("verify")}>03 Proof</button></div><small>Illustrative product preview—not a claimed player result.</small></div><div className="demo-main">
-      {demoTab === "diagnosis" && <div className="demo-panel" id="demo-panel-diagnosis" role="tabpanel" aria-labelledby="demo-tab-diagnosis"><div className="demo-status"><span>HIGH IMPACT PATTERN</span><b>Repeated across recent losses</b></div><h3>{config.diagnosis}</h3><p>{config.evidence}</p><div className="timeline"><span>LOSS 01<i /></span><span>LOSS 02<i /></span><span>WIN 03</span><span>LOSS 04<i /></span><span>LOSS 05<i /></span></div><div className="coach-note"><i>RM</i><div><small>WHY IT MATTERS</small><b>Fixing the repeated decision creates more value than adding another hour of unfocused grinding.</b></div></div></div>}
-      {demoTab === "plan" && <div className="demo-panel" id="demo-panel-plan" role="tabpanel" aria-labelledby="demo-tab-plan"><div className="demo-status cyan"><span>NEXT-QUEUE RULE</span><b>One focus. No overload.</b></div><h3>{config.rule}</h3><p>{config.plan}</p><div className="focus-card"><span>BEFORE YOU QUEUE</span><b>Review the rule for 30 seconds.</b><small>Then play normally and focus on recognizing only this decision.</small></div><div className="focus-card"><span>AFTER THE MATCH</span><b>Mark the moment: followed, missed or not applicable.</b><small>Replay Method uses the next matches to adjust the focus.</small></div></div>}
-      {demoTab === "verify" && <div className="demo-panel" id="demo-panel-verify" role="tabpanel" aria-labelledby="demo-tab-verify"><div className="demo-status green"><span>FOCUS TREND</span><b>Example progress view</b></div><h3>{config.verify}</h3><p>A rank graph alone cannot tell you whether the underlying habit improved. Replay Method tracks the decision first, then the result.</p><div className="verify-chart"><div><span>WEEK 01</span><b style={{ height: "34%" }}>34%</b></div><div><span>WEEK 02</span><b style={{ height: "51%" }}>51%</b></div><div><span>WEEK 03</span><b style={{ height: "72%" }}>72%</b></div></div><small className="demo-disclaimer">Example values for product demonstration. Improvement is not guaranteed.</small></div>}
-    </div></div><div className="demo-conversion"><div><span>{riotRequest ? "RIOT ACCESS REQUESTS ARE OPEN" : replayClosed ? "REPLAY BETA LIST IS OPEN" : "PRODUCT QUALITY BETA IS OPEN"}</span><b>{riotRequest ? "Preserve your opt-in request without pretending ingestion is live." : replayClosed ? "Join before replay intake opens." : "Your first evidence check is free."}</b><p>{riotRequest ? "Explore the intended report loop while official Riot access remains pending." : replayClosed ? "See the intended report loop now. We will email you when the production engine passes its quality gate." : "See the verified outcome on your own replay before deciding whether the product deserves your money."}</p></div><a href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "demo_analysis")}>{intakeLabel} →</a></div></section>
+    <section className="product-section shell" id="product"><div className="section-intro"><span className="kicker">THE PRODUCT, IN ONE LOOP</span><h2>Do not watch a sales demo.<br />Play through the method.</h2><p>Inspect an illustrative evidence moment, lock one queue mission, then see how a later match would verify the same decision. Every value below is clearly example data.</p></div><InteractiveReportPreview config={config} /><div className="demo-conversion"><div><span>{riotRequest ? "RIOT ACCESS REQUESTS ARE OPEN" : replayClosed ? "REPLAY BETA LIST IS OPEN" : "PRODUCT QUALITY BETA IS OPEN"}</span><b>{riotRequest ? "Preserve your opt-in request without pretending ingestion is live." : replayClosed ? "Join before replay intake opens." : "Your first evidence check is free."}</b><p>{riotRequest ? "Explore the intended report loop while official Riot access remains pending." : replayClosed ? "Play through the intended report loop now. We will email you when the production engine passes its quality gate." : "See the verified outcome on your own replay before deciding whether the product deserves your money."}</p></div><a href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "demo_analysis")}>{intakeLabel} →</a></div></section>
 
     <PricingLadder analysisHref={intakeHref} game={game} requestOnly={riotRequest} checkoutOpen={checkoutOpen} replayReady={!replayClosed} />
 

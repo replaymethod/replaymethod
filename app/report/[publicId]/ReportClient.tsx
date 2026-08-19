@@ -42,10 +42,10 @@ function stopCopy(data: PublicReportData) {
     title: "We could not verify enough evidence to coach this match safely.",
     body: "Nothing was invented. Try a fresh replay from a completed match, or contact us if the file should be supported."
   };
-  if (code === "detectors_not_calibrated") return {
-    kicker: "PARSER VERIFIED · COACHING GATED",
-    title: "We read the replay, but the coaching evidence has not passed the beta precision gate.",
-    body: "The player and match data were identified successfully. We stopped before turning uncalibrated heuristics into advice. This submission can be reprocessed when the validated detector set is enabled."
+  if (code === "detectors_not_calibrated" || code === "public_output_disabled") return {
+    kicker: "REAL REPLAY VERIFIED · COACHING GATED",
+    title: "The replay engine worked. It stopped before inventing advice.",
+    body: `${data.processing?.stageLabel || "The player and match data were identified successfully."} This submission can be reprocessed when a validated detector set is enabled.`
   };
   if (code === "subject_player_not_found" || code === "subject_player_ambiguous" || code === "replay_players_missing") return {
     kicker: "PLAYER IDENTITY NEEDED",

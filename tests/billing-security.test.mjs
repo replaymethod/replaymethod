@@ -35,14 +35,16 @@ test("all displayed paid durations map only to server-owned Stripe Price IDs", a
   assert.match(source, /Record<PaidPlan, string>/);
 });
 
-test("pricing presents the owner-directed duration ladder without a fake popularity claim", async () => {
+test("pricing preserves every duration while leading with proof and a low-risk paid start", async () => {
   const source = await readFile(pricingPath, "utf8");
   const orderedPlans = ["annual", "semiannual", "quarterly", "monthly"];
   const positions = orderedPlans.map(plan => source.indexOf(`key: "${plan}"`));
   assert.ok(positions.every(position => position >= 0));
   assert.deepEqual([...positions].sort((a, b) => a - b), positions);
   for (const price of ["$89", "$49", "$27", "$12", "$0"]) assert.match(source, new RegExp(`\\${price}`));
-  assert.match(source, /LOWEST MONTHLY RATE/);
+  assert.match(source, /useState<PlanKey>\("free"\)/);
+  assert.match(source, /LOWEST-RISK PAID START/);
+  assert.match(source, /LOWEST EFFECTIVE RATE/);
   assert.doesNotMatch(source, /MOST POPULAR/i);
 });
 
