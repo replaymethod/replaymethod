@@ -1,8 +1,12 @@
 import type { AdapterResult, AdapterSuccess, GameId } from "../core/contracts";
+import { resolveAuthorizedRiotAccount, resolveRiotIntegration } from "../riot-integration.mjs";
+import { requestRocketLeagueAnalysis, resolveRocketLeagueEngine } from "../rl-engine-client.mjs";
+import { subsystemEnabled } from "../subsystem-controls.mjs";
 
 export type AnalysisInput = {
   requestId: number;
   publicId: string;
+  jobPublicId: string;
   playerId: number | null;
   game: GameId;
   currentRank: string;
@@ -13,15 +17,24 @@ export type AnalysisInput = {
   fileKey: string | null;
   goal: string;
   notes: string | null;
+  providerAccountId: string | null;
+  providerRegion: string | null;
+  providerConnectionStatus: string | null;
 };
 
 export type AdapterEnv = {
   BUCKET: R2Bucket;
+  RL_ENGINE_ENABLED?: string;
+  RIOT_INGESTION_ENABLED?: string;
   RL_ENGINE_URL?: string;
   RL_ENGINE_TOKEN?: string;
+  RL_ENGINE_TIMEOUT_MS?: string;
   RIOT_LEAGUE_API_KEY?: string;
   RIOT_VALORANT_API_KEY?: string;
   RIOT_RSO_CLIENT_ID?: string;
+  RIOT_RSO_CLIENT_SECRET?: string;
+  RIOT_RSO_REDIRECT_URI?: string;
+  RIOT_API_TIMEOUT_MS?: string;
 };
 
 function blocked(code: string, publicMessage: string, internalMessage: string, retryable = false): AdapterResult {
@@ -29,6 +42,9 @@ function blocked(code: string, publicMessage: string, internalMessage: string, r
 }
 
 async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promise<AdapterResult> {
+  if (!subsystemEnabled(env.RL_ENGINE_ENABLED)) {
+    return blocked("rl_engine_disabled", "Your replay is safely stored. Automated replay processing is temporarily paused.", "RL_ENGINE_ENABLED is not true.");
+  }
   if (input.evidenceType !== "replay_file" || !input.fileKey) {
     return blocked(
       "rl_binary_replay_required",
@@ -36,27 +52,29 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
       "A link/VOD was submitted; the deterministic replay engine requires a binary replay."
     );
   }
-  if (!env.RL_ENGINE_URL || !env.RL_ENGINE_TOKEN) {
+  const engine = resolveRocketLeagueEngine(env);
+  if (!engine.ok) {
     return blocked(
-      "rl_engine_not_configured",
+      engine.code || "rl_engine_not_configured",
       "Your replay is safely stored. Automated replay processing is awaiting the dedicated analysis worker.",
-      "RL_ENGINE_URL or RL_ENGINE_TOKEN is missing. The native boxcars/subtr-actor worker is not configured."
+      engine.reason || "Rocket League engine configuration is invalid."
     );
   }
 
   const replay = await env.BUCKET.get(input.fileKey);
   if (!replay) return blocked("raw_input_missing", "The uploaded replay could not be found.", `R2 object ${input.fileKey} is missing.`);
-  const response = await fetch(new URL("/v1/analyze/rocket-league", env.RL_ENGINE_URL), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RL_ENGINE_TOKEN}`,
-      "Content-Type": "application/octet-stream",
-      "X-Replay-Method-Request": input.publicId,
-      "X-Replay-Method-Player": encodeURIComponent(input.playerContext || ""),
-      "X-Replay-Method-Rank": encodeURIComponent(input.currentRank)
-    },
-    body: replay.body
-  });
+  let response: Response;
+  try {
+    response = await requestRocketLeagueAnalysis(engine, input, replay.body);
+  } catch (error) {
+    const timedOut = error instanceof DOMException && ["AbortError", "TimeoutError"].includes(error.name);
+    return blocked(
+      timedOut ? "rl_engine_timeout" : "rl_engine_unreachable",
+      "The replay worker is temporarily unavailable. Your original upload is preserved for an automatic retry.",
+      timedOut ? `RL engine exceeded the ${engine.timeoutMs}ms request timeout.` : "RL engine network request failed.",
+      true,
+    );
+  }
   if (response.status === 422) {
     let detail: Partial<{
       code: string;
@@ -72,34 +90,54 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
       detail.retryable === true,
     );
   }
-  if (!response.ok) throw new Error(`Rocket League engine failed with HTTP ${response.status}.`);
-  const payload = await response.json() as AdapterSuccess;
-  if (payload.kind !== "success" || payload.normalized?.game !== "rocket-league" || !payload.findings?.length) {
-    throw new Error("Rocket League engine returned an invalid adapter contract.");
+  if (response.status === 401 || response.status === 403) {
+    return blocked("rl_engine_auth_failed", "The replay worker configuration needs operator attention. Your upload is preserved.", `RL engine rejected its bearer credential with HTTP ${response.status}.`);
+  }
+  if (response.status === 408 || response.status === 429 || response.status >= 500) {
+    return blocked("rl_engine_unavailable", "The replay worker is temporarily unavailable. Your original upload is preserved for an automatic retry.", `RL engine returned transient HTTP ${response.status}.`, true);
+  }
+  if (!response.ok) {
+    return blocked("rl_engine_contract_failed", "The replay worker configuration needs operator attention. Your upload is preserved.", `RL engine returned unexpected HTTP ${response.status}.`);
+  }
+  let payload: AdapterSuccess;
+  try {
+    payload = await response.json() as AdapterSuccess;
+  } catch {
+    return blocked("rl_engine_contract_failed", "The replay worker returned an unreadable result. Your upload is preserved.", "RL engine success response was not valid JSON.");
+  }
+  if (payload.kind !== "success" || payload.normalized?.game !== "rocket-league" || !Array.isArray(payload.findings)) {
+    return blocked("rl_engine_contract_failed", "The replay worker returned an unsupported result. Your upload is preserved.", "RL engine returned an invalid adapter contract.");
+  }
+  if (!payload.findings.length) {
+    return blocked("insufficient_evidence", "The replay was read, but it did not support a reliable coaching finding.", "RL engine returned a successful normalized replay with no public findings.");
   }
   return payload;
 }
 
 function riotAdapter(input: AnalysisInput, env: AdapterEnv): AdapterResult {
-  const apiKey = input.game === "league" ? env.RIOT_LEAGUE_API_KEY : env.RIOT_VALORANT_API_KEY;
-  if (!apiKey) {
+  if (!subsystemEnabled(env.RIOT_INGESTION_ENABLED)) {
+    return blocked("riot_ingestion_disabled", "Riot match ingestion is not active yet. Your request is preserved and no coaching was invented.", "RIOT_INGESTION_ENABLED is not true.");
+  }
+  const integration = resolveRiotIntegration(input.game, env);
+  if (!integration.ok) {
     return blocked(
-      "riot_production_access_required",
+      integration.code || "riot_production_access_required",
       `${input.game === "league" ? "League" : "VALORANT"} automation is prepared but waiting for Riot production approval. No coaching will be invented from a public profile link.`,
-      `${input.game} production API key is missing.`
+      integration.reason || "Riot production configuration is incomplete.",
     );
   }
-  if (!env.RIOT_RSO_CLIENT_ID) {
+  const account = resolveAuthorizedRiotAccount(input);
+  if (!account.ok) {
     return blocked(
-      "riot_rso_required",
-      "Connect Riot Account will activate after Riot Sign On approval.",
-      "RIOT_RSO_CLIENT_ID is missing. Player-specific ingestion must be opt-in."
+      account.code || "riot_account_connection_required",
+      "Reconnect through Riot Sign On to authorize your own match history.",
+      account.reason || "No authorized Riot account is available for this analysis.",
     );
   }
   return blocked(
-    "riot_account_connection_required",
-    "Reconnect through Riot Sign On to authorize your own match history.",
-    "This legacy link submission has no verified Riot PUUID/RSO grant."
+    "riot_match_ingestion_not_activated",
+    "Official Riot match ingestion is not active in this environment. Your request is preserved and no coaching was invented.",
+    `Validated ${input.game} production/RSO configuration and an authorized PUUID for ${account.region}, but the approved match-history data plane is not activated in this source build.`,
   );
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { PublicReportData } from "../../../lib/report-data";
+import { trackProductEvent } from "../../../lib/client-analytics";
 
 const stages = [
   { key: "queued", label: "Received" },
@@ -31,7 +32,7 @@ function stopCopy(data: PublicReportData) {
     title: "Your replay is safe. The dedicated replay engine is not online yet.",
     body: "We preserved the original file and did not guess from incomplete data. This report can be reprocessed when the deterministic replay worker is connected."
   };
-  if (code === "riot_production_access_required" || code === "riot_rso_required" || code === "riot_account_connection_required") return {
+  if (["riot_production_access_required", "riot_rso_required", "riot_account_connection_required", "riot_match_ingestion_not_activated"].includes(code || "")) return {
     kicker: "RIOT CONNECTION PENDING",
     title: "This match needs an approved Riot account connection.",
     body: "Replay Method will not infer private match behavior from an unverified profile link. Your submission is preserved until the official opt-in integration is available."
@@ -75,16 +76,15 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
     localStorage.setItem("replaymethod-report-ids", JSON.stringify([data.publicId, ...stored.filter(id => id !== data.publicId)].slice(0, 20)));
     const eventKey = `replaymethod-report-view-${data.publicId}`;
     if (!sessionStorage.getItem(eventKey)) {
-      let visitorId = sessionStorage.getItem("replaymethod-session-id");
-      if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
       sessionStorage.setItem(eventKey, "1");
-      const params = new URLSearchParams(location.search);
-      void fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        keepalive: true,
-        body: JSON.stringify({ visitorId, event: "report_view", game: data.game, placement: data.status, path: location.pathname, source: params.get("utm_source") || "direct", campaign: params.get("utm_campaign") || "" })
-      });
+      trackProductEvent("report_view", data.game as "league" | "valorant" | "rocket-league", data.status);
+    }
+    if (data.status === "ready") {
+      const completionKey = `replaymethod-analysis-completed-${data.publicId}`;
+      if (!sessionStorage.getItem(completionKey)) {
+        sessionStorage.setItem(completionKey, "1");
+        trackProductEvent("analysis_completed", data.game as "league" | "valorant" | "rocket-league", "report_ready");
+      }
     }
   }, [data.game, data.publicId, data.status]);
 
@@ -100,9 +100,7 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
   }, [data.publicId, data.status]);
 
   const copyLink = async () => {
-    let visitorId = sessionStorage.getItem("replaymethod-session-id");
-    if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
-    void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ visitorId, event: "share_started", game: data.game, placement: "private_link", path: location.pathname, source: "direct" }) });
+    trackProductEvent("share_started", data.game as "league" | "valorant" | "rocket-league", "private_link");
     await navigator.clipboard.writeText(location.href.split("?")[0]);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
@@ -114,16 +112,12 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
     const response = await fetch(`/api/analyses/${data.publicId}/feedback`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ score: feedbackScore, text: feedbackText, caseStudyConsent }) });
     setFeedbackState(response.ok ? "saved" : "error");
     if (response.ok) {
-      let visitorId = sessionStorage.getItem("replaymethod-session-id");
-      if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
-      void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ visitorId, event: "feedback", game: data.game, placement: `score_${feedbackScore}`, path: location.pathname, source: "direct" }) });
+      trackProductEvent("feedback", data.game as "league" | "valorant" | "rocket-league", `score_${feedbackScore}`);
     }
   };
 
   const trackUpgradeInterest = () => {
-    let visitorId = sessionStorage.getItem("replaymethod-session-id");
-    if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
-    void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ visitorId, event: "cta_click", game: data.game, placement: "report_improvement_loop", path: location.pathname, source: "report" }) });
+    trackProductEvent("upgrade_intent", data.game as "league" | "valorant" | "rocket-league", "report_improvement_loop", "report");
   };
 
   const statusIndex = data.status === "ready" ? stages.length - 1 : stageOrder[data.processing?.stage || "queued"] ?? 0;
@@ -131,19 +125,19 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
   const stoppedCopy = stopped ? stopCopy(data) : null;
   const evidence = data.report?.evidenceDetails.length
     ? data.report.evidenceDetails.map(item => ({
-      label: item.round != null ? `Round ${item.round}` : item.timestamp != null ? `${Math.floor(item.timestamp / 60)}:${String(Math.floor(item.timestamp % 60)).padStart(2, "0")}` : item.label,
+      label: item.round != null ? `ROUND · ${item.round}` : item.timestamp != null ? `MATCH TIME · ${Math.floor(item.timestamp / 60)}:${String(Math.floor(item.timestamp % 60)).padStart(2, "0")}` : item.label,
       text: item.description
     }))
     : (data.report?.evidenceMoments || []).map((text, index) => ({ label: `Evidence ${index + 1}`, text }));
   const confidence = data.report?.confidence == null ? null : Math.round(data.report.confidence * 100);
 
   return <main className="report-page">
-    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><button onClick={copyLink}>{copied ? "Copied ✓" : "Copy private link"}</button></div></nav>
+    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><button type="button" onClick={copyLink}>{copied ? "Copied ✓" : "Copy private link"}</button></div></nav>
     <section className="report-shell shell">
       <header className="report-top"><div><span>PRIVATE PLAYER REPORT</span><h1>{data.gameLabel}</h1><p>{data.currentRank}{data.targetRank ? ` → ${data.targetRank}` : ""} · Submitted {new Date(`${data.createdAt}Z`).toLocaleDateString("en-GB", { dateStyle: "medium" })}</p></div><i className={data.status}>{data.status === "ready" ? "READY" : stopped ? "PAUSED" : "PROCESSING"}</i></header>
 
       {data.status !== "ready" ? <div className={`report-pending ${stopped ? "stopped" : ""}`}><div className="scan-orb"><i /><b>{stopped ? "!" : "↻"}</b></div><span>{stoppedCopy?.kicker || (data.processing?.stageLabel ? "AUTOMATED MATCH ANALYSIS" : "MATCH SECURED")}</span><h2>{stoppedCopy?.title || data.processing?.stageLabel || "Your match is queued."}</h2><p>{stoppedCopy?.body || "Replay Method is reading the submitted match, measuring repeated patterns and selecting one evidence-backed coaching focus."}</p><div className="status-track">{stages.map((stage, index) => <div className={index <= statusIndex && !stopped ? "active" : index < statusIndex ? "complete" : ""} key={stage.key}><i>{index < statusIndex ? "✓" : index + 1}</i><span>{stage.label}</span></div>)}</div><aside>{stopped ? <><b>No fake certainty.</b><span>We stop when the available data cannot support a reliable report.</span></> : delivery === "email" ? <><b>Confirmation sent.</b><span>We’ll send another email when the report is ready.</span></> : <><b>Keep this private link.</b><span>Your report will appear here automatically when it is ready.</span></>}</aside></div> : data.report && <>
-        <div className="report-hero"><div><span>YOUR PRIMARY LEAK</span><h2>{data.report.highestImpactMistake}</h2><p>{data.report.whyItCosts}</p></div><aside><small>METHOD SIGNAL</small><b>{data.report.confidenceLabel ? `${data.report.confidenceLabel.toUpperCase()} CONFIDENCE` : "QUALITY REVIEWED"}</b><span>{confidence == null ? "Evidence checked before publishing" : `${confidence}% detector confidence · ${data.report.analysisSource === "automated" ? "automated" : "reviewed"}`}</span></aside></div>
+        <div className="report-hero"><div><span>YOUR PRIMARY LEAK</span><h2>{data.report.highestImpactMistake}</h2><div className="report-cost"><small>WHY IT COSTS</small><p>{data.report.whyItCosts}</p></div></div><aside><small>CONFIDENCE</small><b>{data.report.confidenceLabel ? `${data.report.confidenceLabel.toUpperCase()} CONFIDENCE` : "QUALITY REVIEWED"}</b><span>{confidence == null ? "Evidence checked before publishing" : `${confidence}% detector confidence · ${data.report.analysisSource === "automated" ? "automated" : "reviewed"}`}</span><em>Confidence in this finding for this match—not a rank-up probability.</em></aside></div>
 
         <section className="report-evidence"><header><span>01 · EVIDENCE</span><h2>Why Replay Method thinks this.</h2><p>Specific observations from the submitted match—not a generic personality score.</p></header><div>{evidence.map((moment, index) => <article key={`${moment.text}-${index}`}><b>{moment.label}</b><p>{moment.text}</p></article>)}</div></section>
 
@@ -151,11 +145,11 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
 
         <section className="practice-plan"><header><span>03 · PRACTICE</span><h2>Your focused plan.</h2></header><div>{data.report.practicePlan.map((item, index) => <article key={`${item}-${index}`}><i>{String(index + 1).padStart(2, "0")}</i><div><small>{index === 0 ? "START HERE" : `STEP ${index + 1}`}</small><b>{item}</b></div></article>)}</div>{data.report.coachNote && <aside><span>COACH NOTE</span><p>{data.report.coachNote}</p></aside>}</section>
 
-        <section className="verify-next"><div><span>04 · PROVE</span><h2>Your diagnosis is complete. The improvement loop checks whether this decision actually changes.</h2><p>Founding membership will remember this focus, compare it across your next matches and show when the underlying habit improves—even before your rank catches up.</p></div><aside><span>FOUNDING 100</span><b>$9<small>/month</small></b><ul><li>4 analyses each month</li><li>Cross-match pattern memory</li><li>Progress verification</li></ul><Link href="/#pricing" onClick={trackUpgradeInterest}>Reserve founding access →</Link><small>No charge today</small></aside></section>
+        <section className="verify-next"><div><span>04 · VERIFY</span><h2>Check the same decision again—not your rank overnight.</h2><p>Later analyses can add evidence to this focus only when the same supported detector observes it again. If that signal is absent or evidence is insufficient, Replay Method stays inconclusive.</p><ol><li><b>QUEUE</b><span>Carry only the next-queue rule into a representative match.</span></li><li><b>SUBMIT</b><span>Send the next supported match without cherry-picking a highlight.</span></li><li><b>COMPARE</b><span>Use another real observation of this same focus before calling it progress.</span></li></ol></div><aside><span>RECOMMENDED · 3-MONTH CYCLE</span><b>$27<small>/3 months</small></b><ul><li>$9/month effective</li><li>4 analyses every 30 days</li><li>History remains readable</li></ul><Link href="/#pricing" onClick={trackUpgradeInterest}>Compare paid plans →</Link><small>Cadence changes with payment. Evidence standards do not.</small></aside></section>
 
-        <section className="report-method"><div><span>METHOD & LIMITS</span><h2>Traceable coaching, not a black box.</h2><p>{data.report.analysisSource === "automated" ? "This report was generated from versioned structured findings. The language layer can explain and prioritize them, but it cannot create new gameplay facts." : "This beta report was quality-reviewed. Automated engine metadata will appear here for reports produced by the structured pipeline."}</p></div><aside><b>{data.processing?.versions.detector || "Quality-reviewed beta"}</b><span>Detector</span><b>{data.processing?.versions.schema || "Legacy report schema"}</b><span>Schema</span></aside>{data.report.limitations.length > 0 && <ul>{data.report.limitations.map(item => <li key={item}>{item}</li>)}</ul>}</section>
+        <section className="report-method"><div><span>CONFIDENCE + LIMITATIONS</span><h2>Traceable coaching, not a black box.</h2><p>{data.report.analysisSource === "automated" ? "This report was generated from versioned structured findings. The language layer can explain and prioritize them, but it cannot create new gameplay facts." : "This beta report was quality-reviewed. Automated engine metadata will appear here for reports produced by the structured pipeline."}</p></div><aside><b>{data.processing?.versions.detector || "Quality-reviewed beta"}</b><span>Detector</span><b>{data.processing?.versions.schema || "Legacy report schema"}</b><span>Schema</span></aside><div className="report-limitations"><b>KNOWN LIMITATIONS</b>{data.report.limitations.length > 0 ? <ul>{data.report.limitations.map(item => <li key={item}>{item}</li>)}</ul> : <p>No additional detector-specific limitations were recorded for this finding.</p>}</div></section>
 
-        <section className="report-feedback"><span>VERIFIED BETA FEEDBACK</span><h2>Did this show you something useful?</h2>{feedbackState === "saved" ? <div className="feedback-saved"><i>✓</i><b>Feedback saved. Thank you for helping build the method.</b></div> : <><div className="score-row" aria-label="Rate this report from 1 to 5">{[1,2,3,4,5].map(score => <button className={feedbackScore === score ? "active" : ""} key={score} onClick={() => setFeedbackScore(score)}>{score}<small>{score === 1 ? "Not useful" : score === 5 ? "Very useful" : ""}</small></button>)}</div><textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="What was useful—or what was missing?" maxLength={1000} /><label><input type="checkbox" checked={caseStudyConsent} onChange={e => setCaseStudyConsent(e.target.checked)} /><span>You may quote this feedback anonymously as a verified beta review.</span></label><button className="save-feedback" disabled={!feedbackScore || feedbackState === "saving"} onClick={saveFeedback}>{feedbackState === "saving" ? "Saving…" : "Save feedback"}</button>{feedbackState === "error" && <p>Could not save feedback. Try again.</p>}</>}</section>
+        <section className="report-feedback"><span>VERIFIED BETA FEEDBACK</span><h2>Did this show you something useful?</h2>{feedbackState === "saved" ? <div className="feedback-saved" role="status"><i>✓</i><b>Feedback saved. Thank you for helping build the method.</b></div> : <><div className="score-row" role="group" aria-label="Rate this report from 1 to 5">{[1,2,3,4,5].map(score => <button type="button" className={feedbackScore === score ? "active" : ""} aria-pressed={feedbackScore === score} aria-label={`${score} out of 5${score === 1 ? ", not useful" : score === 5 ? ", very useful" : ""}`} key={score} onClick={() => setFeedbackScore(score)}>{score}<small aria-hidden="true">{score === 1 ? "Not useful" : score === 5 ? "Very useful" : ""}</small></button>)}</div><textarea aria-label="Optional report feedback" value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="What was useful—or what was missing?" maxLength={1000} /><label><input type="checkbox" checked={caseStudyConsent} onChange={e => setCaseStudyConsent(e.target.checked)} /><span>You may quote this feedback anonymously as a verified beta review.</span></label><button type="button" className="save-feedback" disabled={!feedbackScore || feedbackState === "saving"} onClick={saveFeedback}>{feedbackState === "saving" ? "Saving…" : "Save feedback"}</button>{feedbackState === "error" && <p role="alert">Could not save feedback. Try again.</p>}</>}</section>
       </>}
     </section>
   </main>;

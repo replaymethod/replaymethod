@@ -2,6 +2,10 @@ import { ensureProductSchema } from "../../db";
 import { runGameAdapter, type AdapterEnv, type AnalysisInput } from "../adapters";
 import { isAnalysisGame, reportUrl } from "../analysis";
 import { sendAnalysisReady } from "../email";
+import { advancePlayerFocus, type PersistedFocusFinding } from "../player-focus";
+import { operationalErrorCode } from "../request-security.mjs";
+import { blockedRetryDisposition } from "../retry-policy.mjs";
+import { subsystemEnabled } from "../subsystem-controls.mjs";
 import { synthesizeCoaching } from "./coaching";
 import type { GameId, StructuredFinding } from "./contracts";
 
@@ -12,11 +16,11 @@ export type PipelineEnv = AdapterEnv & {
   OPENAI_INPUT_COST_PER_MILLION?: string;
   OPENAI_OUTPUT_COST_PER_MILLION?: string;
   PUBLIC_SITE_URL?: string;
+  BACKGROUND_PROCESSING_ENABLED?: string;
 };
 
 type JobRow = AnalysisInput & {
   jobId: number;
-  jobPublicId: string;
   email: string;
   attempts: number;
   maxAttempts: number;
@@ -41,9 +45,12 @@ async function loadAndClaim(publicId: string, db: D1Database): Promise<JobRow | 
   const row = await db.prepare(`SELECT
       j.id AS job_id, j.public_id AS job_public_id, j.player_id, j.attempts, j.max_attempts,
       r.id AS request_id, r.public_id, r.email, r.game, r.current_rank, r.target_rank,
-      r.player_context, r.evidence_type, r.evidence_url, r.file_key, r.goal, r.notes
+      r.player_context, r.evidence_type, r.evidence_url, r.file_key, r.goal, r.notes,
+      ga.external_id AS provider_account_id, ga.region AS provider_region,
+      ga.connection_status AS provider_connection_status
     FROM analysis_jobs j
     JOIN analysis_requests r ON r.id = j.analysis_request_id
+    LEFT JOIN game_accounts ga ON ga.player_id = j.player_id AND ga.game = r.game AND ga.provider = 'riot'
     WHERE j.public_id = ?`).bind(publicId).first<Record<string, unknown>>();
   if (!row || !isAnalysisGame(String(row.game))) return null;
   return {
@@ -62,6 +69,9 @@ async function loadAndClaim(publicId: string, db: D1Database): Promise<JobRow | 
     fileKey: row.file_key == null ? null : String(row.file_key),
     goal: String(row.goal),
     notes: row.notes == null ? null : String(row.notes),
+    providerAccountId: row.provider_account_id == null ? null : String(row.provider_account_id),
+    providerRegion: row.provider_region == null ? null : String(row.provider_region),
+    providerConnectionStatus: row.provider_connection_status == null ? null : String(row.provider_connection_status),
     attempts: Number(row.attempts),
     maxAttempts: Number(row.max_attempts)
   };
@@ -71,15 +81,16 @@ async function persistFinding(db: D1Database, job: JobRow, matchId: number, find
   return db.prepare(`INSERT INTO analysis_findings (
       public_id, analysis_request_id, match_id, player_id, game, priority, category, title, summary,
       severity, confidence, confidence_label, frequency, estimated_impact, evidence_json, metrics_json,
-      recommendation_json, limitations_json, detector_version, schema_version
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      recommendation_json, limitations_json, detector_id, detector_version, schema_version
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    RETURNING id`)
     .bind(
       crypto.randomUUID().replaceAll("-", ""), job.requestId, matchId, job.playerId, job.game, priority,
       finding.category, finding.title, finding.summary, finding.severity, finding.confidence,
       finding.confidenceLabel, finding.frequency ?? null, finding.estimatedImpact ?? null,
       JSON.stringify(finding.evidence), JSON.stringify(finding.metrics), JSON.stringify(finding.recommendation),
-      JSON.stringify(finding.limitations), finding.detectorVersion, finding.schemaVersion
-    ).run();
+      JSON.stringify(finding.limitations), finding.id, finding.detectorVersion, finding.schemaVersion
+    ).first<{ id: number }>();
 }
 
 export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
@@ -93,20 +104,28 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     await setStage(env.DB, job.jobId, "ingesting", "Reading match data");
     const result = await runGameAdapter(job, env);
     if (result.kind === "blocked") {
+      const disposition = blockedRetryDisposition({ retryable: result.retryable && subsystemEnabled(env.BACKGROUND_PROCESSING_ENABLED), attempts: job.attempts, maxAttempts: job.maxAttempts });
       await env.DB.batch([
-        env.DB.prepare(`UPDATE analysis_jobs SET status = ?, stage = 'blocked', stage_label = ?, error_code = ?, error_message = ?,
-          next_retry_at = NULL, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
-          .bind(result.retryable ? "retry" : "blocked", result.publicMessage, result.code, result.internalMessage, Date.now() - started, job.jobId),
-        env.DB.prepare("UPDATE analysis_requests SET status = 'blocked', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(job.requestId)
+        env.DB.prepare(`UPDATE analysis_jobs SET status = ?, stage = ?, stage_label = ?, error_code = ?, error_message = ?,
+          next_retry_at = ?, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+          .bind(disposition.jobStatus, disposition.jobStage,
+            disposition.jobStatus === "retry" ? "Replay worker retry scheduled" : result.publicMessage,
+            result.code, result.internalMessage, disposition.nextRetryAt, Date.now() - started, job.jobId),
+        env.DB.prepare("UPDATE analysis_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+          .bind(disposition.requestStatus, job.requestId)
       ]);
+      if (disposition.releaseUsage) {
+        await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(job.requestId).run();
+      }
       return;
     }
 
     await setStage(env.DB, job.jobId, "normalizing", "Building game timeline");
-    const normalizedKey = `normalized/${job.game}/${job.publicId}/game-data.v1.json`;
+    const normalizedKey = `normalized/${job.game}/${job.jobPublicId}/game-data.v1.json`;
     await env.BUCKET.put(normalizedKey, JSON.stringify(result.normalized), {
       httpMetadata: { contentType: "application/json" },
-      customMetadata: { requestId: job.publicId, game: job.game, schemaVersion: result.normalized.schemaVersion }
+      customMetadata: { requestId: job.jobPublicId, game: job.game, schemaVersion: result.normalized.schemaVersion }
     });
 
     await setStage(env.DB, job.jobId, "detecting", "Measuring repeated patterns");
@@ -125,8 +144,11 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     if (!matchResult) throw new Error("Could not persist the normalized match.");
 
     await env.DB.prepare("DELETE FROM analysis_findings WHERE analysis_request_id = ?").bind(job.requestId).run();
+    const persistedFocusFindings: PersistedFocusFinding[] = [];
     for (let index = 0; index < result.findings.length; index += 1) {
-      await persistFinding(env.DB, job, matchResult.id, result.findings[index], index + 1);
+      const persisted = await persistFinding(env.DB, job, matchResult.id, result.findings[index], index + 1);
+      if (!persisted) throw new Error("Could not persist an analysis finding.");
+      persistedFocusFindings.push({ finding: result.findings[index], findingId: persisted.id });
     }
 
     await setStage(env.DB, job.jobId, "coaching", "Prioritizing your coaching focus");
@@ -136,8 +158,6 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     const durationMs = Date.now() - started;
 
     await setStage(env.DB, job.jobId, "persisting", "Saving your private report");
-    const primaryFinding = await env.DB.prepare("SELECT id FROM analysis_findings WHERE analysis_request_id = ? ORDER BY priority ASC LIMIT 1")
-      .bind(job.requestId).first<{ id: number }>();
     await env.DB.batch([
       env.DB.prepare(`UPDATE analysis_requests SET status = 'ready', highest_impact_mistake = ?, why_it_costs = ?,
         evidence_moments = ?, next_queue_rule = ?, practice_plan = ?, coach_note = ?, ready_at = ?, updated_at = CURRENT_TIMESTAMP
@@ -150,31 +170,46 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
         estimated_cost_micros = ?, duration_ms = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
         .bind(result.versions.parser, result.versions.analyzer, result.versions.detector,
           `${result.versions.coaching}+${synthesis.model}`, result.versions.schema,
-          result.estimatedCostMicros + synthesis.costMicros, durationMs, readyAt, job.jobId)
+          result.estimatedCostMicros + synthesis.costMicros, durationMs, readyAt, job.jobId),
+      env.DB.prepare(`UPDATE analysis_usage SET status = 'consumed', consumed_at = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE analysis_request_id = ? AND status = 'reserved'`).bind(readyAt, job.requestId)
     ]);
 
-    if (job.playerId && primaryFinding) {
-      await env.DB.batch([
-        env.DB.prepare("UPDATE player_focuses SET status = 'replaced', updated_at = CURRENT_TIMESTAMP WHERE player_id = ? AND game = ? AND status = 'active'")
-          .bind(job.playerId, job.game),
-        env.DB.prepare(`INSERT INTO player_focuses (
-          public_id, player_id, game, finding_id, status, title, success_metric, target_value, unit, matches_observed
-        ) VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?, 1)`)
-          .bind(crypto.randomUUID().replaceAll("-", ""), job.playerId, job.game, primaryFinding.id,
-            report.highestImpactMistake, result.findings[0].recommendation.successMetric ?? null,
-            result.findings[0].recommendation.targetValue ?? null, result.findings[0].recommendation.targetUnit ?? null)
-      ]);
+    if (job.playerId) {
+      try {
+        const focusFindings = [...persistedFocusFindings].sort((left, right) =>
+          Number(right.finding.id === report.primaryFindingId) - Number(left.finding.id === report.primaryFindingId));
+        await advancePlayerFocus({
+          db: env.DB,
+          playerId: job.playerId,
+          game: job.game,
+          analysisRequestId: job.requestId,
+          findings: focusFindings,
+        });
+      } catch (error) {
+        // Progress history is valuable, but must never corrupt a completed,
+        // evidence-backed report or trigger a duplicate analysis retry.
+        console.error("player focus persistence failed", { jobId: job.jobPublicId, code: operationalErrorCode(error) });
+      }
     }
 
     try {
       const base = env.PUBLIC_SITE_URL || "https://replaymethod.xyz";
-      await sendAnalysisReady({ email: job.email, game: job.game, url: reportUrl(base, job.publicId), mistake: report.highestImpactMistake });
+      await sendAnalysisReady({
+        database: env.DB,
+        analysisRequestId: job.requestId,
+        analysisPublicId: job.publicId,
+        email: job.email,
+        game: job.game,
+        url: reportUrl(base, job.publicId),
+        mistake: report.highestImpactMistake,
+      });
     } catch (error) {
-      console.warn("analysis ready email failed", error);
+      console.warn("analysis ready email failed", { jobId: job.jobPublicId, code: operationalErrorCode(error) });
     }
   } catch (error) {
     const detail = errorText(error);
-    const retry = job.attempts < job.maxAttempts;
+    const retry = subsystemEnabled(env.BACKGROUND_PROCESSING_ENABLED) && job.attempts < job.maxAttempts;
     await env.DB.batch([
       env.DB.prepare(`UPDATE analysis_jobs SET status = ?, stage = 'failed', stage_label = ?, error_code = 'analysis_pipeline_failed',
         error_message = ?, next_retry_at = ?, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
@@ -183,6 +218,10 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
       env.DB.prepare("UPDATE analysis_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
         .bind(retry ? "analyzing" : "failed", job.requestId)
     ]);
-    console.error("analysis job failed", { publicId, detail });
+    if (!retry) {
+      await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(job.requestId).run();
+    }
+    console.error("analysis job failed", { jobId: publicId, code: operationalErrorCode(error) });
   }
 }

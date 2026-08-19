@@ -1,4 +1,5 @@
 import { deterministicReport, type CoachingReport, type StructuredFinding } from "./contracts";
+import { operationalErrorCode } from "../request-security.mjs";
 
 type CoachingEnv = {
   OPENAI_API_KEY?: string;
@@ -100,7 +101,7 @@ export async function synthesizeCoaching(findings: StructuredFinding[], env: Coa
     ));
     return { report, costMicros, model };
   } catch (error) {
-    console.warn("evidence-grounded coaching synthesis unavailable; using deterministic report", error);
+    console.warn("evidence-grounded coaching synthesis unavailable; using deterministic report", { code: operationalErrorCode(error) });
     return { report: fallback, costMicros: 0, model: `${model}-fallback` };
   }
 }

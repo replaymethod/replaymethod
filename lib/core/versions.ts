@@ -15,9 +15,9 @@ export const RIOT_ADAPTER_VERSIONS: AnalyzerVersions = {
 
 export const ROCKET_LEAGUE_ADAPTER_VERSIONS: AnalyzerVersions = {
   parser: "boxcars.0.11.5+subtr-actor.1.2.0",
-  normalizer: "replaymethod-rl-normalizer.0.1.0",
-  analyzer: "replaymethod-rl-analyzer.0.1.0",
-  detector: "replaymethod-rl-detectors.0.1.0",
-  coaching: "replaymethod-coach.1.0.0",
+  normalizer: "replaymethod-rl-normalizer.0.2.0",
+  analyzer: "replaymethod-rl-analyzer.0.2.0",
+  detector: "replaymethod-rl-detectors.0.2.0",
+  coaching: "replaymethod-coach.1.1.0",
   schema: CORE_SCHEMA_VERSION
 };

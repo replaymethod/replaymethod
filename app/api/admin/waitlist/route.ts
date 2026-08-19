@@ -2,14 +2,17 @@ import { desc, eq } from "drizzle-orm";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { getDb } from "../../../../db";
 import { waitlist } from "../../../../db/schema";
+import { isConfiguredSiteAdmin, requireSiteAdminMutation } from "../../../../lib/admin";
 
-function csvCell(value: string | number) { return `"${String(value).replaceAll('"', '""')}"`; }
+function csvCell(value: string | number) {
+  const text = String(value);
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safe.replaceAll('"', '""')}"`;
+}
 
 export async function GET() {
   const user = await getChatGPTUser();
-  const { env } = await import("cloudflare:workers");
-  const adminEmail = (env as unknown as { ADMIN_EMAIL?: string }).ADMIN_EMAIL?.toLowerCase();
-  if (!user || !adminEmail || user.email.toLowerCase() !== adminEmail) return new Response("Unauthorized", { status: 401 });
+  if (!user || !await isConfiguredSiteAdmin(user)) return new Response("Unauthorized", { status: 401, headers: { "Cache-Control": "no-store" } });
 
   const db = await getDb();
   const rows = await db.select().from(waitlist).orderBy(desc(waitlist.createdAt), desc(waitlist.id));
@@ -18,10 +21,8 @@ export async function GET() {
 }
 
 export async function DELETE(request: Request) {
-  const user = await getChatGPTUser();
-  const { env } = await import("cloudflare:workers");
-  const adminEmail = (env as unknown as { ADMIN_EMAIL?: string }).ADMIN_EMAIL?.toLowerCase();
-  if (!user || !adminEmail || user.email.toLowerCase() !== adminEmail) return new Response("Unauthorized", { status: 401 });
+  const unauthorized = await requireSiteAdminMutation(request);
+  if (unauthorized) return unauthorized;
 
   const payload = await request.json().catch(() => null) as { id?: unknown } | null;
   const id = Number(payload?.id);

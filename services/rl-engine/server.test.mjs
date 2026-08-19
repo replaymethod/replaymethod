@@ -5,9 +5,10 @@ import test from "node:test";
 import { createServer, ENGINE_VERSION, MAX_REPLAY_BYTES, PARSER_VERSION } from "./server.mjs";
 
 const token = "test-token-that-is-long-enough";
+const requestId = "11111111111111111111111111111111";
 
-async function withServer(run) {
-  const server = createServer({ token });
+async function withServer(run, options = { token }) {
+  const server = createServer(options);
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -29,8 +30,19 @@ test("health endpoint is public and cache-safe", async () => withServer(async (b
     status: "ready",
     engineVersion: ENGINE_VERSION,
     parserVersion: PARSER_VERSION,
+    activeRequests: 0,
+    maxConcurrency: 1,
   });
 }));
+
+test("separates liveness from configuration readiness", async () => withServer(async (base) => {
+  const live = await fetch(`${base}/livez`);
+  assert.equal(live.status, 200);
+  assert.equal((await live.json()).status, "live");
+  const readiness = await fetch(`${base}/healthz`);
+  assert.equal(readiness.status, 503);
+  assert.equal((await readiness.json()).status, "not_ready");
+}, { token: "short" }));
 
 test("analysis rejects missing bearer token", async () => withServer(async (base) => {
   const response = await fetch(`${base}/v1/analyze/rocket-league`, {
@@ -56,6 +68,7 @@ test("analysis rejects empty replay safely", async () => withServer(async (base)
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/octet-stream",
+      "X-Replay-Method-Request": requestId,
       "X-Replay-Method-Player": "Player",
     },
     body: new Uint8Array(),
@@ -70,6 +83,7 @@ test("analysis rejects invalid replay safely", async () => withServer(async (bas
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/octet-stream",
+      "X-Replay-Method-Request": requestId,
       "X-Replay-Method-Player": "Player",
     },
     body: new Uint8Array([1, 2, 3, 4]),
@@ -88,6 +102,7 @@ test("declared oversized input is rejected before reading", async () => withServ
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/octet-stream",
         "Content-Length": String(MAX_REPLAY_BYTES + 1),
+        "X-Replay-Method-Request": requestId,
         "X-Replay-Method-Player": "Player",
       },
     }, (response) => {
@@ -100,4 +115,33 @@ test("declared oversized input is rejected before reading", async () => withServ
   });
   assert.equal(result.status, 422);
   assert.equal(result.body.code, "file_too_large");
+}));
+
+test("requires the versioned request identifier before reading a replay", async () => withServer(async (base) => {
+  const response = await fetch(`${base}/v1/analyze/rocket-league`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/octet-stream",
+      "X-Replay-Method-Player": "Player",
+    },
+    body: new Uint8Array([1]),
+  });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).code, "request_id_required");
+}));
+
+test("rejects oversized player metadata before parsing", async () => withServer(async (base) => {
+  const response = await fetch(`${base}/v1/analyze/rocket-league`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/octet-stream",
+      "X-Replay-Method-Request": requestId,
+      "X-Replay-Method-Player": "x".repeat(161),
+    },
+    body: new Uint8Array([1]),
+  });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).code, "subject_player_required");
 }));

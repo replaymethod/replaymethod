@@ -4,6 +4,7 @@ export const DETECTOR_LIFECYCLE = Object.freeze([
   "calibrating",
   "shadow",
   "enabled",
+  "demoted",
 ]);
 
 export const DETECTOR_CATEGORIES = Object.freeze({

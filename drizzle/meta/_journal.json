@@ -50,6 +50,41 @@
       "when": 1787069621178,
       "tag": "0006_loose_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1787110507535,
+      "tag": "0007_early_loa",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1787112763930,
+      "tag": "0008_nebulous_glorian",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1787113540291,
+      "tag": "0009_broad_changeling",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1787115614175,
+      "tag": "0010_confused_stingray",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1787137200212,
+      "tag": "0011_whole_silk_fever",
+      "breakpoints": true
     }
   ]
 }

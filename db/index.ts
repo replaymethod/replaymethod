@@ -3,6 +3,13 @@ import * as schema from "./schema";
 
 let productSchemaReady: Promise<void> | null = null;
 
+async function ensureColumn(database: D1Database, table: string, column: string, definition: string) {
+  const info = await database.prepare(`PRAGMA table_info(${table})`).all<{ name: string }>();
+  if (!(info.results || []).some(item => item.name === column)) {
+    await database.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+  }
+}
+
 export async function ensureProductSchema(database: D1Database) {
   if (!productSchemaReady) {
     productSchemaReady = database.batch([
@@ -53,6 +60,124 @@ export async function ensureProductSchema(database: D1Database) {
       )`),
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS players_public_id_unique ON players (public_id)"),
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS players_email_unique ON players (email)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS player_claims (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        token_hash text NOT NULL,
+        player_id integer NOT NULL,
+        analysis_request_id integer NOT NULL,
+        expires_at text NOT NULL,
+        consumed_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id),
+        FOREIGN KEY (analysis_request_id) REFERENCES analysis_requests(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_claims_token_hash_unique ON player_claims (token_hash)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_claims_player_idx ON player_claims (player_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_claims_expires_at_idx ON player_claims (expires_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS player_sessions (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        token_hash text NOT NULL,
+        player_id integer NOT NULL,
+        expires_at text NOT NULL,
+        last_seen_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        revoked_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_sessions_token_hash_unique ON player_sessions (token_hash)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_sessions_player_idx ON player_sessions (player_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_sessions_expires_at_idx ON player_sessions (expires_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS billing_customers (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        player_id integer NOT NULL,
+        stripe_customer_id text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS billing_customers_player_unique ON billing_customers (player_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS billing_customers_stripe_unique ON billing_customers (stripe_customer_id)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS billing_subscriptions (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        player_id integer NOT NULL,
+        stripe_customer_id text NOT NULL,
+        stripe_subscription_id text NOT NULL,
+        stripe_price_id text NOT NULL,
+        plan_key text NOT NULL,
+        status text NOT NULL,
+        current_period_start text NOT NULL,
+        current_period_end text NOT NULL,
+        cancel_at_period_end integer DEFAULT 0 NOT NULL,
+        canceled_at text,
+        ended_at text,
+        grace_until text,
+        latest_invoice_id text,
+        checkout_session_id text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS billing_subscriptions_stripe_unique ON billing_subscriptions (stripe_subscription_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS billing_subscriptions_player_status_idx ON billing_subscriptions (player_id, status)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS billing_subscriptions_customer_idx ON billing_subscriptions (stripe_customer_id)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS billing_events (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        stripe_event_id text NOT NULL,
+        type text NOT NULL,
+        status text DEFAULT 'processing' NOT NULL,
+        error_message text,
+        processed_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS billing_events_stripe_unique ON billing_events (stripe_event_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS billing_events_status_idx ON billing_events (status)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS analysis_usage (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        analysis_public_id text NOT NULL,
+        analysis_request_id integer,
+        player_id integer NOT NULL,
+        access_kind text NOT NULL,
+        plan_key text,
+        window_start text NOT NULL,
+        window_end text NOT NULL,
+        slot integer NOT NULL,
+        status text DEFAULT 'reserved' NOT NULL,
+        consumed_at text,
+        released_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (analysis_request_id) REFERENCES analysis_requests(id),
+        FOREIGN KEY (player_id) REFERENCES players(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS analysis_usage_public_id_unique ON analysis_usage (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS analysis_usage_analysis_unique ON analysis_usage (analysis_public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS analysis_usage_active_slot_unique ON analysis_usage (player_id, access_kind, window_start, slot) WHERE status IN ('reserved', 'consumed')"),
+      database.prepare("CREATE INDEX IF NOT EXISTS analysis_usage_player_window_idx ON analysis_usage (player_id, window_start, status)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS analysis_usage_request_idx ON analysis_usage (analysis_request_id)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS email_deliveries (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        analysis_request_id integer NOT NULL,
+        kind text NOT NULL,
+        provider text DEFAULT 'resend' NOT NULL,
+        status text DEFAULT 'pending' NOT NULL,
+        idempotency_key text NOT NULL,
+        attempts integer DEFAULT 0 NOT NULL,
+        max_attempts integer DEFAULT 3 NOT NULL,
+        provider_message_id text,
+        last_error_code text,
+        next_retry_at text,
+        accepted_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (analysis_request_id) REFERENCES analysis_requests(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS email_deliveries_public_id_unique ON email_deliveries (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS email_deliveries_request_kind_unique ON email_deliveries (analysis_request_id, kind)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS email_deliveries_idempotency_unique ON email_deliveries (idempotency_key)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS email_deliveries_retry_idx ON email_deliveries (status, next_retry_at)"),
       database.prepare(`CREATE TABLE IF NOT EXISTS game_accounts (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         public_id text NOT NULL,
@@ -150,6 +275,7 @@ export async function ensureProductSchema(database: D1Database) {
         metrics_json text NOT NULL,
         recommendation_json text NOT NULL,
         limitations_json text NOT NULL,
+        detector_id text DEFAULT 'legacy.unknown' NOT NULL,
         detector_version text NOT NULL,
         schema_version text DEFAULT 'finding.v1' NOT NULL,
         created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -166,23 +292,59 @@ export async function ensureProductSchema(database: D1Database) {
         player_id integer NOT NULL,
         game text NOT NULL,
         finding_id integer,
+        detector_id text DEFAULT 'legacy.unknown' NOT NULL,
+        baseline_analysis_request_id integer,
+        latest_analysis_request_id integer,
         status text DEFAULT 'active' NOT NULL,
         title text NOT NULL,
         success_metric text,
+        metric_key text,
+        metric_label text,
         baseline_value real,
         latest_value real,
         target_value real,
         unit text,
+        target_direction text,
+        minimum_matches integer DEFAULT 3 NOT NULL,
         matches_observed integer DEFAULT 0 NOT NULL,
         assigned_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
         completed_at text,
+        completion_reason text,
         created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
         updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
         FOREIGN KEY (player_id) REFERENCES players(id),
-        FOREIGN KEY (finding_id) REFERENCES analysis_findings(id)
+        FOREIGN KEY (finding_id) REFERENCES analysis_findings(id),
+        FOREIGN KEY (baseline_analysis_request_id) REFERENCES analysis_requests(id),
+        FOREIGN KEY (latest_analysis_request_id) REFERENCES analysis_requests(id)
       )`),
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focuses_public_id_unique ON player_focuses (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focuses_active_unique ON player_focuses (player_id, game) WHERE status = 'active'"),
       database.prepare("CREATE INDEX IF NOT EXISTS player_focuses_player_game_status_idx ON player_focuses (player_id, game, status)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS player_focus_observations (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        focus_id integer NOT NULL,
+        analysis_request_id integer NOT NULL,
+        finding_id integer NOT NULL,
+        detector_id text NOT NULL,
+        confidence real NOT NULL,
+        metric_key text,
+        metric_label text,
+        metric_value real,
+        unit text,
+        recurrence_value real,
+        evidence_json text NOT NULL,
+        limitations_json text NOT NULL,
+        observed_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (focus_id) REFERENCES player_focuses(id),
+        FOREIGN KEY (analysis_request_id) REFERENCES analysis_requests(id),
+        FOREIGN KEY (finding_id) REFERENCES analysis_findings(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_observations_public_id_unique ON player_focus_observations (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_observations_focus_request_unique ON player_focus_observations (focus_id, analysis_request_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_focus_observations_focus_observed_idx ON player_focus_observations (focus_id, observed_at)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_focus_observations_player_request_idx ON player_focus_observations (analysis_request_id)"),
       database.prepare(`CREATE TABLE IF NOT EXISTS analysis_reviews (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         analysis_request_id integer NOT NULL,
@@ -201,6 +363,9 @@ export async function ensureProductSchema(database: D1Database) {
         candidate_key text NOT NULL,
         replay_fingerprint text NOT NULL,
         mode text,
+        rank_cohort text,
+        context_key text,
+        metadata_provenance text,
         game_version text,
         detector_id text NOT NULL,
         detector_version text NOT NULL,
@@ -225,6 +390,7 @@ export async function ensureProductSchema(database: D1Database) {
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         candidate_id integer NOT NULL,
         reviewer_email text NOT NULL,
+        reviewer_qualification text DEFAULT 'unverified' NOT NULL,
         verdict text NOT NULL,
         timestamp_verified integer,
         notes text,
@@ -233,8 +399,73 @@ export async function ensureProductSchema(database: D1Database) {
         FOREIGN KEY (candidate_id) REFERENCES rl_review_candidates(id)
       )`),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_candidate_idx ON rl_review_labels (candidate_id)"),
-      database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_created_at_idx ON rl_review_labels (created_at)")
-    ]).then(() => undefined).catch((error) => {
+      database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_created_at_idx ON rl_review_labels (created_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS detector_quality_snapshots (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        detector_id text NOT NULL,
+        detector_version text NOT NULL,
+        corpus_fingerprint text NOT NULL,
+        label_set_version text NOT NULL,
+        evidence_source text NOT NULL,
+        metrics_json text NOT NULL,
+        gate_json text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS detector_quality_snapshots_public_id_unique ON detector_quality_snapshots (public_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS detector_quality_snapshots_detector_created_idx ON detector_quality_snapshots (detector_id, created_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS detector_lifecycle_events (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        detector_id text NOT NULL,
+        detector_version text NOT NULL,
+        from_state text NOT NULL,
+        to_state text NOT NULL,
+        reason text NOT NULL,
+        activation_fingerprint text,
+        actor_email text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS detector_lifecycle_events_public_id_unique ON detector_lifecycle_events (public_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS detector_lifecycle_events_detector_created_idx ON detector_lifecycle_events (detector_id, created_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS player_focus_evaluations (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        focus_id integer NOT NULL,
+        analysis_request_id integer NOT NULL,
+        detector_id text NOT NULL,
+        detector_version text NOT NULL,
+        context_key text,
+        detector_evaluated integer NOT NULL,
+        opportunity_count integer DEFAULT 0 NOT NULL,
+        fired integer NOT NULL,
+        metric_value real,
+        evidence_source text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (focus_id) REFERENCES player_focuses(id),
+        FOREIGN KEY (analysis_request_id) REFERENCES analysis_requests(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_evaluations_public_id_unique ON player_focus_evaluations (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_evaluations_focus_request_detector_unique ON player_focus_evaluations (focus_id, analysis_request_id, detector_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_focus_evaluations_focus_created_idx ON player_focus_evaluations (focus_id, created_at)")
+    ]).then(async () => {
+      // Existing beta D1 databases predate the longitudinal focus columns.
+      // Checked migrations remain canonical; these guarded additions keep
+      // local/preview databases compatible when they are opened directly.
+      await ensureColumn(database, "analysis_findings", "detector_id", "text DEFAULT 'legacy.unknown' NOT NULL");
+      await ensureColumn(database, "player_focuses", "detector_id", "text DEFAULT 'legacy.unknown' NOT NULL");
+      await ensureColumn(database, "player_focuses", "baseline_analysis_request_id", "integer");
+      await ensureColumn(database, "player_focuses", "latest_analysis_request_id", "integer");
+      await ensureColumn(database, "player_focuses", "metric_key", "text");
+      await ensureColumn(database, "player_focuses", "metric_label", "text");
+      await ensureColumn(database, "player_focuses", "target_direction", "text");
+      await ensureColumn(database, "player_focuses", "minimum_matches", "integer DEFAULT 3 NOT NULL");
+      await ensureColumn(database, "player_focuses", "completion_reason", "text");
+      await ensureColumn(database, "rl_review_candidates", "rank_cohort", "text");
+      await ensureColumn(database, "rl_review_candidates", "context_key", "text");
+      await ensureColumn(database, "rl_review_candidates", "metadata_provenance", "text");
+      await ensureColumn(database, "rl_review_labels", "reviewer_qualification", "text DEFAULT 'unverified' NOT NULL");
+    }).catch((error) => {
       productSchemaReady = null;
       throw error;
     });
@@ -243,7 +474,7 @@ export async function ensureProductSchema(database: D1Database) {
   await productSchemaReady;
 }
 
-export async function getDb() {
+export async function getDatabase() {
   const { env } = await import("cloudflare:workers");
   if (!env.DB) {
     throw new Error(
@@ -253,5 +484,10 @@ export async function getDb() {
 
   const database = env.DB as D1Database;
   await ensureProductSchema(database);
+  return database;
+}
+
+export async function getDb() {
+  const database = await getDatabase();
   return drizzle(database, { schema });
 }

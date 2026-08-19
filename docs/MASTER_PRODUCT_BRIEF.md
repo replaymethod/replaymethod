@@ -8,8 +8,10 @@ Last consolidated: 18 August 2026
 
 The product must not depend on remembering a chat. This brief consolidates the
 decisions, research conclusions, design direction and agreed build sequence from
-the working sessions. Future work should update this document when a decision
-changes rather than allowing the plan to drift or disappear.
+the working sessions. Update this document only when the owner explicitly
+confirms a product decision or a completed milestone materially changes the
+documented project state. Preserve unresolved decisions as unresolved rather
+than silently reconciling them.
 
 Supporting detail remains in:
 
@@ -113,31 +115,31 @@ generic advice, single-match overreaction and unsupported completeness claims.
 
 ### Free
 
-- first complete evidence-backed analysis;
+- one complete evidence-backed diagnosis per verified player during beta;
 - same detector quality, confidence gates and abstention behavior as paid;
 - one primary focus, evidence moments, one queue rule and a focused plan;
 - saved private report;
-- no card required;
-- after account-based limits exist: one focused check-in every rolling 30 days,
-  one active focus and a visible reset date.
+- no card and no automatic renewal;
+- a blocked, insufficient-evidence or technically failed attempt does not consume
+  the useful diagnosis.
 
-### Founding 100
+### Paid beta
 
-- planned price: **$9 per month**;
-- first 100 valid founding members;
-- price held for the first 12 paid months while continuously subscribed;
-- four complete analyses per billing month;
+- **$27 USD every three months** ($9/month effective) or **$12 USD monthly**;
+- the three-month cycle is recommended because it saves exactly $9/25% versus
+  three monthly payments and supports a bounded improvement cycle;
+- four successfully completed analyses per 30-day entitlement window;
 - cross-match recurrence and pattern memory;
 - active-focus verification and adaptive next-focus selection;
-- priority processing;
-- one month of unused-analysis rollover, capped at four;
-- cancellation stops future renewal;
+- unused analyses do not roll over;
+- cancellation stops the next renewal, preserves access through the paid period,
+  and does not remove completed reports;
 - no charge before a separate, explicit checkout.
 
-Do not launch quarterly, six-month or annual commitments during the founding
-beta. Review them only after 8–12 weeks of real paid-cohort retention and cost
-data. A future public price around $12–$15 is only a hypothesis if the recurring
-loop proves valuable. A later annual plan may use a transparent discount.
+Do not launch six-month or annual commitments during beta. Research an annual
+option only after meaningful three-month cohort retention, use and refund data
+exists. The public pricing UI must give the $27 total charge and renewal cadence
+at least equal prominence to the $9/month equivalent.
 
 ### Upgrade moments
 
@@ -145,7 +147,7 @@ Show the paid continuation only after value is visible:
 
 1. after evidence and the primary focus have been viewed;
 2. when the player chooses to track that focus across new matches;
-3. when another replay is submitted before the free reset;
+3. when another replay is submitted after the free diagnosis;
 4. when several matches are required to separate recurrence from a one-off.
 
 Primary paid message:
@@ -181,11 +183,11 @@ redesign for its own sake. Strengthen the conversion journey in this order:
 4. **Method:** Replay -> Reveal -> Practice -> Prove.
 5. **Comparison:** contrast stat trackers, generic AI and Replay Method without
    dishonest claims about named competitors.
-6. **Free versus Founding:** show exactly what is free now and what the planned
-   $9 improvement loop adds. Do not ask for a card before the report.
+6. **Free versus paid:** show exactly what the free diagnosis includes and what
+   the $12 monthly/$27 three-month improvement loop adds. Do not ask for a card
+   before the report.
 7. **Post-report offer:** only after the useful diagnosis, offer continued
-   tracking, pattern memory and verification. During beta this reserves founding
-   access; it does not charge.
+   tracking, pattern memory and verification. Waitlist signup does not charge.
 8. **Trust:** explain supported inputs, privacy, confidence, limitations and no
    rank guarantee in plain language.
 9. **Reduce noise:** shorten duplicated persuasion and keep one dominant action
@@ -287,7 +289,7 @@ coach-worthy moments.
 6. add player-level history and active-focus verification;
 7. instrument upgrade intent and cost per successful report;
 8. add payment only after the paid benefits genuinely exist;
-9. recruit and measure the first founding cohort;
+9. recruit and measure the first paid beta cohorts;
 10. expand to Riot games only through approved opt-in access.
 
 ## Metrics that decide whether the business works
@@ -308,18 +310,22 @@ usage or routine human review before real costs are known.
 
 ## Delivery and source-control rules
 
-- Discussion and research must end in either an implementation, a recorded
-  decision or an explicitly rejected idea.
-- When the owner approves a website change, the normal completion state is:
-  implemented, checked, committed, merged through the protected GitHub workflow
-  and published to the existing Sites project.
+- Research or analysis may end with a report, recommendation or unresolved
+  decision. Implementation happens only when explicitly requested.
+- A completed implementation may stop locally after relevant validation. Do not
+  automatically continue from one roadmap milestone into the next.
+- Commit, push, pull request and merge are separate release actions that each
+  require explicit authorization in the current turn.
+- Deployment to the existing Sites project requires explicit authorization in
+  the current turn.
 - Do not say a change is live until the deployment is verified.
-- Use branches and pull requests; do not bypass protected `main`.
+- When release actions are explicitly authorized, use branches and pull requests
+  and do not bypass protected `main`.
 - Keep secrets outside source control. Never place real API keys, tokens,
   passwords or production data in GitHub.
-- At meaningful milestones, create a GitHub checkpoint and update this brief.
-- A live deployment is not a substitute for a GitHub checkpoint, and a local
-  edit is not a completed website change.
+- Update this brief only when the owner explicitly confirms a product decision
+  or a completed milestone materially changes the documented project state.
+- Preserve unresolved decisions as unresolved; do not silently reconcile them.
 
 ## Current implementation checkpoint
 
@@ -354,15 +360,20 @@ At the time of this consolidation:
 - League of Legends and VALORANT automated ingestion still depend on approved
   official Riot access.
 
-## Working prompt for future sessions
+## Routing guidance for future sessions
 
-Use the following instruction when resuming Replay Method work:
+Use the following guidance when resuming Replay Method work:
 
-> Continue Replay Method from `docs/MASTER_PRODUCT_BRIEF.md`. Treat it as the
-> project source of truth. Preserve the evidence-first improvement loop, broad
-> internal analysis with one external focus, honest abstention, useful free
-> diagnosis and paid longitudinal verification. Inspect the actual repository
-> state before acting. Implement the next incomplete milestone, test it, update
-> this brief when decisions change, use the protected GitHub workflow and publish
-> completed website batches to the existing Sites project. Never claim an idea,
-> detector, payment feature or deployment is finished before verification.
+> Start with `AGENTS.md` and the explicitly requested task. Read only the
+> relevant project documentation; use this brief as the product source of truth
+> when product direction is in scope. Preserve the evidence-first improvement
+> loop, broad internal analysis with one external focus, honest abstention,
+> useful free diagnosis and paid longitudinal verification. Research or analysis
+> may stop with a report, recommendation or unresolved decision. Implement only
+> when explicitly requested, never continue automatically to the next milestone,
+> and preserve unresolved decisions as unresolved. Treat commit, push, pull
+> request, merge and Sites deployment as separate actions requiring explicit
+> authorization in the current turn. Update this brief only for an explicitly
+> confirmed product decision or a completed milestone that materially changes
+> documented project state. Never claim an idea, detector, payment feature or
+> deployment is finished before verification.

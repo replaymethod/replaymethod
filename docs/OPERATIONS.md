@@ -5,9 +5,10 @@
 - `/admin` — funnel and job mission control
 - `/admin/analyses/{id}` — submission, versions, failure details, QA override and retry
 - `/api/analyses/{publicId}` — private-link status/report payload
-- RL engine `/healthz` — parser service health and version
+- RL engine `/livez` — process liveness only
+- RL engine `/healthz` — authenticated-service configuration readiness, parser/engine versions and concurrency
 
-Admin is restricted by the configured owner email header. Public reports are currently high-entropy bearer links; account-bound report authorization is a pre-scale security milestone.
+Admin requires Sites sign-in and the configured owner identity. Set `ADMIN_USER_ID` to the stable `oai-authenticated-user-id` value when available; it takes precedence over the `ADMIN_EMAIL` fallback on every admin page and API. Public reports are currently high-entropy bearer links; account-bound report authorization is a pre-scale security milestone. Private routes are served with `no-store` and `no-referrer` headers, and report bearer IDs are not reused as replay-object or engine-request identifiers.
 
 ## Common failure handling
 
@@ -15,13 +16,36 @@ Admin is restricted by the configured owner email header. Public reports are cur
 | --- | --- |
 | Corrupt/unsupported replay | Block with `invalid_replay`, `empty_replay` or `file_too_large`; do not generate coaching. |
 | Missing RL worker | Preserve R2 object and block with `rl_engine_not_configured`. |
+| RL worker timeout/network/capacity | Preserve R2 object, keep the analysis pollable, and persist a due retry time. |
+| RL worker auth/contract failure | Preserve R2 object and stop automatic retry until configuration is corrected. |
 | Riot access absent | Preserve request and block with `riot_production_access_required`. |
 | Parser/LLM/transient error | Mark retry/failed with internal detail; allow admin retry. |
 | Email failure | Report remains available by private link; log failure without losing report. |
 | Duplicate retry | Atomic job claim prevents a completed/running job from being claimed again. |
-| Intake abuse | Reject after five submissions from the same email within 24 hours; do not upload another object. |
+| Intake abuse | Require same-origin browser writes and reject after five submissions from the same email within 24 hours before uploading another object. Configure an edge request-rate rule before broad public promotion; application limits do not replace network-level abuse controls. |
 
-Due retry jobs are woken by report polling and by the worker's scheduled handler. Configure a production cron for that handler when the hosting environment exposes scheduled triggers; polling remains a fail-safe rather than the primary queue runner.
+Due retry jobs are woken by report polling and by the worker's scheduled handler. The scheduled handler also reclaims interrupted running leases after ten minutes, fails exhausted leases while releasing their reservations, and starts queued jobs that missed their original background dispatch. Configure a production cron for that handler when the hosting environment exposes scheduled triggers; polling remains a fail-safe rather than the primary queue runner.
+
+## Emergency subsystem controls
+
+Every control is off unless its value is exactly `true`. Mission Control shows
+the flag name and current boolean state, never a secret value.
+
+| Flag | Disables when not `true` |
+| --- | --- |
+| `BILLING_CHECKOUT_ENABLED` | New paid Checkout sessions |
+| `TRANSACTIONAL_EMAIL_ENABLED` | Provider delivery attempts |
+| `RL_ENGINE_ENABLED` | Web-to-Rocket-League-worker calls |
+| `RL_PUBLIC_DETECTORS_ENABLED` | Customer-facing detector output at the worker boundary |
+| `RIOT_INGESTION_ENABLED` | Riot adapter ingestion |
+| `BACKGROUND_PROCESSING_ENABLED` | Automatic analysis retry scheduling |
+
+During an incident, turn off only the affected subsystem in the Sites
+environment, publish the configuration change, verify Mission Control and the
+relevant truthful blocked state, then investigate. Disabling email must not
+change report state; disabling billing must not break free surfaces; disabling
+the worker must preserve uploads; disabling public detectors must remain safe
+even while the worker is live.
 
 ## Backup and restore
 
@@ -57,6 +81,25 @@ Then verify on a preview deployment:
 7. analytics remains fail-soft
 
 Deploy the checkpoint only after preview passes. Do not alter domain DNS during a normal source release.
+
+### Rocket League worker release gate
+
+Before a later explicit worker deployment:
+
+1. Build the checked-in `services/rl-engine/Dockerfile` from a clean source SHA.
+2. Scan the image and confirm it runs as the non-root `node` user.
+3. Inject `RL_ENGINE_TOKEN` through the host secret manager; use the same value
+   for the web binding without logging either value.
+4. Keep `RL_ENGINE_MAX_CONCURRENCY=1` until representative load and memory
+   measurements justify a change.
+5. Confirm `/livez` is 200 and `/healthz` is 200 with the expected source
+   versions. A missing/invalid token must make readiness return 503.
+6. Exercise 401, 400 metadata validation, 415 content type, 422 invalid replay,
+   503 capacity, and web-client timeout/retry behavior in preview.
+7. Confirm SIGTERM drains in-flight work and a due retry remains claimable after
+   service restart.
+8. Do not enable a public detector. Deployment readiness and coaching quality
+   promotion are separate gates.
 
 ## Incident rules
 

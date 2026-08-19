@@ -84,6 +84,131 @@ export const players = sqliteTable("players", {
   uniqueIndex("players_email_unique").on(table.email)
 ]);
 
+export const playerClaims = sqliteTable("player_claims", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  tokenHash: text("token_hash").notNull(),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id),
+  expiresAt: text("expires_at").notNull(),
+  consumedAt: text("consumed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_claims_token_hash_unique").on(table.tokenHash),
+  index("player_claims_player_idx").on(table.playerId),
+  index("player_claims_expires_at_idx").on(table.expiresAt)
+]);
+
+export const playerSessions = sqliteTable("player_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  tokenHash: text("token_hash").notNull(),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  expiresAt: text("expires_at").notNull(),
+  lastSeenAt: text("last_seen_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  revokedAt: text("revoked_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_sessions_token_hash_unique").on(table.tokenHash),
+  index("player_sessions_player_idx").on(table.playerId),
+  index("player_sessions_expires_at_idx").on(table.expiresAt)
+]);
+
+export const billingCustomers = sqliteTable("billing_customers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("billing_customers_player_unique").on(table.playerId),
+  uniqueIndex("billing_customers_stripe_unique").on(table.stripeCustomerId)
+]);
+
+export const billingSubscriptions = sqliteTable("billing_subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  stripeSubscriptionId: text("stripe_subscription_id").notNull(),
+  stripePriceId: text("stripe_price_id").notNull(),
+  planKey: text("plan_key").notNull(),
+  status: text("status").notNull(),
+  currentPeriodStart: text("current_period_start").notNull(),
+  currentPeriodEnd: text("current_period_end").notNull(),
+  cancelAtPeriodEnd: integer("cancel_at_period_end", { mode: "boolean" }).notNull().default(false),
+  canceledAt: text("canceled_at"),
+  endedAt: text("ended_at"),
+  graceUntil: text("grace_until"),
+  latestInvoiceId: text("latest_invoice_id"),
+  checkoutSessionId: text("checkout_session_id"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("billing_subscriptions_stripe_unique").on(table.stripeSubscriptionId),
+  index("billing_subscriptions_player_status_idx").on(table.playerId, table.status),
+  index("billing_subscriptions_customer_idx").on(table.stripeCustomerId)
+]);
+
+export const billingEvents = sqliteTable("billing_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  stripeEventId: text("stripe_event_id").notNull(),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("processing"),
+  errorMessage: text("error_message"),
+  processedAt: text("processed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("billing_events_stripe_unique").on(table.stripeEventId),
+  index("billing_events_status_idx").on(table.status)
+]);
+
+export const analysisUsage = sqliteTable("analysis_usage", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  analysisPublicId: text("analysis_public_id").notNull(),
+  analysisRequestId: integer("analysis_request_id").references(() => analysisRequests.id),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  accessKind: text("access_kind").notNull(),
+  planKey: text("plan_key"),
+  windowStart: text("window_start").notNull(),
+  windowEnd: text("window_end").notNull(),
+  slot: integer("slot").notNull(),
+  status: text("status").notNull().default("reserved"),
+  consumedAt: text("consumed_at"),
+  releasedAt: text("released_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("analysis_usage_public_id_unique").on(table.publicId),
+  uniqueIndex("analysis_usage_analysis_unique").on(table.analysisPublicId),
+  uniqueIndex("analysis_usage_active_slot_unique").on(table.playerId, table.accessKind, table.windowStart, table.slot)
+    .where(sql`${table.status} IN ('reserved', 'consumed')`),
+  index("analysis_usage_player_window_idx").on(table.playerId, table.windowStart, table.status),
+  index("analysis_usage_request_idx").on(table.analysisRequestId)
+]);
+
+export const emailDeliveries = sqliteTable("email_deliveries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id),
+  kind: text("kind").notNull(),
+  provider: text("provider").notNull().default("resend"),
+  status: text("status").notNull().default("pending"),
+  idempotencyKey: text("idempotency_key").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  providerMessageId: text("provider_message_id"),
+  lastErrorCode: text("last_error_code"),
+  nextRetryAt: text("next_retry_at"),
+  acceptedAt: text("accepted_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("email_deliveries_public_id_unique").on(table.publicId),
+  uniqueIndex("email_deliveries_request_kind_unique").on(table.analysisRequestId, table.kind),
+  uniqueIndex("email_deliveries_idempotency_unique").on(table.idempotencyKey),
+  index("email_deliveries_retry_idx").on(table.status, table.nextRetryAt)
+]);
+
 export const gameAccounts = sqliteTable("game_accounts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   publicId: text("public_id").notNull(),
@@ -182,6 +307,7 @@ export const analysisFindings = sqliteTable("analysis_findings", {
   metricsJson: text("metrics_json").notNull(),
   recommendationJson: text("recommendation_json").notNull(),
   limitationsJson: text("limitations_json").notNull(),
+  detectorId: text("detector_id").notNull().default("legacy.unknown"),
   detectorVersion: text("detector_version").notNull(),
   schemaVersion: text("schema_version").notNull().default("finding.v1"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
@@ -197,21 +323,54 @@ export const playerFocuses = sqliteTable("player_focuses", {
   playerId: integer("player_id").notNull().references(() => players.id),
   game: text("game").notNull(),
   findingId: integer("finding_id").references(() => analysisFindings.id),
+  detectorId: text("detector_id").notNull().default("legacy.unknown"),
+  baselineAnalysisRequestId: integer("baseline_analysis_request_id").references(() => analysisRequests.id),
+  latestAnalysisRequestId: integer("latest_analysis_request_id").references(() => analysisRequests.id),
   status: text("status").notNull().default("active"),
   title: text("title").notNull(),
   successMetric: text("success_metric"),
+  metricKey: text("metric_key"),
+  metricLabel: text("metric_label"),
   baselineValue: real("baseline_value"),
   latestValue: real("latest_value"),
   targetValue: real("target_value"),
   unit: text("unit"),
+  targetDirection: text("target_direction"),
+  minimumMatches: integer("minimum_matches").notNull().default(3),
   matchesObserved: integer("matches_observed").notNull().default(0),
   assignedAt: text("assigned_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   completedAt: text("completed_at"),
+  completionReason: text("completion_reason"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
 }, table => [
   uniqueIndex("player_focuses_public_id_unique").on(table.publicId),
+  uniqueIndex("player_focuses_active_unique").on(table.playerId, table.game).where(sql`${table.status} = 'active'`),
   index("player_focuses_player_game_status_idx").on(table.playerId, table.game, table.status)
+]);
+
+export const playerFocusObservations = sqliteTable("player_focus_observations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  focusId: integer("focus_id").notNull().references(() => playerFocuses.id),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id),
+  findingId: integer("finding_id").notNull().references(() => analysisFindings.id),
+  detectorId: text("detector_id").notNull(),
+  confidence: real("confidence").notNull(),
+  metricKey: text("metric_key"),
+  metricLabel: text("metric_label"),
+  metricValue: real("metric_value"),
+  unit: text("unit"),
+  recurrenceValue: real("recurrence_value"),
+  evidenceJson: text("evidence_json").notNull(),
+  limitationsJson: text("limitations_json").notNull(),
+  observedAt: text("observed_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_focus_observations_public_id_unique").on(table.publicId),
+  uniqueIndex("player_focus_observations_focus_request_unique").on(table.focusId, table.analysisRequestId),
+  index("player_focus_observations_focus_observed_idx").on(table.focusId, table.observedAt),
+  index("player_focus_observations_player_request_idx").on(table.analysisRequestId)
 ]);
 
 export const analysisReviews = sqliteTable("analysis_reviews", {
@@ -232,6 +391,9 @@ export const rlReviewCandidates = sqliteTable("rl_review_candidates", {
   candidateKey: text("candidate_key").notNull(),
   replayFingerprint: text("replay_fingerprint").notNull(),
   mode: text("mode"),
+  rankCohort: text("rank_cohort"),
+  contextKey: text("context_key"),
+  metadataProvenance: text("metadata_provenance"),
   gameVersion: text("game_version"),
   detectorId: text("detector_id").notNull(),
   detectorVersion: text("detector_version").notNull(),
@@ -258,6 +420,7 @@ export const rlReviewLabels = sqliteTable("rl_review_labels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   candidateId: integer("candidate_id").notNull().references(() => rlReviewCandidates.id),
   reviewerEmail: text("reviewer_email").notNull(),
+  reviewerQualification: text("reviewer_qualification").notNull().default("unverified"),
   verdict: text("verdict").notNull(),
   timestampVerified: integer("timestamp_verified", { mode: "boolean" }),
   notes: text("notes"),
@@ -266,4 +429,56 @@ export const rlReviewLabels = sqliteTable("rl_review_labels", {
 }, table => [
   index("rl_review_labels_candidate_idx").on(table.candidateId),
   index("rl_review_labels_created_at_idx").on(table.createdAt)
+]);
+
+export const detectorQualitySnapshots = sqliteTable("detector_quality_snapshots", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  detectorId: text("detector_id").notNull(),
+  detectorVersion: text("detector_version").notNull(),
+  corpusFingerprint: text("corpus_fingerprint").notNull(),
+  labelSetVersion: text("label_set_version").notNull(),
+  evidenceSource: text("evidence_source").notNull(),
+  metricsJson: text("metrics_json").notNull(),
+  gateJson: text("gate_json").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("detector_quality_snapshots_public_id_unique").on(table.publicId),
+  index("detector_quality_snapshots_detector_created_idx").on(table.detectorId, table.createdAt)
+]);
+
+export const detectorLifecycleEvents = sqliteTable("detector_lifecycle_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  detectorId: text("detector_id").notNull(),
+  detectorVersion: text("detector_version").notNull(),
+  fromState: text("from_state").notNull(),
+  toState: text("to_state").notNull(),
+  reason: text("reason").notNull(),
+  activationFingerprint: text("activation_fingerprint"),
+  actorEmail: text("actor_email").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("detector_lifecycle_events_public_id_unique").on(table.publicId),
+  index("detector_lifecycle_events_detector_created_idx").on(table.detectorId, table.createdAt)
+]);
+
+export const playerFocusEvaluations = sqliteTable("player_focus_evaluations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  focusId: integer("focus_id").notNull().references(() => playerFocuses.id),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id),
+  detectorId: text("detector_id").notNull(),
+  detectorVersion: text("detector_version").notNull(),
+  contextKey: text("context_key"),
+  detectorEvaluated: integer("detector_evaluated", { mode: "boolean" }).notNull(),
+  opportunityCount: integer("opportunity_count").notNull().default(0),
+  fired: integer("fired", { mode: "boolean" }).notNull(),
+  metricValue: real("metric_value"),
+  evidenceSource: text("evidence_source").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_focus_evaluations_public_id_unique").on(table.publicId),
+  uniqueIndex("player_focus_evaluations_focus_request_detector_unique").on(table.focusId, table.analysisRequestId, table.detectorId),
+  index("player_focus_evaluations_focus_created_idx").on(table.focusId, table.createdAt)
 ]);
