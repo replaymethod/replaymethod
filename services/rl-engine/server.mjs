@@ -1,8 +1,8 @@
 import { createServer as createHttpServer } from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { analyzeReplay } from "./analyzer.mjs";
-import { inspectReplay, PARSER_VERSION, ReplayInputError } from "./parser.mjs";
+import { Worker } from "node:worker_threads";
+import { PARSER_VERSION, ReplayInputError } from "./parser.mjs";
 
 export { PARSER_VERSION };
 
@@ -92,10 +92,58 @@ function maximumConcurrency(value) {
   return Number.isInteger(parsed) ? Math.min(8, Math.max(1, parsed)) : 1;
 }
 
+function replayWorkerError(payload) {
+  if (payload?.name === "ReplayInputError" && typeof payload.code === "string") {
+    const error = new ReplayInputError(
+      payload.code,
+      payload.publicMessage ?? "The replay could not be parsed safely.",
+    );
+    if (typeof payload.message === "string") error.message = payload.message;
+    return error;
+  }
+  const error = new Error(
+    typeof payload?.message === "string" ? payload.message : "The replay worker failed without a result.",
+  );
+  if (typeof payload?.code === "string") error.code = payload.code;
+  return error;
+}
+
+export function processReplayInWorker({ operation, bytes, player, rank, publicOutputEnabled }) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./analysis-worker.mjs", import.meta.url), {
+      execArgv: [],
+    });
+    let settled = false;
+
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      callback(value);
+      void worker.terminate();
+    };
+
+    worker.once("message", (message) => {
+      if (message?.ok) finish(resolve, message.result);
+      else finish(reject, replayWorkerError(message?.error));
+    });
+    worker.once("error", (error) => finish(reject, error));
+    worker.once("exit", (code) => {
+      if (!settled) finish(reject, new Error(`Replay worker exited before returning a result (code ${code}).`));
+    });
+
+    const replayBytes = new Uint8Array(bytes);
+    worker.postMessage(
+      { operation, bytes: replayBytes, player, rank, publicOutputEnabled },
+      [replayBytes.buffer],
+    );
+  });
+}
+
 export function createServer({
   token = process.env.RL_ENGINE_TOKEN,
   maxConcurrency = process.env.RL_ENGINE_MAX_CONCURRENCY,
   publicOutputEnabled = process.env.RL_PUBLIC_DETECTORS_ENABLED === "true",
+  processReplay = processReplayInWorker,
 } = {}) {
   const concurrencyLimit = maximumConcurrency(maxConcurrency);
   const ready = typeof token === "string" && token.length >= MINIMUM_TOKEN_LENGTH && token.length <= 512;
@@ -143,9 +191,13 @@ export function createServer({
       activeRequests += 1;
       counted = true;
       const bytes = await readBody(request);
-      const result = url.pathname.includes("/inspect/")
-        ? { kind: "inspection", normalized: inspectReplay(bytes, player, rank) }
-        : analyzeReplay(bytes, player, rank, { publicOutputEnabled });
+      const result = await processReplay({
+        operation: url.pathname.includes("/inspect/") ? "inspect" : "analyze",
+        bytes,
+        player,
+        rank,
+        publicOutputEnabled,
+      });
       return json(response, 200, result);
     } catch (error) {
       console.error("rocket league request failed", {
