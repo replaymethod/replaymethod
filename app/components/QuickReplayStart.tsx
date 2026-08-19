@@ -143,7 +143,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       <div><b>{replay ? replay.name : "DROP YOUR .REPLAY HERE"}</b><span>{replay ? `${Math.ceil(replay.size / 1024)} KB · Ready` : "or click to choose · original PC replay · max 16 MB"}</span></div>
       <strong>{replay ? "Change" : "Choose file"}</strong>
     </label>
-    {!replay && <div className="quick-upload-help"><p className="quick-promise">Upload first, email last. No account or card.</p><Link href="/replay-upload">Can’t find the file? <span>3 quick steps →</span></Link></div>}
+    {!replay && <div className="quick-upload-help"><p className="quick-promise">Upload first, email last. No account or card.</p><details><summary>Where is my .replay file? <span>30-second guide</span></summary><ol><li><b>1</b><span>Press <strong>Windows + R</strong></span></li><li><b>2</b><span>Paste <code>%USERPROFILE%\Documents\My Games\Rocket League\TAGame\Demos</code></span></li><li><b>3</b><span>Choose your latest <strong>.replay</strong> file above</span></li></ol><Link href="/replay-upload">Open the full visual guide →</Link></details></div>}
 
     {replay && <div className="replay-value quick-replay-value" role="status" aria-live="polite">
       <div className="replay-value-head"><span>REPLAY VALIDATED</span><strong>Supported match file recognized.</strong><p>No gameplay claim has been made. This confirms the file is ready for secure parser checks.</p></div>

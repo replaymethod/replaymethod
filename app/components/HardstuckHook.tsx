@@ -34,6 +34,7 @@ type HardstuckHookProps = {
   onAnalysisStart?: () => void;
   onPatternSelect?: (pattern: number) => void;
   requestOnly?: boolean;
+  intakeClosed?: boolean;
 };
 
 export default function HardstuckHook({
@@ -41,10 +42,11 @@ export default function HardstuckHook({
   onAnalysisStart,
   onPatternSelect,
   requestOnly = false,
+  intakeClosed = false,
 }: HardstuckHookProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const selectedPattern = selected === null ? null : patterns[selected];
-  const selectedAnalysisHref = selectedPattern
+  const selectedAnalysisHref = selectedPattern && !analysisHref.startsWith("#")
     ? `${analysisHref}${analysisHref.includes("?") ? "&" : "?"}hypothesis=${encodeURIComponent(selectedPattern.title)}`
     : analysisHref;
 
@@ -70,6 +72,7 @@ export default function HardstuckHook({
                   className={isSelected ? "active" : ""}
                   onClick={() => { setSelected(index); onPatternSelect?.(index + 1); }}
                   aria-pressed={isSelected}
+                  aria-controls="hardstuck-result"
                 >
                   <span className="hardstuck-option-number">0{index + 1}</span>
                   <span className="hardstuck-option-copy">
@@ -110,6 +113,7 @@ export default function HardstuckHook({
             </div>
 
             <div
+              id="hardstuck-result"
               className={`hardstuck-result ${selectedPattern ? "revealed" : ""}`}
               role="status"
               aria-live="polite"
@@ -129,12 +133,14 @@ export default function HardstuckHook({
             </div>
 
             <a className="hardstuck-cta" href={selectedAnalysisHref} onClick={onAnalysisStart}>
-              {requestOnly
+              {intakeClosed
+                ? selectedPattern ? "Save this for replay beta access" : "Join the replay beta list"
+                : requestOnly
                 ? selectedPattern ? "Carry this into my Riot request" : "Save a Riot beta request"
                 : selectedPattern ? "Test this in the replay beta" : "Start a replay evidence check"}
               <span aria-hidden="true">→</span>
             </a>
-            <small className="hardstuck-trust">{requestOnly ? "Official access pending · private request · no card" : "One real match · private status · no card"}</small>
+            <small className="hardstuck-trust">{intakeClosed ? "Quality gate in progress · no file · no card" : requestOnly ? "Official access pending · private request · no card" : "One real match · private status · no card"}</small>
           </div>
         </div>
       </div>

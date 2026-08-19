@@ -1,12 +1,14 @@
 import Stripe from "stripe";
 
 export const STRIPE_API_VERSION = "2026-06-24.dahlia" as const;
-export type PaidPlan = "quarterly" | "monthly";
+export type PaidPlan = "annual" | "semiannual" | "quarterly" | "monthly";
 
 type StripeEnvironment = {
   STRIPE_MODE?: string;
   STRIPE_RESTRICTED_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_PRICE_ANNUAL?: string;
+  STRIPE_PRICE_SEMIANNUAL?: string;
   STRIPE_PRICE_QUARTERLY?: string;
   STRIPE_PRICE_MONTHLY?: string;
   PUBLIC_SITE_URL?: string;
@@ -15,7 +17,7 @@ type StripeEnvironment = {
 export class BillingConfigurationError extends Error {}
 
 export function isPaidPlan(value: unknown): value is PaidPlan {
-  return value === "quarterly" || value === "monthly";
+  return value === "annual" || value === "semiannual" || value === "quarterly" || value === "monthly";
 }
 
 export async function stripeEnvironment() {
@@ -41,12 +43,14 @@ export async function stripeClient() {
 
 export async function billingConfiguration() {
   const env = await stripeEnvironment();
+  const annual = env.STRIPE_PRICE_ANNUAL?.trim();
+  const semiannual = env.STRIPE_PRICE_SEMIANNUAL?.trim();
   const quarterly = env.STRIPE_PRICE_QUARTERLY?.trim();
   const monthly = env.STRIPE_PRICE_MONTHLY?.trim();
-  if (!quarterly || !monthly) throw new BillingConfigurationError("Paid plan prices are not configured yet.");
+  if (!annual || !semiannual || !quarterly || !monthly) throw new BillingConfigurationError("Paid plan prices are not configured yet.");
   return {
     stripe: await stripeClient(),
-    prices: { quarterly, monthly } satisfies Record<PaidPlan, string>,
+    prices: { annual, semiannual, quarterly, monthly } satisfies Record<PaidPlan, string>,
     siteUrl: safeSiteUrl(env.PUBLIC_SITE_URL),
     webhookSecret: env.STRIPE_WEBHOOK_SECRET?.trim() || "",
   };
@@ -64,6 +68,8 @@ function safeSiteUrl(value?: string) {
 }
 
 export function planForPrice(priceId: string, prices: Record<PaidPlan, string>): PaidPlan | "unknown" {
+  if (priceId === prices.annual) return "annual";
+  if (priceId === prices.semiannual) return "semiannual";
   if (priceId === prices.quarterly) return "quarterly";
   if (priceId === prices.monthly) return "monthly";
   return "unknown";

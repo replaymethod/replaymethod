@@ -7,6 +7,7 @@ const webhookPath = new URL("../app/api/billing/webhook/route.ts", import.meta.u
 const schemaPath = new URL("../db/schema.ts", import.meta.url);
 const billingProjectionPath = new URL("../lib/stripe-billing.ts", import.meta.url);
 const pricingPath = new URL("../app/components/PricingLadder.tsx", import.meta.url);
+const stripePath = new URL("../lib/stripe.ts", import.meta.url);
 
 test("checkout trusts server Price IDs and enforces authenticated same-origin writes", async () => {
   const source = await readFile(checkoutPath, "utf8");
@@ -18,10 +19,31 @@ test("checkout trusts server Price IDs and enforces authenticated same-origin wr
   assert.doesNotMatch(source, /automatic_tax/);
 });
 
-test("Riot request-only pricing cannot enter paid Checkout", async () => {
+test("closed or Riot request-only pricing cannot enter paid Checkout", async () => {
   const source = await readFile(pricingPath, "utf8");
-  assert.match(source, /disabled=\{requestOnly \|\| loading !== null\}/);
+  assert.match(source, /disabled=\{requestOnly \|\| !checkoutOpen \|\| loading !== null\}/);
   assert.match(source, /Official access required first/);
+  assert.match(source, /Paid beta opens after detector validation/);
+});
+
+test("all displayed paid durations map only to server-owned Stripe Price IDs", async () => {
+  const source = await readFile(stripePath, "utf8");
+  for (const plan of ["annual", "semiannual", "quarterly", "monthly"]) {
+    assert.match(source, new RegExp(`value === "${plan}"`));
+    assert.match(source, new RegExp(`prices\\.${plan}`));
+  }
+  assert.match(source, /Record<PaidPlan, string>/);
+});
+
+test("pricing presents the owner-directed duration ladder without a fake popularity claim", async () => {
+  const source = await readFile(pricingPath, "utf8");
+  const orderedPlans = ["annual", "semiannual", "quarterly", "monthly"];
+  const positions = orderedPlans.map(plan => source.indexOf(`key: "${plan}"`));
+  assert.ok(positions.every(position => position >= 0));
+  assert.deepEqual([...positions].sort((a, b) => a - b), positions);
+  for (const price of ["$89", "$49", "$27", "$12", "$0"]) assert.match(source, new RegExp(`\\${price}`));
+  assert.match(source, /LOWEST MONTHLY RATE/);
+  assert.doesNotMatch(source, /MOST POPULAR/i);
 });
 
 test("webhooks require Stripe's signature over the raw body", async () => {

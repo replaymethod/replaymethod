@@ -125,9 +125,11 @@ generic advice, single-match overreaction and unsupported completeness claims.
 
 ### Paid beta
 
-- **$27 USD every three months** ($9/month effective) or **$12 USD monthly**;
-- the three-month cycle is recommended because it saves exactly $9/25% versus
-  three monthly payments and supports a bounded improvement cycle;
+- **$89 USD every twelve months** ($7.42/month effective), **$49 USD every six
+  months** ($8.17/month effective), **$27 USD every three months** ($9/month
+  effective), or **$12 USD monthly**;
+- present the longest commitment first while showing the full amount charged and
+  renewal cadence at least as prominently as every effective monthly rate;
 - four successfully completed analyses per 30-day entitlement window;
 - cross-match recurrence and pattern memory;
 - active-focus verification and adaptive next-focus selection;
@@ -136,10 +138,11 @@ generic advice, single-match overreaction and unsupported completeness claims.
   and does not remove completed reports;
 - no charge before a separate, explicit checkout.
 
-Do not launch six-month or annual commitments during beta. Research an annual
-option only after meaningful three-month cohort retention, use and refund data
-exists. The public pricing UI must give the $27 total charge and renewal cadence
-at least equal prominence to the $9/month equivalent.
+Six- and twelve-month commitments are owner-directed, reversible commercial
+experiments. Closely measure plan mix, useful-report completion, retention,
+utilization, refunds, disputes and support confusion. Do not use long commitments
+to hide weak retention, and do not open paid checkout before the engine and legal
+activation gates pass.
 
 ### Upgrade moments
 

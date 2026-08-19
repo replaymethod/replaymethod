@@ -11,6 +11,8 @@ Configure these as server-only secrets or variables:
 - `STRIPE_MODE=test`
 - `STRIPE_RESTRICTED_KEY`: a restricted test key (`rk_test_…`)
 - `STRIPE_WEBHOOK_SECRET`: the signing secret (`whsec_…`) for `/api/billing/webhook`
+- `STRIPE_PRICE_ANNUAL`: recurring USD Price ID for $89 every twelve months
+- `STRIPE_PRICE_SEMIANNUAL`: recurring USD Price ID for $49 every six months
 - `STRIPE_PRICE_QUARTERLY`: recurring USD Price ID for $27 every three months
 - `STRIPE_PRICE_MONTHLY`: recurring USD Price ID for $12 monthly
 - `PUBLIC_SITE_URL`: canonical HTTPS origin used by Checkout and Portal redirects
@@ -30,12 +32,14 @@ The webhook handler also retrieves Subscriptions after lifecycle events. Expand 
 
 ## Test Products and Prices
 
-Create one product for Replay Method beta access and two recurring Prices:
+Create one product for Replay Method beta access and four recurring Prices:
 
 1. Monthly: USD 12.00, recurring every month.
 2. 3-month cycle: USD 27.00, recurring every three months.
+3. 6-month climb: USD 49.00, recurring every six months.
+4. 12-month climb: USD 89.00, recurring every twelve months.
 
-Put their `price_…` IDs in the environment variables above. The server accepts only the `monthly` and `quarterly` plan keys and maps them to these trusted Price IDs; the browser never supplies an amount.
+Put their `price_…` IDs in the environment variables above. The server accepts only the `monthly`, `quarterly`, `semiannual`, and `annual` plan keys and maps them to these trusted Price IDs; the browser never supplies an amount.
 
 ## Webhook endpoint
 
@@ -60,7 +64,7 @@ Enable Stripe Smart Retries in Billing recovery settings and configure customer 
 
 Before any separately authorized live-mode activation:
 
-1. Complete both plan checkouts with Stripe test payment methods.
+1. Complete all four plan checkouts with Stripe test payment methods.
 2. Confirm duplicate webhook delivery does not duplicate subscriptions or usage.
 3. Confirm invalid signatures are rejected.
 4. Confirm Portal cancellation preserves access through the paid period and then removes paid entitlement.

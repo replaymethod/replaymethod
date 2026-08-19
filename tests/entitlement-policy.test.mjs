@@ -28,6 +28,14 @@ test("creates a four-analysis window anchored to the paid subscription period", 
   assert.equal(window.windowEnd, "2026-09-30T00:00:00.000Z");
 });
 
+test("every paid duration receives the same evidence entitlement cadence", () => {
+  for (const planKey of ["annual", "semiannual", "quarterly", "monthly"]) {
+    const window = paidEntitlementWindow(subscription({ planKey }), new Date("2026-09-15T00:00:00.000Z"));
+    assert.equal(window?.planKey, planKey);
+    assert.equal(window?.limit, ANALYSES_PER_WINDOW);
+  }
+});
+
 test("cancel-at-period-end does not remove already paid access", () => {
   const window = paidEntitlementWindow(subscription({ cancelAtPeriodEnd: true }), new Date("2026-08-15T00:00:00.000Z"));
   assert.equal(window?.accessKind, "paid");

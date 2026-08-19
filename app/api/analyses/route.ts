@@ -7,6 +7,7 @@ import { coarseAnalyticsValue } from "../../../lib/analytics-policy.mjs";
 import { sendAnalysisReceived } from "../../../lib/email";
 import { createPlayerToken, expiresAt, hashPlayerToken, PLAYER_CLAIM_SECONDS } from "../../../lib/player-identity.mjs";
 import { declaredBodyTooLarge, isSameOriginRequest, operationalErrorCode } from "../../../lib/request-security.mjs";
+import { subsystemEnabled } from "../../../lib/subsystem-controls.mjs";
 
 export const runtime = "edge";
 
@@ -65,6 +66,13 @@ export async function POST(request: Request) {
     if (playerContext == null) return Response.json({ error: "Add the player identity and mode or role." }, { status: 400 });
     if (goal.length < 8) return Response.json({ error: "Tell us what you want to improve." }, { status: 400 });
     if (!dataConsent) return Response.json({ error: "Confirm that we may process the submitted match data." }, { status: 400 });
+
+    if (game === "rocket-league") {
+      const { env } = await import("cloudflare:workers");
+      if (!subsystemEnabled((env as unknown as { RL_ENGINE_ENABLED?: string }).RL_ENGINE_ENABLED)) {
+        return Response.json({ error: "Rocket League replay intake is temporarily closed while the production quality gate is completed. Join the beta list for first access." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "86400" } });
+      }
+    }
 
     const hasFile = replay instanceof File && replay.size > 0;
     if (hasFile && game !== "rocket-league") return Response.json({ error: "Replay file uploads are currently for Rocket League. Use a match or VOD link for this game." }, { status: 400 });

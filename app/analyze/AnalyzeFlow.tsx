@@ -48,7 +48,7 @@ function replayProblemCode(file: File) {
   return "unknown";
 }
 
-export default function AnalyzeFlow({ initialGame, initialHypothesis }: { initialGame: AnalysisGame | null; initialHypothesis: string }) {
+export default function AnalyzeFlow({ initialGame, initialHypothesis, engineOpen }: { initialGame: AnalysisGame | null; initialHypothesis: string; engineOpen: boolean }) {
   const replayInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(initialGame ? 1 : 0);
   const [game, setGame] = useState<AnalysisGame | null>(initialGame);
@@ -69,12 +69,24 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis }: { initia
   const selected = useMemo(() => games.find(item => item.key === game), [game]);
 
   const chooseGame = (value: AnalysisGame) => {
+    if (value === "rocket-league" && !engineOpen) {
+      track("game_select", value, "analysis_intake_closed");
+      location.assign("/#join-beta");
+      return;
+    }
     setGame(value);
     setReplay(null);
     setEvidenceUrl("");
     track("game_select", value, "analysis_intake");
     setStep(1);
   };
+
+  if (initialGame === "rocket-league" && !engineOpen) {
+    return <main className="intake-page">
+      <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><Link href="/">Exit</Link></div></nav>
+      <section className="access-card shell"><div className="access-mark" aria-hidden="true">↻</div><span>REPLAY QUALITY GATE</span><h1>Uploads are not open yet.</h1><p>The production engine is finishing validation on real replay fixtures. We will not accept your file or imply that analysis is live before that gate passes.</p><Link className="access-primary" href="/#join-beta">JOIN THE REPLAY BETA LIST →</Link><small>No upload today · No card · No charge</small></section>
+    </main>;
+  }
 
   const selectReplay = (file: File | null) => {
     if (!file) return;
