@@ -44,9 +44,17 @@ function fileProblem(file: File) {
   return "";
 }
 
+function fileSizeLabel(bytes: number) {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function QuickReplayStart({ placement }: { placement: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const rankRef = useRef<HTMLInputElement>(null);
   const [replay, setReplay] = useState<File | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [currentRank, setCurrentRank] = useState("");
   const [playerContext, setPlayerContext] = useState("");
@@ -63,12 +71,20 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     setMessage(problem);
     if (problem) {
       setReplay(null);
+      setDetailsOpen(false);
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
     setReplay(file);
+    setDetailsOpen(false);
+    setStatus("idle");
     track("upload_started", placement);
     track("analysis_start", `${placement}_details`);
+  }
+
+  function continueToDetails() {
+    setDetailsOpen(true);
+    window.setTimeout(() => rankRef.current?.focus(), 0);
   }
 
   function drop(event: DragEvent<HTMLLabelElement>) {
@@ -136,9 +152,16 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     </label>
     {!replay && <p className="quick-promise">Upload first, email last. No account or card.</p>}
 
-    {replay && <div className="quick-details">
+    {replay && <div className="replay-value quick-replay-value" role="status" aria-live="polite">
+      <div className="replay-value-head"><span>REPLAY VALIDATED</span><strong>Supported match file recognized.</strong><p>No gameplay claim has been made. This confirms the file is ready for secure parser checks.</p></div>
+      <div className="replay-value-facts"><div><span>FORMAT</span><b>.replay</b><small>recognized</small></div><div><span>FILE SIZE</span><b>{fileSizeLabel(replay.size)}</b><small>non-empty</small></div><div><span>UPLOAD LIMIT</span><b>PASS</b><small>16 MB maximum</small></div></div>
+      <div className="replay-value-plan"><span>NEXT: EVIDENCE CHECKS</span><p>Replay Method will verify the player and match structure, then test recurring decisions against real match evidence. It stops when evidence is insufficient.</p></div>
+      {!detailsOpen && <button className="quick-value-continue" type="button" aria-expanded="false" aria-controls="quick-replay-details" onClick={continueToDetails}>CONTINUE TO PRIVATE REPORT SETUP <span>→</span></button>}
+    </div>}
+
+    {replay && detailsOpen && <div className="quick-details" id="quick-replay-details">
       <div className="quick-field-row">
-        <label><span>Current rank *</span><input value={currentRank} onChange={event => setCurrentRank(event.target.value)} placeholder="e.g. Diamond 2" maxLength={80} required /></label>
+        <label><span>Current rank *</span><input ref={rankRef} value={currentRank} onChange={event => setCurrentRank(event.target.value)} placeholder="e.g. Diamond 2" maxLength={80} required /></label>
         <label><span>Exact player name *</span><input value={playerContext} onChange={event => setPlayerContext(event.target.value)} placeholder="as shown in the replay" maxLength={160} required /></label>
       </div>
       <label className="quick-notes"><span>What felt wrong? <i>optional</i></span><input value={notes} onChange={event => setNotes(event.target.value)} placeholder="We still scan the whole match." maxLength={500} /></label>

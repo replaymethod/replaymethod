@@ -40,6 +40,9 @@ export default function HardstuckHook({
 }: HardstuckHookProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const selectedPattern = selected === null ? null : patterns[selected];
+  const selectedAnalysisHref = selectedPattern
+    ? `${analysisHref}${analysisHref.includes("?") ? "&" : "?"}hypothesis=${encodeURIComponent(selectedPattern.title)}`
+    : analysisHref;
 
   return (
     <section className="hardstuck-hook" aria-labelledby="hardstuck-title">
@@ -121,7 +124,7 @@ export default function HardstuckHook({
               </p>
             </div>
 
-            <a className="hardstuck-cta" href={analysisHref} onClick={onAnalysisStart}>
+            <a className="hardstuck-cta" href={selectedAnalysisHref} onClick={onAnalysisStart}>
               {selectedPattern ? "Test this on my replay" : "Analyze my replay"}
               <span aria-hidden="true">→</span>
             </a>

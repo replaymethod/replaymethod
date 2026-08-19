@@ -8,8 +8,9 @@ export const metadata: Metadata = {
   alternates: { canonical: "/analyze" }
 };
 
-export default async function AnalyzePage({ searchParams }: { searchParams: Promise<{ game?: string }> }) {
+export default async function AnalyzePage({ searchParams }: { searchParams: Promise<{ game?: string; hypothesis?: string }> }) {
   const query = await searchParams;
   const initialGame = query.game && isAnalysisGame(query.game) ? query.game : null;
-  return <AnalyzeFlow initialGame={initialGame} />;
+  const initialHypothesis = query.hypothesis?.trim().slice(0, 120) || "";
+  return <AnalyzeFlow initialGame={initialGame} initialHypothesis={initialHypothesis} />;
 }
