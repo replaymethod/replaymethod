@@ -2,6 +2,7 @@ import { ensureProductSchema } from "../../db";
 import { runGameAdapter, type AdapterEnv, type AnalysisInput } from "../adapters";
 import { isAnalysisGame, reportUrl } from "../analysis";
 import { sendAnalysisReady } from "../email";
+import { advancePlayerFocus, type PersistedFocusFinding } from "../player-focus";
 import { synthesizeCoaching } from "./coaching";
 import type { GameId, StructuredFinding } from "./contracts";
 
@@ -71,15 +72,16 @@ async function persistFinding(db: D1Database, job: JobRow, matchId: number, find
   return db.prepare(`INSERT INTO analysis_findings (
       public_id, analysis_request_id, match_id, player_id, game, priority, category, title, summary,
       severity, confidence, confidence_label, frequency, estimated_impact, evidence_json, metrics_json,
-      recommendation_json, limitations_json, detector_version, schema_version
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      recommendation_json, limitations_json, detector_id, detector_version, schema_version
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    RETURNING id`)
     .bind(
       crypto.randomUUID().replaceAll("-", ""), job.requestId, matchId, job.playerId, job.game, priority,
       finding.category, finding.title, finding.summary, finding.severity, finding.confidence,
       finding.confidenceLabel, finding.frequency ?? null, finding.estimatedImpact ?? null,
       JSON.stringify(finding.evidence), JSON.stringify(finding.metrics), JSON.stringify(finding.recommendation),
-      JSON.stringify(finding.limitations), finding.detectorVersion, finding.schemaVersion
-    ).run();
+      JSON.stringify(finding.limitations), finding.id, finding.detectorVersion, finding.schemaVersion
+    ).first<{ id: number }>();
 }
 
 export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
@@ -129,8 +131,11 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     if (!matchResult) throw new Error("Could not persist the normalized match.");
 
     await env.DB.prepare("DELETE FROM analysis_findings WHERE analysis_request_id = ?").bind(job.requestId).run();
+    const persistedFocusFindings: PersistedFocusFinding[] = [];
     for (let index = 0; index < result.findings.length; index += 1) {
-      await persistFinding(env.DB, job, matchResult.id, result.findings[index], index + 1);
+      const persisted = await persistFinding(env.DB, job, matchResult.id, result.findings[index], index + 1);
+      if (!persisted) throw new Error("Could not persist an analysis finding.");
+      persistedFocusFindings.push({ finding: result.findings[index], findingId: persisted.id });
     }
 
     await setStage(env.DB, job.jobId, "coaching", "Prioritizing your coaching focus");
@@ -140,8 +145,6 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     const durationMs = Date.now() - started;
 
     await setStage(env.DB, job.jobId, "persisting", "Saving your private report");
-    const primaryFinding = await env.DB.prepare("SELECT id FROM analysis_findings WHERE analysis_request_id = ? ORDER BY priority ASC LIMIT 1")
-      .bind(job.requestId).first<{ id: number }>();
     await env.DB.batch([
       env.DB.prepare(`UPDATE analysis_requests SET status = 'ready', highest_impact_mistake = ?, why_it_costs = ?,
         evidence_moments = ?, next_queue_rule = ?, practice_plan = ?, coach_note = ?, ready_at = ?, updated_at = CURRENT_TIMESTAMP
@@ -159,17 +162,22 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
         WHERE analysis_request_id = ? AND status = 'reserved'`).bind(readyAt, job.requestId)
     ]);
 
-    if (job.playerId && primaryFinding) {
-      await env.DB.batch([
-        env.DB.prepare("UPDATE player_focuses SET status = 'replaced', updated_at = CURRENT_TIMESTAMP WHERE player_id = ? AND game = ? AND status = 'active'")
-          .bind(job.playerId, job.game),
-        env.DB.prepare(`INSERT INTO player_focuses (
-          public_id, player_id, game, finding_id, status, title, success_metric, target_value, unit, matches_observed
-        ) VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?, 1)`)
-          .bind(crypto.randomUUID().replaceAll("-", ""), job.playerId, job.game, primaryFinding.id,
-            report.highestImpactMistake, result.findings[0].recommendation.successMetric ?? null,
-            result.findings[0].recommendation.targetValue ?? null, result.findings[0].recommendation.targetUnit ?? null)
-      ]);
+    if (job.playerId) {
+      try {
+        const focusFindings = [...persistedFocusFindings].sort((left, right) =>
+          Number(right.finding.id === report.primaryFindingId) - Number(left.finding.id === report.primaryFindingId));
+        await advancePlayerFocus({
+          db: env.DB,
+          playerId: job.playerId,
+          game: job.game,
+          analysisRequestId: job.requestId,
+          findings: focusFindings,
+        });
+      } catch (error) {
+        // Progress history is valuable, but must never corrupt a completed,
+        // evidence-backed report or trigger a duplicate analysis retry.
+        console.error("player focus persistence failed", { publicId: job.publicId, error });
+      }
     }
 
     try {

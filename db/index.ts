@@ -3,6 +3,13 @@ import * as schema from "./schema";
 
 let productSchemaReady: Promise<void> | null = null;
 
+async function ensureColumn(database: D1Database, table: string, column: string, definition: string) {
+  const info = await database.prepare(`PRAGMA table_info(${table})`).all<{ name: string }>();
+  if (!(info.results || []).some(item => item.name === column)) {
+    await database.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+  }
+}
+
 export async function ensureProductSchema(database: D1Database) {
   if (!productSchemaReady) {
     productSchemaReady = database.batch([
@@ -268,6 +275,7 @@ export async function ensureProductSchema(database: D1Database) {
         metrics_json text NOT NULL,
         recommendation_json text NOT NULL,
         limitations_json text NOT NULL,
+        detector_id text DEFAULT 'legacy.unknown' NOT NULL,
         detector_version text NOT NULL,
         schema_version text DEFAULT 'finding.v1' NOT NULL,
         created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -284,23 +292,59 @@ export async function ensureProductSchema(database: D1Database) {
         player_id integer NOT NULL,
         game text NOT NULL,
         finding_id integer,
+        detector_id text DEFAULT 'legacy.unknown' NOT NULL,
+        baseline_analysis_request_id integer,
+        latest_analysis_request_id integer,
         status text DEFAULT 'active' NOT NULL,
         title text NOT NULL,
         success_metric text,
+        metric_key text,
+        metric_label text,
         baseline_value real,
         latest_value real,
         target_value real,
         unit text,
+        target_direction text,
+        minimum_matches integer DEFAULT 3 NOT NULL,
         matches_observed integer DEFAULT 0 NOT NULL,
         assigned_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
         completed_at text,
+        completion_reason text,
         created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
         updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
         FOREIGN KEY (player_id) REFERENCES players(id),
-        FOREIGN KEY (finding_id) REFERENCES analysis_findings(id)
+        FOREIGN KEY (finding_id) REFERENCES analysis_findings(id),
+        FOREIGN KEY (baseline_analysis_request_id) REFERENCES analysis_requests(id),
+        FOREIGN KEY (latest_analysis_request_id) REFERENCES analysis_requests(id)
       )`),
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focuses_public_id_unique ON player_focuses (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focuses_active_unique ON player_focuses (player_id, game) WHERE status = 'active'"),
       database.prepare("CREATE INDEX IF NOT EXISTS player_focuses_player_game_status_idx ON player_focuses (player_id, game, status)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS player_focus_observations (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        focus_id integer NOT NULL,
+        analysis_request_id integer NOT NULL,
+        finding_id integer NOT NULL,
+        detector_id text NOT NULL,
+        confidence real NOT NULL,
+        metric_key text,
+        metric_label text,
+        metric_value real,
+        unit text,
+        recurrence_value real,
+        evidence_json text NOT NULL,
+        limitations_json text NOT NULL,
+        observed_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (focus_id) REFERENCES player_focuses(id),
+        FOREIGN KEY (analysis_request_id) REFERENCES analysis_requests(id),
+        FOREIGN KEY (finding_id) REFERENCES analysis_findings(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_observations_public_id_unique ON player_focus_observations (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_observations_focus_request_unique ON player_focus_observations (focus_id, analysis_request_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_focus_observations_focus_observed_idx ON player_focus_observations (focus_id, observed_at)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_focus_observations_player_request_idx ON player_focus_observations (analysis_request_id)"),
       database.prepare(`CREATE TABLE IF NOT EXISTS analysis_reviews (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         analysis_request_id integer NOT NULL,
@@ -352,7 +396,20 @@ export async function ensureProductSchema(database: D1Database) {
       )`),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_candidate_idx ON rl_review_labels (candidate_id)"),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_created_at_idx ON rl_review_labels (created_at)")
-    ]).then(() => undefined).catch((error) => {
+    ]).then(async () => {
+      // Existing beta D1 databases predate the longitudinal focus columns.
+      // Checked migrations remain canonical; these guarded additions keep
+      // local/preview databases compatible when they are opened directly.
+      await ensureColumn(database, "analysis_findings", "detector_id", "text DEFAULT 'legacy.unknown' NOT NULL");
+      await ensureColumn(database, "player_focuses", "detector_id", "text DEFAULT 'legacy.unknown' NOT NULL");
+      await ensureColumn(database, "player_focuses", "baseline_analysis_request_id", "integer");
+      await ensureColumn(database, "player_focuses", "latest_analysis_request_id", "integer");
+      await ensureColumn(database, "player_focuses", "metric_key", "text");
+      await ensureColumn(database, "player_focuses", "metric_label", "text");
+      await ensureColumn(database, "player_focuses", "target_direction", "text");
+      await ensureColumn(database, "player_focuses", "minimum_matches", "integer DEFAULT 3 NOT NULL");
+      await ensureColumn(database, "player_focuses", "completion_reason", "text");
+    }).catch((error) => {
       productSchemaReady = null;
       throw error;
     });

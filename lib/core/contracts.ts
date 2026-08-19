@@ -28,6 +28,8 @@ export type Recommendation = {
   successMetric?: string;
   targetValue?: number;
   targetUnit?: string;
+  progressMetricKey?: string;
+  targetDirection?: "increase" | "decrease" | "maintain";
   matchesToObserve?: number;
 };
 

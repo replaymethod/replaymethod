@@ -307,6 +307,7 @@ export const analysisFindings = sqliteTable("analysis_findings", {
   metricsJson: text("metrics_json").notNull(),
   recommendationJson: text("recommendation_json").notNull(),
   limitationsJson: text("limitations_json").notNull(),
+  detectorId: text("detector_id").notNull().default("legacy.unknown"),
   detectorVersion: text("detector_version").notNull(),
   schemaVersion: text("schema_version").notNull().default("finding.v1"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
@@ -322,21 +323,54 @@ export const playerFocuses = sqliteTable("player_focuses", {
   playerId: integer("player_id").notNull().references(() => players.id),
   game: text("game").notNull(),
   findingId: integer("finding_id").references(() => analysisFindings.id),
+  detectorId: text("detector_id").notNull().default("legacy.unknown"),
+  baselineAnalysisRequestId: integer("baseline_analysis_request_id").references(() => analysisRequests.id),
+  latestAnalysisRequestId: integer("latest_analysis_request_id").references(() => analysisRequests.id),
   status: text("status").notNull().default("active"),
   title: text("title").notNull(),
   successMetric: text("success_metric"),
+  metricKey: text("metric_key"),
+  metricLabel: text("metric_label"),
   baselineValue: real("baseline_value"),
   latestValue: real("latest_value"),
   targetValue: real("target_value"),
   unit: text("unit"),
+  targetDirection: text("target_direction"),
+  minimumMatches: integer("minimum_matches").notNull().default(3),
   matchesObserved: integer("matches_observed").notNull().default(0),
   assignedAt: text("assigned_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   completedAt: text("completed_at"),
+  completionReason: text("completion_reason"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
 }, table => [
   uniqueIndex("player_focuses_public_id_unique").on(table.publicId),
+  uniqueIndex("player_focuses_active_unique").on(table.playerId, table.game).where(sql`${table.status} = 'active'`),
   index("player_focuses_player_game_status_idx").on(table.playerId, table.game, table.status)
+]);
+
+export const playerFocusObservations = sqliteTable("player_focus_observations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  focusId: integer("focus_id").notNull().references(() => playerFocuses.id),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id),
+  findingId: integer("finding_id").notNull().references(() => analysisFindings.id),
+  detectorId: text("detector_id").notNull(),
+  confidence: real("confidence").notNull(),
+  metricKey: text("metric_key"),
+  metricLabel: text("metric_label"),
+  metricValue: real("metric_value"),
+  unit: text("unit"),
+  recurrenceValue: real("recurrence_value"),
+  evidenceJson: text("evidence_json").notNull(),
+  limitationsJson: text("limitations_json").notNull(),
+  observedAt: text("observed_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_focus_observations_public_id_unique").on(table.publicId),
+  uniqueIndex("player_focus_observations_focus_request_unique").on(table.focusId, table.analysisRequestId),
+  index("player_focus_observations_focus_observed_idx").on(table.focusId, table.observedAt),
+  index("player_focus_observations_player_request_idx").on(table.analysisRequestId)
 ]);
 
 export const analysisReviews = sqliteTable("analysis_reviews", {
