@@ -8,8 +8,10 @@ Last consolidated: 18 August 2026
 
 The product must not depend on remembering a chat. This brief consolidates the
 decisions, research conclusions, design direction and agreed build sequence from
-the working sessions. Future work should update this document when a decision
-changes rather than allowing the plan to drift or disappear.
+the working sessions. Update this document only when the owner explicitly
+confirms a product decision or a completed milestone materially changes the
+documented project state. Preserve unresolved decisions as unresolved rather
+than silently reconciling them.
 
 Supporting detail remains in:
 
@@ -308,18 +310,22 @@ usage or routine human review before real costs are known.
 
 ## Delivery and source-control rules
 
-- Discussion and research must end in either an implementation, a recorded
-  decision or an explicitly rejected idea.
-- When the owner approves a website change, the normal completion state is:
-  implemented, checked, committed, merged through the protected GitHub workflow
-  and published to the existing Sites project.
+- Research or analysis may end with a report, recommendation or unresolved
+  decision. Implementation happens only when explicitly requested.
+- A completed implementation may stop locally after relevant validation. Do not
+  automatically continue from one roadmap milestone into the next.
+- Commit, push, pull request and merge are separate release actions that each
+  require explicit authorization in the current turn.
+- Deployment to the existing Sites project requires explicit authorization in
+  the current turn.
 - Do not say a change is live until the deployment is verified.
-- Use branches and pull requests; do not bypass protected `main`.
+- When release actions are explicitly authorized, use branches and pull requests
+  and do not bypass protected `main`.
 - Keep secrets outside source control. Never place real API keys, tokens,
   passwords or production data in GitHub.
-- At meaningful milestones, create a GitHub checkpoint and update this brief.
-- A live deployment is not a substitute for a GitHub checkpoint, and a local
-  edit is not a completed website change.
+- Update this brief only when the owner explicitly confirms a product decision
+  or a completed milestone materially changes the documented project state.
+- Preserve unresolved decisions as unresolved; do not silently reconcile them.
 
 ## Current implementation checkpoint
 
@@ -354,15 +360,20 @@ At the time of this consolidation:
 - League of Legends and VALORANT automated ingestion still depend on approved
   official Riot access.
 
-## Working prompt for future sessions
+## Routing guidance for future sessions
 
-Use the following instruction when resuming Replay Method work:
+Use the following guidance when resuming Replay Method work:
 
-> Continue Replay Method from `docs/MASTER_PRODUCT_BRIEF.md`. Treat it as the
-> project source of truth. Preserve the evidence-first improvement loop, broad
-> internal analysis with one external focus, honest abstention, useful free
-> diagnosis and paid longitudinal verification. Inspect the actual repository
-> state before acting. Implement the next incomplete milestone, test it, update
-> this brief when decisions change, use the protected GitHub workflow and publish
-> completed website batches to the existing Sites project. Never claim an idea,
-> detector, payment feature or deployment is finished before verification.
+> Start with `AGENTS.md` and the explicitly requested task. Read only the
+> relevant project documentation; use this brief as the product source of truth
+> when product direction is in scope. Preserve the evidence-first improvement
+> loop, broad internal analysis with one external focus, honest abstention,
+> useful free diagnosis and paid longitudinal verification. Research or analysis
+> may stop with a report, recommendation or unresolved decision. Implement only
+> when explicitly requested, never continue automatically to the next milestone,
+> and preserve unresolved decisions as unresolved. Treat commit, push, pull
+> request, merge and Sites deployment as separate actions requiring explicit
+> authorization in the current turn. Update this brief only for an explicitly
+> confirmed product decision or a completed milestone that materially changes
+> documented project state. Never claim an idea, detector, payment feature or
+> deployment is finished before verification.
