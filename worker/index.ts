@@ -10,6 +10,7 @@ interface Env {
   BUCKET: R2Bucket;
   RL_ENGINE_URL?: string;
   RL_ENGINE_TOKEN?: string;
+  RL_ENGINE_TIMEOUT_MS?: string;
   RIOT_LEAGUE_API_KEY?: string;
   RIOT_VALORANT_API_KEY?: string;
   RIOT_RSO_CLIENT_ID?: string;

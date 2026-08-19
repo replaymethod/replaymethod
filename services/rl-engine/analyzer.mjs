@@ -18,7 +18,6 @@ export function analyzeReplay(bytes, requestedIdentity, rank) {
     "detectors_not_calibrated",
     "Your replay parsed successfully and the player was identified. Coaching is paused until the evidence detectors pass the beta quality gate.",
     JSON.stringify({
-      subject: normalized.subjectDisplayName,
       mode: normalized.mode ?? null,
       versions: {
         parser: PARSER_VERSION,

@@ -1,0 +1,11 @@
+.git
+.next
+.wrangler
+dist
+node_modules
+.env
+.env.*
+*.log
+*.replay
+docs/*.json
+drizzle/meta/*.json

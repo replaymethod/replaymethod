@@ -1,4 +1,5 @@
 import type { AdapterResult, AdapterSuccess, GameId } from "../core/contracts";
+import { requestRocketLeagueAnalysis, resolveRocketLeagueEngine } from "../rl-engine-client.mjs";
 
 export type AnalysisInput = {
   requestId: number;
@@ -19,6 +20,7 @@ export type AdapterEnv = {
   BUCKET: R2Bucket;
   RL_ENGINE_URL?: string;
   RL_ENGINE_TOKEN?: string;
+  RL_ENGINE_TIMEOUT_MS?: string;
   RIOT_LEAGUE_API_KEY?: string;
   RIOT_VALORANT_API_KEY?: string;
   RIOT_RSO_CLIENT_ID?: string;
@@ -36,27 +38,29 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
       "A link/VOD was submitted; the deterministic replay engine requires a binary replay."
     );
   }
-  if (!env.RL_ENGINE_URL || !env.RL_ENGINE_TOKEN) {
+  const engine = resolveRocketLeagueEngine(env);
+  if (!engine.ok) {
     return blocked(
-      "rl_engine_not_configured",
+      engine.code || "rl_engine_not_configured",
       "Your replay is safely stored. Automated replay processing is awaiting the dedicated analysis worker.",
-      "RL_ENGINE_URL or RL_ENGINE_TOKEN is missing. The native boxcars/subtr-actor worker is not configured."
+      engine.reason || "Rocket League engine configuration is invalid."
     );
   }
 
   const replay = await env.BUCKET.get(input.fileKey);
   if (!replay) return blocked("raw_input_missing", "The uploaded replay could not be found.", `R2 object ${input.fileKey} is missing.`);
-  const response = await fetch(new URL("/v1/analyze/rocket-league", env.RL_ENGINE_URL), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RL_ENGINE_TOKEN}`,
-      "Content-Type": "application/octet-stream",
-      "X-Replay-Method-Request": input.publicId,
-      "X-Replay-Method-Player": encodeURIComponent(input.playerContext || ""),
-      "X-Replay-Method-Rank": encodeURIComponent(input.currentRank)
-    },
-    body: replay.body
-  });
+  let response: Response;
+  try {
+    response = await requestRocketLeagueAnalysis(engine, input, replay.body);
+  } catch (error) {
+    const timedOut = error instanceof DOMException && ["AbortError", "TimeoutError"].includes(error.name);
+    return blocked(
+      timedOut ? "rl_engine_timeout" : "rl_engine_unreachable",
+      "The replay worker is temporarily unavailable. Your original upload is preserved for an automatic retry.",
+      timedOut ? `RL engine exceeded the ${engine.timeoutMs}ms request timeout.` : "RL engine network request failed.",
+      true,
+    );
+  }
   if (response.status === 422) {
     let detail: Partial<{
       code: string;
@@ -72,10 +76,26 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
       detail.retryable === true,
     );
   }
-  if (!response.ok) throw new Error(`Rocket League engine failed with HTTP ${response.status}.`);
-  const payload = await response.json() as AdapterSuccess;
-  if (payload.kind !== "success" || payload.normalized?.game !== "rocket-league" || !payload.findings?.length) {
-    throw new Error("Rocket League engine returned an invalid adapter contract.");
+  if (response.status === 401 || response.status === 403) {
+    return blocked("rl_engine_auth_failed", "The replay worker configuration needs operator attention. Your upload is preserved.", `RL engine rejected its bearer credential with HTTP ${response.status}.`);
+  }
+  if (response.status === 408 || response.status === 429 || response.status >= 500) {
+    return blocked("rl_engine_unavailable", "The replay worker is temporarily unavailable. Your original upload is preserved for an automatic retry.", `RL engine returned transient HTTP ${response.status}.`, true);
+  }
+  if (!response.ok) {
+    return blocked("rl_engine_contract_failed", "The replay worker configuration needs operator attention. Your upload is preserved.", `RL engine returned unexpected HTTP ${response.status}.`);
+  }
+  let payload: AdapterSuccess;
+  try {
+    payload = await response.json() as AdapterSuccess;
+  } catch {
+    return blocked("rl_engine_contract_failed", "The replay worker returned an unreadable result. Your upload is preserved.", "RL engine success response was not valid JSON.");
+  }
+  if (payload.kind !== "success" || payload.normalized?.game !== "rocket-league" || !Array.isArray(payload.findings)) {
+    return blocked("rl_engine_contract_failed", "The replay worker returned an unsupported result. Your upload is preserved.", "RL engine returned an invalid adapter contract.");
+  }
+  if (!payload.findings.length) {
+    return blocked("insufficient_evidence", "The replay was read, but it did not support a reliable coaching finding.", "RL engine returned a successful normalized replay with no public findings.");
   }
   return payload;
 }

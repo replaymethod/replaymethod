@@ -5,7 +5,8 @@
 - `/admin` — funnel and job mission control
 - `/admin/analyses/{id}` — submission, versions, failure details, QA override and retry
 - `/api/analyses/{publicId}` — private-link status/report payload
-- RL engine `/healthz` — parser service health and version
+- RL engine `/livez` — process liveness only
+- RL engine `/healthz` — authenticated-service configuration readiness, parser/engine versions and concurrency
 
 Admin is restricted by the configured owner email header. Public reports are currently high-entropy bearer links; account-bound report authorization is a pre-scale security milestone.
 
@@ -15,6 +16,8 @@ Admin is restricted by the configured owner email header. Public reports are cur
 | --- | --- |
 | Corrupt/unsupported replay | Block with `invalid_replay`, `empty_replay` or `file_too_large`; do not generate coaching. |
 | Missing RL worker | Preserve R2 object and block with `rl_engine_not_configured`. |
+| RL worker timeout/network/capacity | Preserve R2 object, keep the analysis pollable, and persist a due retry time. |
+| RL worker auth/contract failure | Preserve R2 object and stop automatic retry until configuration is corrected. |
 | Riot access absent | Preserve request and block with `riot_production_access_required`. |
 | Parser/LLM/transient error | Mark retry/failed with internal detail; allow admin retry. |
 | Email failure | Report remains available by private link; log failure without losing report. |
@@ -57,6 +60,25 @@ Then verify on a preview deployment:
 7. analytics remains fail-soft
 
 Deploy the checkpoint only after preview passes. Do not alter domain DNS during a normal source release.
+
+### Rocket League worker release gate
+
+Before a later explicit worker deployment:
+
+1. Build the checked-in `services/rl-engine/Dockerfile` from a clean source SHA.
+2. Scan the image and confirm it runs as the non-root `node` user.
+3. Inject `RL_ENGINE_TOKEN` through the host secret manager; use the same value
+   for the web binding without logging either value.
+4. Keep `RL_ENGINE_MAX_CONCURRENCY=1` until representative load and memory
+   measurements justify a change.
+5. Confirm `/livez` is 200 and `/healthz` is 200 with the expected source
+   versions. A missing/invalid token must make readiness return 503.
+6. Exercise 401, 400 metadata validation, 415 content type, 422 invalid replay,
+   503 capacity, and web-client timeout/retry behavior in preview.
+7. Confirm SIGTERM drains in-flight work and a due retry remains claimable after
+   service restart.
+8. Do not enable a public detector. Deployment readiness and coaching quality
+   promotion are separate gates.
 
 ## Incident rules
 

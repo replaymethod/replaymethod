@@ -1,6 +1,6 @@
 # Rocket League master engine status
 
-Last verified: 2026-08-18
+Last verified: 2026-08-19
 
 ## What works now
 
@@ -100,6 +100,21 @@ upgrade a shadow observation into a public claim.
 The website should not advertise automatic Rocket League coaching as ready
 until at least one detector clears this process and the replay-engine service
 is deployed with its required private credentials.
+
+## Deployment-readiness boundary
+
+The native service is packaged and hardened for a later deployment: it has
+separate liveness/readiness endpoints, bounded request metadata and replay
+size, bearer authentication, a configurable concurrency ceiling, safe logs,
+graceful shutdown, and a container health check. The web client validates an
+HTTPS engine URL, enforces a bounded timeout, distinguishes auth/contract
+failures from transient capacity/network failures, and persists a real due
+time for automatic retries.
+
+This is source readiness, not a deployed service. `RL_ENGINE_URL` and the
+shared `RL_ENGINE_TOKEN` still require an owner-controlled engine environment.
+The six-replay corpus remains `REAL DATA REQUIRED`, and all public detectors
+remain `QUALITY GATE NOT YET MET`.
 
 ## Reproducing the baseline
 

@@ -3,6 +3,7 @@ import { runGameAdapter, type AdapterEnv, type AnalysisInput } from "../adapters
 import { isAnalysisGame, reportUrl } from "../analysis";
 import { sendAnalysisReady } from "../email";
 import { advancePlayerFocus, type PersistedFocusFinding } from "../player-focus";
+import { blockedRetryDisposition } from "../retry-policy.mjs";
 import { synthesizeCoaching } from "./coaching";
 import type { GameId, StructuredFinding } from "./contracts";
 
@@ -95,13 +96,17 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     await setStage(env.DB, job.jobId, "ingesting", "Reading match data");
     const result = await runGameAdapter(job, env);
     if (result.kind === "blocked") {
+      const disposition = blockedRetryDisposition({ retryable: result.retryable, attempts: job.attempts, maxAttempts: job.maxAttempts });
       await env.DB.batch([
-        env.DB.prepare(`UPDATE analysis_jobs SET status = ?, stage = 'blocked', stage_label = ?, error_code = ?, error_message = ?,
-          next_retry_at = NULL, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
-          .bind(result.retryable ? "retry" : "blocked", result.publicMessage, result.code, result.internalMessage, Date.now() - started, job.jobId),
-        env.DB.prepare("UPDATE analysis_requests SET status = 'blocked', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(job.requestId)
+        env.DB.prepare(`UPDATE analysis_jobs SET status = ?, stage = ?, stage_label = ?, error_code = ?, error_message = ?,
+          next_retry_at = ?, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+          .bind(disposition.jobStatus, disposition.jobStage,
+            disposition.jobStatus === "retry" ? "Replay worker retry scheduled" : result.publicMessage,
+            result.code, result.internalMessage, disposition.nextRetryAt, Date.now() - started, job.jobId),
+        env.DB.prepare("UPDATE analysis_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+          .bind(disposition.requestStatus, job.requestId)
       ]);
-      if (!result.retryable) {
+      if (disposition.releaseUsage) {
         await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
           updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(job.requestId).run();
       }
