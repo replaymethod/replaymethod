@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import { rlReviewCandidates } from "../../../../../db/schema";
-import { requireSiteAdminApi } from "../../../../../lib/admin";
+import { requireSiteAdminMutation } from "../../../../../lib/admin";
 import { isRlReviewVerdict, RL_LABEL_SET_VERSION } from "../../../../../lib/rl-review";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const unauthorized = await requireSiteAdminApi();
+  const unauthorized = await requireSiteAdminMutation(request);
   if (unauthorized) return unauthorized;
   const id = Number((await params).id);
   if (!Number.isInteger(id) || id < 1) return Response.json({ error: "Invalid candidate" }, { status: 400 });

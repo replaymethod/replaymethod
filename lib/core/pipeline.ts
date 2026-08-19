@@ -3,6 +3,7 @@ import { runGameAdapter, type AdapterEnv, type AnalysisInput } from "../adapters
 import { isAnalysisGame, reportUrl } from "../analysis";
 import { sendAnalysisReady } from "../email";
 import { advancePlayerFocus, type PersistedFocusFinding } from "../player-focus";
+import { operationalErrorCode } from "../request-security.mjs";
 import { blockedRetryDisposition } from "../retry-policy.mjs";
 import { synthesizeCoaching } from "./coaching";
 import type { GameId, StructuredFinding } from "./contracts";
@@ -18,7 +19,6 @@ export type PipelineEnv = AdapterEnv & {
 
 type JobRow = AnalysisInput & {
   jobId: number;
-  jobPublicId: string;
   email: string;
   attempts: number;
   maxAttempts: number;
@@ -120,10 +120,10 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     }
 
     await setStage(env.DB, job.jobId, "normalizing", "Building game timeline");
-    const normalizedKey = `normalized/${job.game}/${job.publicId}/game-data.v1.json`;
+    const normalizedKey = `normalized/${job.game}/${job.jobPublicId}/game-data.v1.json`;
     await env.BUCKET.put(normalizedKey, JSON.stringify(result.normalized), {
       httpMetadata: { contentType: "application/json" },
-      customMetadata: { requestId: job.publicId, game: job.game, schemaVersion: result.normalized.schemaVersion }
+      customMetadata: { requestId: job.jobPublicId, game: job.game, schemaVersion: result.normalized.schemaVersion }
     });
 
     await setStage(env.DB, job.jobId, "detecting", "Measuring repeated patterns");
@@ -187,7 +187,7 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
       } catch (error) {
         // Progress history is valuable, but must never corrupt a completed,
         // evidence-backed report or trigger a duplicate analysis retry.
-        console.error("player focus persistence failed", { publicId: job.publicId, error });
+        console.error("player focus persistence failed", { jobId: job.jobPublicId, code: operationalErrorCode(error) });
       }
     }
 
@@ -203,7 +203,7 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
         mistake: report.highestImpactMistake,
       });
     } catch (error) {
-      console.warn("analysis ready email failed", error);
+      console.warn("analysis ready email failed", { jobId: job.jobPublicId, code: operationalErrorCode(error) });
     }
   } catch (error) {
     const detail = errorText(error);
@@ -220,6 +220,6 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
       await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(job.requestId).run();
     }
-    console.error("analysis job failed", { publicId, detail });
+    console.error("analysis job failed", { jobId: publicId, code: operationalErrorCode(error) });
   }
 }

@@ -15,8 +15,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const object = await (env as unknown as { BUCKET?: R2Bucket }).BUCKET?.get(row.fileKey);
   if (!object) return new Response("File not found", { status: 404 });
   const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set("Content-Disposition", `attachment; filename="${(row.fileName || "match.replay").replaceAll('"', "")}"`);
+  const fileName = (row.fileName || "match.replay").replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "match.replay";
+  headers.set("Content-Type", "application/octet-stream");
+  headers.set("Content-Disposition", `attachment; filename="${fileName}"`);
   headers.set("Cache-Control", "private, no-store");
+  headers.set("X-Content-Type-Options", "nosniff");
   return new Response(object.body, { headers });
 }

@@ -3,6 +3,7 @@ import { getDb } from "../../../../db";
 import { analysisJobs, analysisRequests, playerSessions } from "../../../../db/schema";
 import { gameLabels, isAnalysisGame, publicIdPattern } from "../../../../lib/analysis";
 import { hashPlayerToken, PLAYER_SESSION_COOKIE, playerTokenPattern, readCookie } from "../../../../lib/player-identity.mjs";
+import { isSameOriginRequest } from "../../../../lib/request-security.mjs";
 
 const fields = {
   publicId: analysisRequests.publicId,
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    if (!isSameOriginRequest(request)) return Response.json({ reports: [] }, { status: 403, headers: { "Cache-Control": "no-store" } });
     const payload = await request.json() as { ids?: unknown[] };
     const ids = (payload.ids || []).filter((id): id is string => typeof id === "string" && publicIdPattern.test(id)).slice(0, 20);
     if (!ids.length) return Response.json({ reports: [] });

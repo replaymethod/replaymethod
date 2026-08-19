@@ -1,6 +1,7 @@
 import { getDatabase } from "../../../../db";
 import { authenticatedPlayer, isSameOrigin } from "../../../../lib/player-session";
 import { BillingConfigurationError, billingConfiguration } from "../../../../lib/stripe";
+import { operationalErrorCode } from "../../../../lib/request-security.mjs";
 
 export const runtime = "edge";
 
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     if (error instanceof BillingConfigurationError) {
       return Response.json({ error: error.message }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }
-    console.error("billing portal failed", error);
+    console.error("billing portal failed", { code: operationalErrorCode(error) });
     return Response.json({ error: "Subscription management could not be opened. Try again shortly." }, { status: 502, headers: { "Cache-Control": "no-store" } });
   }
 }

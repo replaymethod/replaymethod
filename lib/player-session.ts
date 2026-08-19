@@ -1,5 +1,6 @@
 import { getDatabase } from "../db";
 import { hashPlayerToken, PLAYER_SESSION_COOKIE, playerTokenPattern, readCookie } from "./player-identity.mjs";
+import { isSameOriginRequest } from "./request-security.mjs";
 
 export type AuthenticatedPlayer = {
   id: number;
@@ -23,5 +24,5 @@ export async function authenticatedPlayer(request: Request, database?: D1Databas
 }
 
 export function isSameOrigin(request: Request) {
-  return request.headers.get("origin") === new URL(request.url).origin;
+  return isSameOriginRequest(request);
 }

@@ -24,7 +24,8 @@ test("sends an HTTP-safe exact player identity through the versioned authenticat
   const config = resolveRocketLeagueEngine({ RL_ENGINE_URL: "https://engine.example", RL_ENGINE_TOKEN: token });
   let captured;
   const response = await requestRocketLeagueAnalysis(config, {
-    publicId: "a".repeat(32),
+    publicId: "f".repeat(32),
+    jobPublicId: "a".repeat(32),
     playerContext: "Player Name 🚀 · Ranked Doubles",
     currentRank: "Diamond II",
   }, new Uint8Array([1, 2, 3]), async (url, init) => {

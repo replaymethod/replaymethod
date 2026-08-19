@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireChatGPTUser, chatGPTSignOutPath } from "../chatgpt-auth";
 import { getDb } from "../../db";
 import { analysisJobs, analysisRequests, analysisUsage, billingEvents, billingSubscriptions, emailDeliveries, funnelEvents, playerFocuses, rlReviewCandidates, waitlist } from "../../db/schema";
+import { isConfiguredSiteAdmin } from "../../lib/admin";
 import DeleteLeadButton from "./DeleteLeadButton";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +14,8 @@ const percent = (part: number, total: number) => total ? `${((part / total) * 10
 
 export default async function AdminPage() {
   const user = await requireChatGPTUser("/admin");
-  const { env } = await import("cloudflare:workers");
-  const adminEmail = (env as unknown as { ADMIN_EMAIL?: string }).ADMIN_EMAIL?.toLowerCase();
 
-  if (!adminEmail || user.email.toLowerCase() !== adminEmail) {
+  if (!await isConfiguredSiteAdmin(user)) {
     return <main className="admin-denied"><div><span>REPLAY METHOD ADMIN</span><h1>Access denied.</h1><p>This dashboard is restricted to the site owner.</p><Link href="/">Return to Replay Method</Link></div></main>;
   }
 

@@ -8,7 +8,7 @@
 - RL engine `/livez` — process liveness only
 - RL engine `/healthz` — authenticated-service configuration readiness, parser/engine versions and concurrency
 
-Admin is restricted by the configured owner email header. Public reports are currently high-entropy bearer links; account-bound report authorization is a pre-scale security milestone.
+Admin requires Sites sign-in and the configured owner identity. Set `ADMIN_USER_ID` to the stable `oai-authenticated-user-id` value when available; it takes precedence over the `ADMIN_EMAIL` fallback on every admin page and API. Public reports are currently high-entropy bearer links; account-bound report authorization is a pre-scale security milestone. Private routes are served with `no-store` and `no-referrer` headers, and report bearer IDs are not reused as replay-object or engine-request identifiers.
 
 ## Common failure handling
 
@@ -22,9 +22,9 @@ Admin is restricted by the configured owner email header. Public reports are cur
 | Parser/LLM/transient error | Mark retry/failed with internal detail; allow admin retry. |
 | Email failure | Report remains available by private link; log failure without losing report. |
 | Duplicate retry | Atomic job claim prevents a completed/running job from being claimed again. |
-| Intake abuse | Reject after five submissions from the same email within 24 hours; do not upload another object. |
+| Intake abuse | Require same-origin browser writes and reject after five submissions from the same email within 24 hours before uploading another object. Configure an edge request-rate rule before broad public promotion; application limits do not replace network-level abuse controls. |
 
-Due retry jobs are woken by report polling and by the worker's scheduled handler. Configure a production cron for that handler when the hosting environment exposes scheduled triggers; polling remains a fail-safe rather than the primary queue runner.
+Due retry jobs are woken by report polling and by the worker's scheduled handler. The scheduled handler also reclaims interrupted running leases after ten minutes, fails exhausted leases while releasing their reservations, and starts queued jobs that missed their original background dispatch. Configure a production cron for that handler when the hosting environment exposes scheduled triggers; polling remains a fail-safe rather than the primary queue runner.
 
 ## Backup and restore
 

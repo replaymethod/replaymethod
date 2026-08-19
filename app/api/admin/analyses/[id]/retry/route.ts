@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
 import { analysisJobs, analysisRequests } from "../../../../../../db/schema";
-import { requireSiteAdminApi } from "../../../../../../lib/admin";
+import { requireSiteAdminMutation } from "../../../../../../lib/admin";
 
-export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  const unauthorized = await requireSiteAdminApi();
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const unauthorized = await requireSiteAdminMutation(request);
   if (unauthorized) return unauthorized;
   const id = Number((await params).id);
   if (!Number.isInteger(id) || id < 1) return Response.json({ error: "Invalid analysis." }, { status: 400 });

@@ -2,8 +2,10 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import { analysisRequests } from "../../../../../db/schema";
 import { cleanText, publicIdPattern } from "../../../../../lib/analysis";
+import { isSameOriginRequest } from "../../../../../lib/request-security.mjs";
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
+  if (!isSameOriginRequest(request)) return Response.json({ error: "Invalid feedback request." }, { status: 403, headers: { "Cache-Control": "no-store" } });
   const { publicId } = await params;
   if (!publicIdPattern.test(publicId)) return Response.json({ error: "Not found" }, { status: 404 });
   try {

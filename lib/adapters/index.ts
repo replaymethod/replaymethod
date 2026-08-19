@@ -5,6 +5,7 @@ import { requestRocketLeagueAnalysis, resolveRocketLeagueEngine } from "../rl-en
 export type AnalysisInput = {
   requestId: number;
   publicId: string;
+  jobPublicId: string;
   playerId: number | null;
   game: GameId;
   currentRank: string;

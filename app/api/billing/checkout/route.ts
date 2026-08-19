@@ -6,6 +6,7 @@ import {
   isPaidPlan,
   randomIntegrationIdentifier,
 } from "../../../../lib/stripe";
+import { operationalErrorCode } from "../../../../lib/request-security.mjs";
 
 export const runtime = "edge";
 
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
     if (error instanceof BillingConfigurationError) {
       return Response.json({ error: error.message }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }
-    console.error("billing checkout failed", error);
+    console.error("billing checkout failed", { code: operationalErrorCode(error) });
     return Response.json({ error: "Secure checkout could not be opened. Try again shortly." }, { status: 502, headers: { "Cache-Control": "no-store" } });
   }
 }

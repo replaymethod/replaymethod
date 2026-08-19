@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
-import { analysisJobs, analysisRequests } from "../../../../../db/schema";
-import { requireSiteAdminApi } from "../../../../../lib/admin";
+import { analysisJobs, analysisRequests, analysisUsage } from "../../../../../db/schema";
+import { requireSiteAdminMutation } from "../../../../../lib/admin";
 import { cleanText, isAnalysisGame, reportUrl, type AnalysisStatus } from "../../../../../lib/analysis";
 import { sendAnalysisReady } from "../../../../../lib/email";
 
@@ -9,7 +9,7 @@ const statuses = new Set<AnalysisStatus>(["received", "analyzing", "blocked", "f
 const lines = (value: unknown, limit: number) => cleanText(value, 5000).split("\n").map(line => line.trim()).filter(Boolean).slice(0, limit);
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const unauthorized = await requireSiteAdminApi();
+  const unauthorized = await requireSiteAdminMutation(request);
   if (unauthorized) return unauthorized;
   const id = Number((await params).id);
   if (!Number.isInteger(id) || id < 1) return Response.json({ error: "Invalid request" }, { status: 400 });
@@ -48,14 +48,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }).where(eq(analysisRequests.id, id));
 
     if (becomingReady) {
-      await db.update(analysisJobs).set({
-        status: "completed",
-        stage: "completed",
-        stageLabel: "Quality-reviewed report ready",
-        coachingVersion: "quality-review",
-        completedAt: now,
-        updatedAt: now
-      }).where(eq(analysisJobs.analysisRequestId, id));
+      await db.batch([
+        db.update(analysisJobs).set({
+          status: "completed",
+          stage: "completed",
+          stageLabel: "Quality-reviewed report ready",
+          coachingVersion: "quality-review",
+          completedAt: now,
+          updatedAt: now
+        }).where(eq(analysisJobs.analysisRequestId, id)),
+        db.update(analysisUsage).set({
+          status: "consumed",
+          consumedAt: now,
+          updatedAt: now
+        }).where(and(eq(analysisUsage.analysisRequestId, id), eq(analysisUsage.status, "reserved")))
+      ]);
     }
 
     let emailSent = false;

@@ -3,6 +3,7 @@ import { asc } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { rlReviewCandidates } from "../../../db/schema";
 import { requireChatGPTUser } from "../../chatgpt-auth";
+import { isConfiguredSiteAdmin } from "../../../lib/admin";
 import { detectorName, ensureRlReviewQueueSeeded, RL_LABEL_SET_VERSION } from "../../../lib/rl-review";
 import { detectorQualitySummary, percentage as qualityPercentage } from "../../../lib/rl-quality";
 import reviewMoments from "../../../docs/RL_REVIEW_MOMENTS.json";
@@ -17,9 +18,7 @@ const ratioPercentage = (value: number, total: number) => total ? `${Math.round(
 
 export default async function RlReviewPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requireChatGPTUser("/admin/rl-review");
-  const { env } = await import("cloudflare:workers");
-  const adminEmail = (env as unknown as { ADMIN_EMAIL?: string }).ADMIN_EMAIL?.toLowerCase();
-  if (!adminEmail || user.email.toLowerCase() !== adminEmail) return <main className="admin-denied"><div><span>REPLAY METHOD ADMIN</span><h1>Access denied.</h1><Link href="/">Return home</Link></div></main>;
+  if (!await isConfiguredSiteAdmin(user)) return <main className="admin-denied"><div><span>REPLAY METHOD ADMIN</span><h1>Access denied.</h1><Link href="/">Return home</Link></div></main>;
 
   await ensureRlReviewQueueSeeded();
   const db = await getDb();

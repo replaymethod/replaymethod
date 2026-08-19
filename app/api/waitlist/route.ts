@@ -1,5 +1,7 @@
 import { getDb } from "../../../db";
 import { waitlist } from "../../../db/schema";
+import { coarseAnalyticsValue } from "../../../lib/analytics-policy.mjs";
+import { isSameOriginRequest } from "../../../lib/request-security.mjs";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const games = new Set(["general", "league", "valorant", "rocket-league"]);
@@ -7,6 +9,7 @@ const clean = (value: unknown, length: number) => typeof value === "string" ? va
 
 export async function POST(request: Request) {
   try {
+    if (!isSameOriginRequest(request)) return Response.json({ error: "Invalid signup request." }, { status: 403, headers: { "Cache-Control": "no-store" } });
     const payload = await request.json() as { email?: string; game?: string; source?: string; campaign?: string; website?: string; consent?: boolean };
 
     // Quietly accept obvious bot submissions without polluting the list.
@@ -14,8 +17,8 @@ export async function POST(request: Request) {
 
     const email = clean(payload.email, 254).toLowerCase();
     const game = games.has(payload.game || "") ? payload.game! : "general";
-    const source = clean(payload.source, 80).toLowerCase() || "direct";
-    const campaign = clean(payload.campaign, 120) || null;
+    const source = coarseAnalyticsValue(payload.source, 80, "direct");
+    const campaign = coarseAnalyticsValue(payload.campaign, 120) || null;
     if (!emailPattern.test(email)) return Response.json({ error: "Enter a valid email address." }, { status: 400 });
     if (payload.consent !== true) return Response.json({ error: "Please confirm that we may email you about the beta." }, { status: 400 });
 

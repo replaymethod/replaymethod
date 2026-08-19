@@ -13,14 +13,17 @@ function invoiceSubscriptionId(invoice: Stripe.Invoice) {
 }
 
 async function playerForSubscription(db: D1Database, subscription: Stripe.Subscription, customerId: string) {
+  // Once a Stripe Customer is mapped, that durable mapping is authoritative.
+  // Subscription metadata is only a bootstrap hint for the first signed event.
+  const customer = await db.prepare("SELECT player_id AS playerId FROM billing_customers WHERE stripe_customer_id = ? LIMIT 1")
+    .bind(customerId).first<{ playerId: number }>();
+  if (customer) return Number(customer.playerId);
   const publicId = subscription.metadata?.player_public_id;
   if (publicId) {
     const player = await db.prepare("SELECT id FROM players WHERE public_id = ? LIMIT 1").bind(publicId).first<{ id: number }>();
     if (player) return Number(player.id);
   }
-  const customer = await db.prepare("SELECT player_id AS playerId FROM billing_customers WHERE stripe_customer_id = ? LIMIT 1")
-    .bind(customerId).first<{ playerId: number }>();
-  return customer ? Number(customer.playerId) : null;
+  return null;
 }
 
 export async function syncSubscription(
@@ -71,11 +74,10 @@ async function beginEvent(db: D1Database, event: Stripe.Event) {
   const inserted = await db.prepare(`INSERT OR IGNORE INTO billing_events (stripe_event_id, type, status)
     VALUES (?, ?, 'processing')`).bind(event.id, event.type).run();
   if (inserted.meta.changes) return true;
-  const existing = await db.prepare("SELECT status FROM billing_events WHERE stripe_event_id = ?")
-    .bind(event.id).first<{ status: string }>();
-  if (existing?.status !== "failed") return false;
   const retried = await db.prepare(`UPDATE billing_events SET status = 'processing', error_message = NULL,
-    updated_at = CURRENT_TIMESTAMP WHERE stripe_event_id = ? AND status = 'failed'`).bind(event.id).run();
+    updated_at = CURRENT_TIMESTAMP WHERE stripe_event_id = ? AND (
+      status = 'failed' OR (status = 'processing' AND updated_at <= datetime('now', '-10 minutes'))
+    )`).bind(event.id).run();
   return Boolean(retried.meta.changes);
 }
 
@@ -95,7 +97,10 @@ export async function processBillingEvent(
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       await syncSubscription(db, subscription, prices, { checkoutSessionId: session.id });
     } else if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
-      await syncSubscription(db, event.data.object as Stripe.Subscription, prices);
+      // Webhooks can arrive out of order. Re-read Stripe's current projection
+      // instead of allowing an older event snapshot to regress entitlement.
+      const subscription = await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id);
+      await syncSubscription(db, subscription, prices);
     } else if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
       const invoice = event.data.object as Stripe.Invoice;
       const subscriptionId = invoiceSubscriptionId(invoice);

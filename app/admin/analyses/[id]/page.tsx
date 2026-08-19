@@ -5,15 +5,14 @@ import { getDb } from "../../../../db";
 import { analysisFindings, analysisJobs, analysisRequests, analysisUsage, billingSubscriptions, emailDeliveries, playerClaims, playerFocuses } from "../../../../db/schema";
 import { requireChatGPTUser } from "../../../chatgpt-auth";
 import { gameLabels, isAnalysisGame, parseLines } from "../../../../lib/analysis";
+import { isConfiguredSiteAdmin } from "../../../../lib/admin";
 import AnalysisEditor from "./AnalysisEditor";
 
 export const dynamic = "force-dynamic";
 
 export default async function AnalysisAdminPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireChatGPTUser(`/admin/analyses/${(await params).id}`);
-  const { env } = await import("cloudflare:workers");
-  const adminEmail = (env as unknown as { ADMIN_EMAIL?: string }).ADMIN_EMAIL?.toLowerCase();
-  if (!adminEmail || user.email.toLowerCase() !== adminEmail) return <main className="admin-denied"><div><span>REPLAY METHOD ADMIN</span><h1>Access denied.</h1><Link href="/">Return home</Link></div></main>;
+  if (!await isConfiguredSiteAdmin(user)) return <main className="admin-denied"><div><span>REPLAY METHOD ADMIN</span><h1>Access denied.</h1><Link href="/">Return home</Link></div></main>;
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
   const db = await getDb();
