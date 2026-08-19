@@ -75,7 +75,7 @@ function parseEvidence(value: string | null | undefined): EvidenceDetail[] {
       timestamp: typeof row.timestamp === "number" ? row.timestamp : null,
       round: typeof row.round === "number" ? row.round : null
     }];
-  }).slice(0, 8);
+  }).slice(0, 5);
 }
 
 function parseLimitations(value: string | null | undefined): string[] {
