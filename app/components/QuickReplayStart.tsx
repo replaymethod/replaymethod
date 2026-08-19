@@ -1,6 +1,7 @@
 "use client";
 
 import { DragEvent, FormEvent, useRef, useState } from "react";
+import Link from "next/link";
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 const DEFAULT_GOAL = "Find the highest-impact recurring mistake in this match.";
@@ -136,7 +137,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     }
   }
 
-  return <form className={`quick-replay ${replay ? "has-file" : ""}`} onSubmit={submit}>
+  return <form id="replay-upload" className={`quick-replay ${replay ? "has-file" : ""}`} onSubmit={submit}>
     <div className="quick-replay-head"><div><span>ROCKET LEAGUE · LIVE BETA</span><b>Drop one replay. Get one priority.</b></div><i>$0</i></div>
     <label
       className={`quick-drop ${dragging ? "dragging" : ""}`}
@@ -150,7 +151,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       <div><b>{replay ? replay.name : "DROP YOUR .REPLAY HERE"}</b><span>{replay ? `${Math.ceil(replay.size / 1024)} KB · Ready` : "or click to choose · original PC replay · max 16 MB"}</span></div>
       <strong>{replay ? "Change" : "Choose file"}</strong>
     </label>
-    {!replay && <p className="quick-promise">Upload first, email last. No account or card.</p>}
+    {!replay && <div className="quick-upload-help"><p className="quick-promise">Upload first, email last. No account or card.</p><Link href="/replay-upload">Can’t find the file? <span>3 quick steps →</span></Link></div>}
 
     {replay && <div className="replay-value quick-replay-value" role="status" aria-live="polite">
       <div className="replay-value-head"><span>REPLAY VALIDATED</span><strong>Supported match file recognized.</strong><p>No gameplay claim has been made. This confirms the file is ready for secure parser checks.</p></div>
