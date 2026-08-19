@@ -43,9 +43,12 @@ async function loadAndClaim(publicId: string, db: D1Database): Promise<JobRow | 
   const row = await db.prepare(`SELECT
       j.id AS job_id, j.public_id AS job_public_id, j.player_id, j.attempts, j.max_attempts,
       r.id AS request_id, r.public_id, r.email, r.game, r.current_rank, r.target_rank,
-      r.player_context, r.evidence_type, r.evidence_url, r.file_key, r.goal, r.notes
+      r.player_context, r.evidence_type, r.evidence_url, r.file_key, r.goal, r.notes,
+      ga.external_id AS provider_account_id, ga.region AS provider_region,
+      ga.connection_status AS provider_connection_status
     FROM analysis_jobs j
     JOIN analysis_requests r ON r.id = j.analysis_request_id
+    LEFT JOIN game_accounts ga ON ga.player_id = j.player_id AND ga.game = r.game AND ga.provider = 'riot'
     WHERE j.public_id = ?`).bind(publicId).first<Record<string, unknown>>();
   if (!row || !isAnalysisGame(String(row.game))) return null;
   return {
@@ -64,6 +67,9 @@ async function loadAndClaim(publicId: string, db: D1Database): Promise<JobRow | 
     fileKey: row.file_key == null ? null : String(row.file_key),
     goal: String(row.goal),
     notes: row.notes == null ? null : String(row.notes),
+    providerAccountId: row.provider_account_id == null ? null : String(row.provider_account_id),
+    providerRegion: row.provider_region == null ? null : String(row.provider_region),
+    providerConnectionStatus: row.provider_connection_status == null ? null : String(row.provider_connection_status),
     attempts: Number(row.attempts),
     maxAttempts: Number(row.max_attempts)
   };

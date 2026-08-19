@@ -14,6 +14,9 @@ interface Env {
   RIOT_LEAGUE_API_KEY?: string;
   RIOT_VALORANT_API_KEY?: string;
   RIOT_RSO_CLIENT_ID?: string;
+  RIOT_RSO_CLIENT_SECRET?: string;
+  RIOT_RSO_REDIRECT_URI?: string;
+  RIOT_API_TIMEOUT_MS?: string;
   OPENAI_API_KEY?: string;
   OPENAI_MODEL?: string;
   OPENAI_INPUT_COST_PER_MILLION?: string;

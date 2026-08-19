@@ -129,13 +129,12 @@ export async function POST(request: Request) {
     }).returning({ id: analysisRequests.id }).get();
     await attachAnalysisUsage(publicId, inserted.id);
 
-    const provider = game === "rocket-league" ? "epic" : "riot";
-    if (playerContext) {
+    if (game === "rocket-league" && playerContext) {
       await db.insert(gameAccounts).values({
         publicId: crypto.randomUUID().replaceAll("-", ""),
         playerId: player.id,
         game,
-        provider,
+        provider: "epic",
         displayName: playerContext
       }).onConflictDoUpdate({
         target: [gameAccounts.playerId, gameAccounts.game, gameAccounts.provider],

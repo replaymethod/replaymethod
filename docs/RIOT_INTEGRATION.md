@@ -34,6 +34,52 @@ Owner-facing application materials should describe:
 
 Required credentials must be installed as host secrets, never pasted into chat or committed.
 
+## Checked-in readiness boundary
+
+The shared adapter now keeps three inputs separate:
+
+1. User-submitted Riot ID, role/agent/champion and match/VOD link are request
+   context only. They never create or verify a Riot provider account.
+2. A connected provider account requires an RSO-authorized opaque PUUID, routing
+   region and `connection_status=connected` in `game_accounts`.
+3. Official match and timeline payloads enter through a game-specific validator
+   before they can become `game-data.v1` or any finding.
+
+League and VALORANT configuration is validated independently. The host must
+provide the relevant game API key plus `RIOT_RSO_CLIENT_ID`,
+`RIOT_RSO_CLIENT_SECRET`, and an HTTPS `RIOT_RSO_REDIRECT_URI` (loopback HTTP is
+accepted only for local development). `RIOT_API_TIMEOUT_MS` is bounded to 3–30
+seconds. Configuration presence is not evidence of production approval.
+
+The checked-in contracts carry official payloads as `unknown` until a
+game-specific production-schema validator accepts them. No public profile link,
+typed Riot ID or VOD URL is converted into PUUID ownership or match history.
+
+## Activation checklist
+
+After Riot grants the required product/RSO access in a separate owner-authorized
+run:
+
+1. Register the exact production redirect URI and install each credential in
+   the host secret manager.
+2. Implement and verify state, PKCE/authorization-code handling, callback error
+   containment, token refresh/revocation, disconnect and deletion.
+3. Persist only the provider identity and connection lifecycle needed by the
+   product; keep access/refresh credentials encrypted outside report data and
+   logs.
+4. Validate real League match/timeline and VALORANT match payloads against the
+   approved API schemas. Add sanitized fixtures only when they come from an
+   authorized source.
+5. Exercise 401/403, 404, 429, regional routing, timeout and partial-history
+   behavior. Apply bounded retries without turning unavailable data into advice.
+6. Calibrate game-specific detectors on representative, authorized data before
+   enabling findings. API ingestion success alone is not a coaching quality
+   gate.
+
+Until those steps and official approval exist, status remains
+`EXTERNAL ACCESS REQUIRED — RIOT PRODUCTION / RSO`. The adapter intentionally
+returns a safe blocked result and does not call unofficial or fabricated data.
+
 ## Official references
 
 - Riot Developer Portal: https://developer.riotgames.com/

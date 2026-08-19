@@ -31,7 +31,7 @@ function stopCopy(data: PublicReportData) {
     title: "Your replay is safe. The dedicated replay engine is not online yet.",
     body: "We preserved the original file and did not guess from incomplete data. This report can be reprocessed when the deterministic replay worker is connected."
   };
-  if (code === "riot_production_access_required" || code === "riot_rso_required" || code === "riot_account_connection_required") return {
+  if (["riot_production_access_required", "riot_rso_required", "riot_account_connection_required", "riot_match_ingestion_not_activated"].includes(code || "")) return {
     kicker: "RIOT CONNECTION PENDING",
     title: "This match needs an approved Riot account connection.",
     body: "Replay Method will not infer private match behavior from an unverified profile link. Your submission is preserved until the official opt-in integration is available."

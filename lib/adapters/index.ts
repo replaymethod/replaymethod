@@ -1,4 +1,5 @@
 import type { AdapterResult, AdapterSuccess, GameId } from "../core/contracts";
+import { resolveAuthorizedRiotAccount, resolveRiotIntegration } from "../riot-integration.mjs";
 import { requestRocketLeagueAnalysis, resolveRocketLeagueEngine } from "../rl-engine-client.mjs";
 
 export type AnalysisInput = {
@@ -14,6 +15,9 @@ export type AnalysisInput = {
   fileKey: string | null;
   goal: string;
   notes: string | null;
+  providerAccountId: string | null;
+  providerRegion: string | null;
+  providerConnectionStatus: string | null;
 };
 
 export type AdapterEnv = {
@@ -24,6 +28,9 @@ export type AdapterEnv = {
   RIOT_LEAGUE_API_KEY?: string;
   RIOT_VALORANT_API_KEY?: string;
   RIOT_RSO_CLIENT_ID?: string;
+  RIOT_RSO_CLIENT_SECRET?: string;
+  RIOT_RSO_REDIRECT_URI?: string;
+  RIOT_API_TIMEOUT_MS?: string;
 };
 
 function blocked(code: string, publicMessage: string, internalMessage: string, retryable = false): AdapterResult {
@@ -101,25 +108,26 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
 }
 
 function riotAdapter(input: AnalysisInput, env: AdapterEnv): AdapterResult {
-  const apiKey = input.game === "league" ? env.RIOT_LEAGUE_API_KEY : env.RIOT_VALORANT_API_KEY;
-  if (!apiKey) {
+  const integration = resolveRiotIntegration(input.game, env);
+  if (!integration.ok) {
     return blocked(
-      "riot_production_access_required",
+      integration.code || "riot_production_access_required",
       `${input.game === "league" ? "League" : "VALORANT"} automation is prepared but waiting for Riot production approval. No coaching will be invented from a public profile link.`,
-      `${input.game} production API key is missing.`
+      integration.reason || "Riot production configuration is incomplete.",
     );
   }
-  if (!env.RIOT_RSO_CLIENT_ID) {
+  const account = resolveAuthorizedRiotAccount(input);
+  if (!account.ok) {
     return blocked(
-      "riot_rso_required",
-      "Connect Riot Account will activate after Riot Sign On approval.",
-      "RIOT_RSO_CLIENT_ID is missing. Player-specific ingestion must be opt-in."
+      account.code || "riot_account_connection_required",
+      "Reconnect through Riot Sign On to authorize your own match history.",
+      account.reason || "No authorized Riot account is available for this analysis.",
     );
   }
   return blocked(
-    "riot_account_connection_required",
-    "Reconnect through Riot Sign On to authorize your own match history.",
-    "This legacy link submission has no verified Riot PUUID/RSO grant."
+    "riot_match_ingestion_not_activated",
+    "Official Riot match ingestion is not active in this environment. Your request is preserved and no coaching was invented.",
+    `Validated ${input.game} production/RSO configuration and an authorized PUUID for ${account.region}, but the approved match-history data plane is not activated in this source build.`,
   );
 }
 
