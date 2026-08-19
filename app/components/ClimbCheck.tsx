@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { trackProductEvent } from "../../lib/client-analytics";
 
 type Game = "league" | "valorant" | "rocket-league";
 type Leak = {
@@ -42,13 +43,7 @@ const leaks: Record<Game, Leak[]> = {
 };
 
 function sendEvent(event: "page_view" | "tool_start" | "tool_complete" | "cta_click" | "signup", game: Game | "general", placement: string) {
-  try {
-    const storageKey = "replaymethod-session-id";
-    let visitorId = sessionStorage.getItem(storageKey);
-    if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem(storageKey, visitorId); }
-    const params = new URLSearchParams(location.search);
-    void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ visitorId, event, game, placement, path: location.pathname, source: params.get("utm_source") || "direct", campaign: params.get("utm_campaign") || "" }) });
-  } catch { /* the tool must work even if analytics does not */ }
+  trackProductEvent(event, game, placement);
 }
 
 function ResultSignup({ game, leak }: { game: Game; leak: Leak }) {

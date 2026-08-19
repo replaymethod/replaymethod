@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { PublicReportData } from "../../../lib/report-data";
+import { trackProductEvent } from "../../../lib/client-analytics";
 
 const stages = [
   { key: "queued", label: "Received" },
@@ -75,16 +76,15 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
     localStorage.setItem("replaymethod-report-ids", JSON.stringify([data.publicId, ...stored.filter(id => id !== data.publicId)].slice(0, 20)));
     const eventKey = `replaymethod-report-view-${data.publicId}`;
     if (!sessionStorage.getItem(eventKey)) {
-      let visitorId = sessionStorage.getItem("replaymethod-session-id");
-      if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
       sessionStorage.setItem(eventKey, "1");
-      const params = new URLSearchParams(location.search);
-      void fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        keepalive: true,
-        body: JSON.stringify({ visitorId, event: "report_view", game: data.game, placement: data.status, path: location.pathname, source: params.get("utm_source") || "direct", campaign: params.get("utm_campaign") || "" })
-      });
+      trackProductEvent("report_view", data.game as "league" | "valorant" | "rocket-league", data.status);
+    }
+    if (data.status === "ready") {
+      const completionKey = `replaymethod-analysis-completed-${data.publicId}`;
+      if (!sessionStorage.getItem(completionKey)) {
+        sessionStorage.setItem(completionKey, "1");
+        trackProductEvent("analysis_completed", data.game as "league" | "valorant" | "rocket-league", "report_ready");
+      }
     }
   }, [data.game, data.publicId, data.status]);
 
@@ -100,9 +100,7 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
   }, [data.publicId, data.status]);
 
   const copyLink = async () => {
-    let visitorId = sessionStorage.getItem("replaymethod-session-id");
-    if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
-    void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ visitorId, event: "share_started", game: data.game, placement: "private_link", path: location.pathname, source: "direct" }) });
+    trackProductEvent("share_started", data.game as "league" | "valorant" | "rocket-league", "private_link");
     await navigator.clipboard.writeText(location.href.split("?")[0]);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
@@ -114,16 +112,12 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
     const response = await fetch(`/api/analyses/${data.publicId}/feedback`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ score: feedbackScore, text: feedbackText, caseStudyConsent }) });
     setFeedbackState(response.ok ? "saved" : "error");
     if (response.ok) {
-      let visitorId = sessionStorage.getItem("replaymethod-session-id");
-      if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
-      void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ visitorId, event: "feedback", game: data.game, placement: `score_${feedbackScore}`, path: location.pathname, source: "direct" }) });
+      trackProductEvent("feedback", data.game as "league" | "valorant" | "rocket-league", `score_${feedbackScore}`);
     }
   };
 
   const trackUpgradeInterest = () => {
-    let visitorId = sessionStorage.getItem("replaymethod-session-id");
-    if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
-    void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ visitorId, event: "cta_click", game: data.game, placement: "report_improvement_loop", path: location.pathname, source: "report" }) });
+    trackProductEvent("upgrade_intent", data.game as "league" | "valorant" | "rocket-league", "report_improvement_loop", "report");
   };
 
   const statusIndex = data.status === "ready" ? stages.length - 1 : stageOrder[data.processing?.stage || "queued"] ?? 0;

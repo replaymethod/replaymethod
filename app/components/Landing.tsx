@@ -5,10 +5,10 @@ import { FormEvent, useEffect, useState } from "react";
 import QuickReplayStart from "./QuickReplayStart";
 import HardstuckHook from "./HardstuckHook";
 import PricingLadder from "./PricingLadder";
+import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 
 export type GameKey = "general" | "league" | "valorant" | "rocket-league";
 type DemoTab = "diagnosis" | "plan" | "verify";
-type EventName = "page_view" | "cta_click" | "game_select" | "signup" | "tool_start" | "tool_complete" | "analysis_start" | "analysis_submit" | "report_view" | "feedback";
 
 type Config = {
   label: string;
@@ -115,22 +115,8 @@ function getAttribution() {
   return { source: source.slice(0, 80), campaign: (params.get("utm_campaign") || "").slice(0, 120) };
 }
 
-function trackEvent(game: GameKey, event: EventName, placement: string) {
-  try {
-    const attribution = getAttribution();
-    const storageKey = "replaymethod-session-id";
-    let visitorId = sessionStorage.getItem(storageKey);
-    if (!visitorId) {
-      visitorId = crypto.randomUUID();
-      sessionStorage.setItem(storageKey, visitorId);
-    }
-    void fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      body: JSON.stringify({ visitorId, event, game, placement, path: location.pathname, ...attribution })
-    });
-  } catch { /* analytics must never block the page */ }
+function trackEvent(game: GameKey, event: ProductEvent, placement: string) {
+  trackProductEvent(event, game, placement);
 }
 
 function WaitlistForm({ game, config, placement, id }: { game: GameKey; config: Config; placement: string; id?: string }) {
@@ -233,6 +219,7 @@ export default function Landing({ game = "general" }: { game?: GameKey }) {
         <HardstuckHook
           analysisHref={analysisHref}
           requestOnly={riotRequest}
+          onPatternSelect={(pattern) => trackEvent(game, "hardstuck_select", `pattern_${pattern}`)}
           onAnalysisStart={() =>
             trackEvent(game, "analysis_start", "hardstuck_hook")
           }
@@ -258,7 +245,7 @@ export default function Landing({ game = "general" }: { game?: GameKey }) {
 
     <section className="guide-preview shell"><div className="section-intro"><span className="kicker">FREE PLAYER GUIDES</span><h2>Searchable answers for the exact moment you get stuck.</h2><p>Built for the questions ranked players actually search after a bad session—not generic motivational content.</p></div><div className="guide-preview-grid"><a href="/guides/league-replay-review-checklist"><span>LEAGUE OF LEGENDS</span><h3>How to review a loss without blaming the last teamfight</h3><p>Lane conversion, objective setup, death quality and the 14–20 minute transition.</p><b>Read the checklist →</b></a><a href="/guides/valorant-vod-review-checklist"><span>VALORANT</span><h3>A round-by-round VOD review that takes 15 minutes</h3><p>First contact, tradeability, utility value and decisions after a losing streak.</p><b>Read the checklist →</b></a><a href="/guides/rocket-league-replay-review-checklist"><span>ROCKET LEAGUE</span><h3>The replay review checklist for hardstuck ranked players</h3><p>Spacing, challenges, boost paths, recoveries and the goals your mechanics did not cause.</p><b>Read the checklist →</b></a></div></section>
 
-    <PricingLadder analysisHref={analysisHref} requestOnly={riotRequest} />
+    <PricingLadder analysisHref={analysisHref} game={game} requestOnly={riotRequest} />
 
     <section className="faq shell"><div className="section-intro"><span className="kicker">NO BULLSHIT FAQ</span><h2>Know exactly what you’re submitting.</h2></div><div className="faq-list"><details><summary>Is Replay Method live today?<b>+</b></summary><p>The production-quality beta foundation is live. Rocket League uses original .replay files; official League and VALORANT account ingestion is awaiting Riot production approval. A report is only produced when the available evidence supports it.</p></details><details><summary>Does Replay Method guarantee I rank up?<b>+</b></summary><p>No honest coach can guarantee a rank. Replay Method exposes patterns, focuses practice and tracks behavior. You still have to play and apply the feedback.</p></details><details><summary>Which games are supported?<b>+</b></summary><p>Rocket League is the first deep replay adapter. League of Legends and VALORANT share the same product foundation and will activate through official opt-in Riot connections after approval.</p></details><details><summary>What can I submit?<b>+</b></summary><p>Rocket League automation requires the original PC .replay file. League and VALORANT beta requests can preserve a representative match link, but unverified public profiles are never used to invent private-match coaching.</p></details><details><summary>What happens after submission?<b>+</b></summary><p>You immediately receive a private status link. It shows the real pipeline stage, report evidence and engine versions—or an honest blocked state when access or evidence is insufficient.</p></details><details><summary>Why not just use a stat tracker?<b>+</b></summary><p>Trackers are excellent at showing rank, history and performance. Replay Method turns repeated patterns into one prioritized correction you can apply in the next match.</p></details></div></section>
 

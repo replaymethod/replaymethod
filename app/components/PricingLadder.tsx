@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { trackProductEvent, type AnalyticsGame } from "../../lib/client-analytics";
 
 type PaidPlan = "quarterly" | "monthly";
 
@@ -49,9 +50,10 @@ const paidFeatures = [
   "Unused analyses do not roll over",
 ];
 
-export default function PricingLadder({ analysisHref, requestOnly = false }: { analysisHref: string; requestOnly?: boolean }) {
+export default function PricingLadder({ analysisHref, game, requestOnly = false }: { analysisHref: string; game: AnalyticsGame; requestOnly?: boolean }) {
   const [loading, setLoading] = useState<PaidPlan | null>(null);
   const [error, setError] = useState("");
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("checkout") === "canceled") {
@@ -60,7 +62,20 @@ export default function PricingLadder({ analysisHref, requestOnly = false }: { a
     }
   }, []);
 
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      trackProductEvent("pricing_viewed", game, "pricing_section");
+      observer.disconnect();
+    }, { threshold: .25 });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [game]);
+
   async function checkout(plan: PaidPlan) {
+    trackProductEvent("upgrade_intent", game, `pricing_${plan}`);
     setLoading(plan);
     setError("");
 
@@ -72,6 +87,7 @@ export default function PricingLadder({ analysisHref, requestOnly = false }: { a
       });
       const payload = await response.json().catch(() => ({})) as { url?: string; error?: string };
       if (!response.ok || !payload.url) throw new Error(payload.error || "Secure checkout is not available yet.");
+      trackProductEvent("checkout_started", game, `pricing_${plan}`);
       window.location.assign(payload.url);
     } catch (checkoutError) {
       setError(checkoutError instanceof Error ? checkoutError.message : "Secure checkout is not available yet.");
@@ -80,7 +96,7 @@ export default function PricingLadder({ analysisHref, requestOnly = false }: { a
   }
 
   return (
-    <section className="pricing-ladder shell" id="pricing" aria-labelledby="pricing-title">
+    <section ref={sectionRef} className="pricing-ladder shell" id="pricing" aria-labelledby="pricing-title">
       <div className="pricing-heading">
         <span className="kicker">START WITH PROOF. PAY ONLY TO CONTINUE.</span>
         <h2 id="pricing-title">{requestOnly ? "Official access first. Payment comes later." : "One supported diagnosis first. Then choose your pace."}</h2>

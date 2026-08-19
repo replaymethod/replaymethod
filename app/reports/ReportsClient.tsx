@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { trackProductEvent } from "../../lib/client-analytics";
 
 type ReportSummary = {
   publicId: string;
@@ -17,6 +18,7 @@ type ReportSummary = {
 type BillingSnapshot = {
   planKey: "quarterly" | "monthly" | null;
   status: string;
+  hasBillingAccount: boolean;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
   paymentGrace: boolean;
@@ -86,12 +88,13 @@ export default function ReportsClient() {
     failed: "Analysis needs attention",
   }[report.status] ?? "Report pending");
   const planName = billing?.planKey === "quarterly" ? "3-month cycle" : billing?.planKey === "monthly" ? "Monthly" : billing?.hasBillingAccount ? "No active plan" : "Free proof";
+  const trackNewAnalysis = () => trackProductEvent(reports?.length ? "followup_started" : "analysis_start", "general", reports?.length ? "history_followup" : "history_empty");
 
   return (
     <main className="reports-page">
       <nav className="tool-nav shell">
         <Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link>
-        <Link href="/analyze">New analysis</Link>
+        <Link href="/analyze" onClick={trackNewAnalysis}>New analysis</Link>
       </nav>
       <section className="reports-shell shell">
         <span>{historyMode === "verified" ? "EMAIL-VERIFIED HISTORY" : "DEVICE-SAVED HISTORY"}</span>
@@ -116,7 +119,7 @@ export default function ReportsClient() {
               <button type="button" onClick={openPortal} disabled={portalState === "loading"}>
                 {portalState === "loading" ? "Opening secure portal…" : "Manage subscription"}
               </button>
-            ) : <Link href="/#pricing">Compare paid plans →</Link>}
+            ) : <Link href="/#pricing" onClick={() => trackProductEvent("upgrade_intent", "general", "history_billing")}>Compare paid plans →</Link>}
             {portalError && <p className="billing-error" role="alert">{portalError}</p>}
           </aside>
         )}
@@ -125,7 +128,7 @@ export default function ReportsClient() {
           <div className="reports-empty">
             <b>No reports available here yet.</b>
             <p>Submit one real match and the private report will appear here. Email verification connects later reports on this device.</p>
-            <Link href="/analyze">Start my free analysis →</Link>
+            <Link href="/analyze" onClick={trackNewAnalysis}>Start my free analysis →</Link>
           </div>
         ) : (
           <div className="reports-list">

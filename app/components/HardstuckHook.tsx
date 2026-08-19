@@ -32,12 +32,14 @@ const patterns = [
 type HardstuckHookProps = {
   analysisHref?: string;
   onAnalysisStart?: () => void;
+  onPatternSelect?: (pattern: number) => void;
   requestOnly?: boolean;
 };
 
 export default function HardstuckHook({
   analysisHref = "/analyze",
   onAnalysisStart,
+  onPatternSelect,
   requestOnly = false,
 }: HardstuckHookProps) {
   const [selected, setSelected] = useState<number | null>(null);
@@ -66,7 +68,7 @@ export default function HardstuckHook({
                   type="button"
                   key={pattern.title}
                   className={isSelected ? "active" : ""}
-                  onClick={() => setSelected(index)}
+                  onClick={() => { setSelected(index); onPatternSelect?.(index + 1); }}
                   aria-pressed={isSelected}
                 >
                   <span className="hardstuck-option-number">0{index + 1}</span>

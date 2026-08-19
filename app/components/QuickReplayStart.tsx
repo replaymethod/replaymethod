@@ -2,6 +2,7 @@
 
 import { DragEvent, FormEvent, useRef, useState } from "react";
 import Link from "next/link";
+import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 const DEFAULT_GOAL = "Find the highest-impact recurring mistake in this match.";
@@ -15,27 +16,15 @@ function getAttribution() {
   return { source: source.slice(0, 80), campaign: (params.get("utm_campaign") || "").slice(0, 120) };
 }
 
-function track(event: string, placement: string) {
-  try {
-    let visitorId = sessionStorage.getItem("replaymethod-session-id");
-    if (!visitorId) {
-      visitorId = crypto.randomUUID();
-      sessionStorage.setItem("replaymethod-session-id", visitorId);
-    }
-    void fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      body: JSON.stringify({
-        visitorId,
-        event,
-        game: "rocket-league",
-        placement,
-        path: location.pathname,
-        ...getAttribution()
-      })
-    });
-  } catch { /* measurement must never block an upload */ }
+function track(event: ProductEvent, placement: string) {
+  trackProductEvent(event, "rocket-league", placement);
+}
+
+function replayProblemCode(file: File) {
+  if (!file.name.toLowerCase().endsWith(".replay")) return "invalid_type";
+  if (file.size === 0) return "empty_file";
+  if (file.size > MAX_REPLAY_BYTES) return "file_too_large";
+  return "unknown";
 }
 
 function fileProblem(file: File) {
@@ -71,6 +60,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     const problem = fileProblem(file);
     setMessage(problem);
     if (problem) {
+      track("validation_failed", replayProblemCode(file));
       setStatus("error");
       setReplay(null);
       setDetailsOpen(false);
@@ -80,7 +70,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     setReplay(file);
     setDetailsOpen(false);
     setStatus("idle");
-    track("upload_started", placement);
+    track("replay_selected", placement);
     track("analysis_start", `${placement}_details`);
   }
 
@@ -122,6 +112,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     data.set("replay", replay);
 
     try {
+      track("upload_started", placement);
       const response = await fetch("/api/analyses", { method: "POST", body: data });
       const result = await response.json() as { publicId?: string; emailSent?: boolean; error?: string };
       if (!response.ok || !result.publicId) throw new Error(result.error || "We couldn’t start the analysis.");

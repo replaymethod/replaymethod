@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { trackProductEvent } from "../../../lib/client-analytics";
 
 export default function BillingSuccessPage() {
   const [state, setState] = useState<"checking" | "active" | "pending">("checking");
@@ -13,7 +14,13 @@ export default function BillingSuccessPage() {
       try {
         const response = await fetch("/api/billing/status", { cache: "no-store" });
         const payload = await response.json() as { billing?: { planKey?: string | null } };
-        if (!stopped && response.ok && payload.billing?.planKey) return setState("active");
+        if (!stopped && response.ok && payload.billing?.planKey) {
+          if (!sessionStorage.getItem("replaymethod-paid-activation-recorded")) {
+            sessionStorage.setItem("replaymethod-paid-activation-recorded", "1");
+            trackProductEvent("paid_activation", "general", "billing_confirmed");
+          }
+          return setState("active");
+        }
       } catch { /* the webhook can still complete after this page loads */ }
       attempts += 1;
       if (!stopped && attempts < 4) window.setTimeout(check, 1200);

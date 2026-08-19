@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { AnalysisGame } from "../../lib/analysis";
+import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 
 const games: { key: AnalysisGame; mark: string; name: string; proof: string; input: string }[] = [
   { key: "league", mark: "L", name: "League of Legends", proof: "Official Riot connection in approval", input: "Riot ID and a representative match link" },
@@ -36,12 +37,15 @@ function attribution() {
   return { source: (params.get("utm_source") || "direct").slice(0, 80), campaign: (params.get("utm_campaign") || "").slice(0, 120) };
 }
 
-function track(event: string, game: AnalysisGame | null, placement: string) {
-  try {
-    let visitorId = sessionStorage.getItem("replaymethod-session-id");
-    if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem("replaymethod-session-id", visitorId); }
-    void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ visitorId, event, game: game || "general", placement, path: location.pathname, ...attribution() }) });
-  } catch { /* measurement never blocks submission */ }
+function track(event: ProductEvent, game: AnalysisGame | null, placement: string) {
+  trackProductEvent(event, game || "general", placement);
+}
+
+function replayProblemCode(file: File) {
+  if (!file.name.toLowerCase().endsWith(".replay")) return "invalid_type";
+  if (file.size === 0) return "empty_file";
+  if (file.size > MAX_REPLAY_BYTES) return "file_too_large";
+  return "unknown";
 }
 
 export default function AnalyzeFlow({ initialGame, initialHypothesis }: { initialGame: AnalysisGame | null; initialHypothesis: string }) {
@@ -77,6 +81,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis }: { initia
     const problem = replayProblem(file);
     setMessage(problem);
     if (problem) {
+      track("validation_failed", "rocket-league", replayProblemCode(file));
       setStatus("error");
       setReplay(null);
       if (replayInputRef.current) replayInputRef.current.value = "";
@@ -84,7 +89,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis }: { initia
     }
     setReplay(file);
     setStatus("idle");
-    track("upload_started", "rocket-league", "analysis_intake");
+    track("replay_selected", "rocket-league", "analysis_intake");
   };
 
   const next = () => {
@@ -122,16 +127,19 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis }: { initia
     if (replay) data.set("replay", replay);
 
     try {
+      if (replay) track("upload_started", game, "analysis_intake");
       const response = await fetch("/api/analyses", { method: "POST", body: data });
       const result = await response.json() as { publicId?: string; emailSent?: boolean; error?: string };
       if (!response.ok || !result.publicId) throw new Error(result.error || "Try again.");
       const stored = JSON.parse(localStorage.getItem("replaymethod-report-ids") || "[]") as string[];
       localStorage.setItem("replaymethod-report-ids", JSON.stringify([result.publicId, ...stored.filter(id => id !== result.publicId)].slice(0, 20)));
       track("analysis_submit", game, replay ? "replay_upload" : "evidence_link");
+      if (stored.length) track("second_match_submitted", game, "returning_player");
       location.href = `/report/${result.publicId}?delivery=${result.emailSent ? "email" : "link"}`;
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "We couldn’t create the analysis.");
+      track("analysis_failed", game, replay ? "replay_upload" : "evidence_link");
     }
   }
 
