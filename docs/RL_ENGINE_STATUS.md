@@ -78,6 +78,12 @@ gate requires at least:
 The eight probes currently fail this gate because the corpus is small and the
 review queue is unlabeled. That is expected and prevents fake confidence.
 
+The gate also requires independent reviewers, reviewer agreement, complete
+label provenance, minimum samples within each cohort, detector dependency and
+conflict tests, confidence-calibration evidence, exact-run reproducibility and
+version/patch regression. Synthetic fixtures exercise software only and are
+excluded from calibration replay counts.
+
 ## Coaching output
 
 The private engine now includes a deterministic report composer. It ranks only
@@ -87,6 +93,19 @@ rule, practice plan, success metric and three-match verification window. If no
 finding passes, it returns `insufficient_evidence`; language generation cannot
 upgrade a shadow observation into a public claim.
 
+The decision policy validates the exact detector activation record, supported
+mode, sample floor and dependencies before scoring. It resolves duplicate and
+conflicting findings deterministically, preserves an active focus or regression
+where evidence supports it, and records suppressed alternatives. Prescriptions
+include dosage, an exclusion cue, return-to-play rule, later success evidence
+and intervention-failure evidence.
+
+Detector lifecycle is explicit (`discovery` → `shadow` → `candidate` →
+`enabled`, with `demoted` rollback). Activation records bind version, scope,
+quality gate, provenance and a reproducible fingerprint. D1 has additive audit
+storage for reviewer qualification, cohort/provenance, quality snapshots,
+lifecycle events and later non-firing detector evaluations.
+
 ## Next engine milestone
 
 1. use the private review interface to confirm timestamps and labels;
@@ -94,8 +113,8 @@ upgrade a shadow observation into a public claim.
 3. calculate precision and false-positive reports per detector version;
 4. run patch-regression and abstention tests over the labeled corpus;
 5. promote only passing detectors from `shadow` to `enabled`;
-6. rank enabled findings by recurrence, impact, confidence and trainability;
-7. verify the same behavior over later matches.
+6. persist a signed-off quality snapshot and activation event;
+7. verify the same behavior over later comparable matches.
 
 The website should not advertise automatic Rocket League coaching as ready
 until at least one detector clears this process and the replay-engine service
@@ -110,6 +129,9 @@ graceful shutdown, and a container health check. The web client validates an
 HTTPS engine URL, enforces a bounded timeout, distinguishes auth/contract
 failures from transient capacity/network failures, and persists a real due
 time for automatic retries.
+
+Independent fail-closed switches gate worker calls, public detector output and
+background retries. Deploying the process cannot itself activate a detector.
 
 This is source readiness, not a deployed service. `RL_ENGINE_URL` and the
 shared `RL_ENGINE_TOKEN` still require an owner-controlled engine environment.

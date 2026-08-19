@@ -9,6 +9,9 @@ type QueueCandidate = {
   id: string;
   replayFingerprint: string;
   mode: string | null;
+  rankCohort?: string | null;
+  contextKey?: string | null;
+  metadataProvenance?: string | null;
   gameVersion: string | null;
   detectorId: string;
   detectorVersion: string;
@@ -32,12 +35,15 @@ export async function ensureRlReviewQueueSeeded() {
 
       for (let offset = 0; offset < candidates.length; offset += 50) {
         const statements = candidates.slice(offset, offset + 50).map(candidate => database.prepare(`INSERT OR IGNORE INTO rl_review_candidates (
-          candidate_key, replay_fingerprint, mode, game_version, detector_id, detector_version,
+          candidate_key, replay_fingerprint, mode, rank_cohort, context_key, metadata_provenance, game_version, detector_id, detector_version,
           review_question, timestamp_seconds, frame, observation_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
           candidate.id,
           candidate.replayFingerprint,
           candidate.mode,
+          candidate.rankCohort ?? null,
+          candidate.contextKey ?? null,
+          candidate.metadataProvenance ?? "checked_in_real_replay",
           candidate.gameVersion,
           candidate.detectorId,
           candidate.detectorVersion,

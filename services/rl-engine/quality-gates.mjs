@@ -7,6 +7,9 @@ export const PUBLIC_DETECTOR_GATE = Object.freeze({
   maximumFalsePositiveRate: 0.05,
   minimumTimestampVerifiedRate: 0.95,
   minimumRankModeCohorts: 3,
+  minimumExamplesPerCohort: 5,
+  minimumIndependentReviewers: 2,
+  minimumReviewerAgreement: 0.6,
 });
 
 /** Conservative 95% Wilson lower bound for a binomial acceptance rate. */
@@ -31,7 +34,17 @@ export function assessPublicDetectorGate(metrics = {}, gate = PUBLIC_DETECTOR_GA
     ["timestamp_verification", Number.isFinite(metrics.timestampVerifiedRate)
       && metrics.timestampVerifiedRate >= gate.minimumTimestampVerifiedRate],
     ["rank_mode_cohorts", (metrics.rankModeCohorts ?? 0) >= gate.minimumRankModeCohorts],
+    ["cohort_sample_floor", (metrics.minimumCohortSamples ?? 0) >= gate.minimumExamplesPerCohort],
+    ["independent_reviewers", (metrics.independentReviewers ?? 0) >= gate.minimumIndependentReviewers],
+    ["reviewer_agreement", Number.isFinite(metrics.reviewerAgreement)
+      && metrics.reviewerAgreement >= gate.minimumReviewerAgreement],
+    ["label_provenance", metrics.labelProvenanceComplete === true],
     ["patch_regression", metrics.patchRegressionPassed === true],
+    ["version_drift", metrics.versionDriftPassed === true],
+    ["confidence_calibration", metrics.confidenceCalibrationPassed === true],
+    ["deterministic_reproducibility", metrics.reproducibilityPassed === true],
+    ["detector_dependencies", metrics.detectorDependenciesPassed === true],
+    ["conflict_resolution", metrics.conflictResolutionTested === true],
     ["expert_labels", Boolean(metrics.expertLabelSetVersion)],
     ["abstention_rule", metrics.abstentionRuleTested === true],
   ].map(([id, passed]) => ({ id, passed }));

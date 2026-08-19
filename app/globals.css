@@ -309,3 +309,6 @@ html,body,main{width:100%;max-width:100%;overflow-x:hidden}
 @media(max-width:1040px){.admin-operation-grid,.analysis-operations,.job-health{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:720px){.admin-operations{padding:20px}.admin-operation-grid,.analysis-operations,.job-health{grid-template-columns:1fr 1fr}.admin-operation-grid article,.analysis-operations article{min-height:118px}}
 @media(max-width:480px){.admin-operation-grid,.analysis-operations,.job-health{grid-template-columns:1fr}.admin-operation-grid article,.analysis-operations article{min-height:0}.admin-operations{padding:17px}.job-alert{padding:16px}}
+
+.pricing-adult{display:flex;align-items:flex-start;gap:10px;max-width:650px;margin:18px auto 0;padding:15px 17px;border:1px solid #303a58;border-radius:11px;background:#080c17;color:#98a3b9;font-size:10px;line-height:1.55;cursor:pointer}.pricing-adult input{flex:none;width:17px;height:17px;margin:0;accent-color:#7659ff}.pricing-adult strong{color:#eef1fa}.pricing-adult:focus-within{border-color:#7765ff;box-shadow:0 0 0 3px rgba(119,101,255,.14)}
+@media(max-width:700px){.pricing-adult{min-height:52px;align-items:center;font-size:11px}}

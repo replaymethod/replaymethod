@@ -391,6 +391,9 @@ export const rlReviewCandidates = sqliteTable("rl_review_candidates", {
   candidateKey: text("candidate_key").notNull(),
   replayFingerprint: text("replay_fingerprint").notNull(),
   mode: text("mode"),
+  rankCohort: text("rank_cohort"),
+  contextKey: text("context_key"),
+  metadataProvenance: text("metadata_provenance"),
   gameVersion: text("game_version"),
   detectorId: text("detector_id").notNull(),
   detectorVersion: text("detector_version").notNull(),
@@ -417,6 +420,7 @@ export const rlReviewLabels = sqliteTable("rl_review_labels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   candidateId: integer("candidate_id").notNull().references(() => rlReviewCandidates.id),
   reviewerEmail: text("reviewer_email").notNull(),
+  reviewerQualification: text("reviewer_qualification").notNull().default("unverified"),
   verdict: text("verdict").notNull(),
   timestampVerified: integer("timestamp_verified", { mode: "boolean" }),
   notes: text("notes"),
@@ -425,4 +429,56 @@ export const rlReviewLabels = sqliteTable("rl_review_labels", {
 }, table => [
   index("rl_review_labels_candidate_idx").on(table.candidateId),
   index("rl_review_labels_created_at_idx").on(table.createdAt)
+]);
+
+export const detectorQualitySnapshots = sqliteTable("detector_quality_snapshots", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  detectorId: text("detector_id").notNull(),
+  detectorVersion: text("detector_version").notNull(),
+  corpusFingerprint: text("corpus_fingerprint").notNull(),
+  labelSetVersion: text("label_set_version").notNull(),
+  evidenceSource: text("evidence_source").notNull(),
+  metricsJson: text("metrics_json").notNull(),
+  gateJson: text("gate_json").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("detector_quality_snapshots_public_id_unique").on(table.publicId),
+  index("detector_quality_snapshots_detector_created_idx").on(table.detectorId, table.createdAt)
+]);
+
+export const detectorLifecycleEvents = sqliteTable("detector_lifecycle_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  detectorId: text("detector_id").notNull(),
+  detectorVersion: text("detector_version").notNull(),
+  fromState: text("from_state").notNull(),
+  toState: text("to_state").notNull(),
+  reason: text("reason").notNull(),
+  activationFingerprint: text("activation_fingerprint"),
+  actorEmail: text("actor_email").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("detector_lifecycle_events_public_id_unique").on(table.publicId),
+  index("detector_lifecycle_events_detector_created_idx").on(table.detectorId, table.createdAt)
+]);
+
+export const playerFocusEvaluations = sqliteTable("player_focus_evaluations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  focusId: integer("focus_id").notNull().references(() => playerFocuses.id),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id),
+  detectorId: text("detector_id").notNull(),
+  detectorVersion: text("detector_version").notNull(),
+  contextKey: text("context_key"),
+  detectorEvaluated: integer("detector_evaluated", { mode: "boolean" }).notNull(),
+  opportunityCount: integer("opportunity_count").notNull().default(0),
+  fired: integer("fired", { mode: "boolean" }).notNull(),
+  metricValue: real("metric_value"),
+  evidenceSource: text("evidence_source").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_focus_evaluations_public_id_unique").on(table.publicId),
+  uniqueIndex("player_focus_evaluations_focus_request_detector_unique").on(table.focusId, table.analysisRequestId, table.detectorId),
+  index("player_focus_evaluations_focus_created_idx").on(table.focusId, table.createdAt)
 ]);

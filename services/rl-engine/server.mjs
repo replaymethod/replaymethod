@@ -92,7 +92,11 @@ function maximumConcurrency(value) {
   return Number.isInteger(parsed) ? Math.min(8, Math.max(1, parsed)) : 1;
 }
 
-export function createServer({ token = process.env.RL_ENGINE_TOKEN, maxConcurrency = process.env.RL_ENGINE_MAX_CONCURRENCY } = {}) {
+export function createServer({
+  token = process.env.RL_ENGINE_TOKEN,
+  maxConcurrency = process.env.RL_ENGINE_MAX_CONCURRENCY,
+  publicOutputEnabled = process.env.RL_PUBLIC_DETECTORS_ENABLED === "true",
+} = {}) {
   const concurrencyLimit = maximumConcurrency(maxConcurrency);
   const ready = typeof token === "string" && token.length >= MINIMUM_TOKEN_LENGTH && token.length <= 512;
   let activeRequests = 0;
@@ -141,7 +145,7 @@ export function createServer({ token = process.env.RL_ENGINE_TOKEN, maxConcurren
       const bytes = await readBody(request);
       const result = url.pathname.includes("/inspect/")
         ? { kind: "inspection", normalized: inspectReplay(bytes, player, rank) }
-        : analyzeReplay(bytes, player, rank);
+        : analyzeReplay(bytes, player, rank, { publicOutputEnabled });
       return json(response, 200, result);
     } catch (error) {
       console.error("rocket league request failed", {

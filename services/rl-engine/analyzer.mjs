@@ -6,7 +6,7 @@ export const ANALYZER_VERSION = "rocket-league-analyzer@0.1.0";
 export const DETECTOR_VERSION = "rocket-league-detectors@0.1.0-shadow";
 export const COACHING_VERSION = "coaching.v1";
 
-export function analyzeReplay(bytes, requestedIdentity, rank) {
+export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnabled = false } = {}) {
   const evidence = buildReplayEvidence(bytes, requestedIdentity, rank);
   const normalized = evidence.normalized;
   const shadowRun = runShadowDetectors(evidence);
@@ -15,8 +15,10 @@ export function analyzeReplay(bytes, requestedIdentity, rank) {
   // representative fixture corpus, timestamp verification and expert-labelled
   // precision. Parser success alone is not evidence that a coaching claim is true.
   throw new ReplayInputError(
-    "detectors_not_calibrated",
-    "Your replay parsed successfully and the player was identified. Coaching is paused until the evidence detectors pass the beta quality gate.",
+    publicOutputEnabled ? "detectors_not_calibrated" : "public_output_disabled",
+    publicOutputEnabled
+      ? "Your replay parsed successfully and the player was identified. Coaching is paused until the evidence detectors pass the beta quality gate."
+      : "Your replay parsed successfully and the player was identified. Public coaching output is paused by an operator safety control.",
     JSON.stringify({
       mode: normalized.mode ?? null,
       versions: {

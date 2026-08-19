@@ -5,8 +5,13 @@ type ReviewRow = {
   detectorId: string;
   replayFingerprint: string;
   mode: string | null;
+  rankCohort?: string | null;
   verdict: string;
   timestampVerified: boolean | null;
+  reviewerEmail?: string | null;
+  reviewerQualification?: string | null;
+  labelSetVersion?: string | null;
+  reviewedAt?: string | null;
 };
 
 const gateLabels: Record<string, string> = {
@@ -21,6 +26,15 @@ const gateLabels: Record<string, string> = {
   patch_regression: "Patch regression suite",
   expert_labels: "Versioned expert labels",
   abstention_rule: "Abstention tests",
+  cohort_sample_floor: "5 examples in every covered cohort",
+  independent_reviewers: "2 independent reviewers",
+  reviewer_agreement: "60% reviewer agreement floor",
+  label_provenance: "Complete label provenance",
+  version_drift: "Parser and patch drift checks",
+  confidence_calibration: "Confidence calibration check",
+  deterministic_reproducibility: "Deterministic reproduction check",
+  detector_dependencies: "Detector dependency checks",
+  conflict_resolution: "Conflict and duplicate-resolution tests",
 };
 
 export function detectorQualitySummary(rows: ReviewRow[]) {
@@ -38,8 +52,19 @@ export function detectorQualitySummary(rows: ReviewRow[]) {
     timestampVerifiedRate: timestampReviewed.length
       ? timestampReviewed.filter((row) => row.timestampVerified).length / timestampReviewed.length
       : null,
-    rankModeCohorts: new Set(rows.map((row) => row.mode).filter(Boolean)).size,
+    rankModeCohorts: new Set(rows.map((row) => row.mode && row.rankCohort ? `${row.mode}:${row.rankCohort}` : null).filter(Boolean)).size,
+    minimumCohortSamples: 0,
+    independentReviewers: new Set(rows.map((row) => row.reviewerEmail).filter(Boolean)).size,
+    reviewerAgreement: null,
+    labelProvenanceComplete: decided.length > 0 && decided.every((row) => Boolean(
+      row.reviewerEmail && row.reviewerQualification && row.labelSetVersion && row.reviewedAt
+    )),
     patchRegressionPassed: false,
+    versionDriftPassed: false,
+    confidenceCalibrationPassed: false,
+    reproducibilityPassed: false,
+    detectorDependenciesPassed: false,
+    conflictResolutionTested: false,
     expertLabelSetVersion: decided.length ? RL_LABEL_SET_VERSION : null,
     abstentionRuleTested: false,
   };

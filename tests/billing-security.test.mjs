@@ -6,14 +6,22 @@ const checkoutPath = new URL("../app/api/billing/checkout/route.ts", import.meta
 const webhookPath = new URL("../app/api/billing/webhook/route.ts", import.meta.url);
 const schemaPath = new URL("../db/schema.ts", import.meta.url);
 const billingProjectionPath = new URL("../lib/stripe-billing.ts", import.meta.url);
+const pricingPath = new URL("../app/components/PricingLadder.tsx", import.meta.url);
 
 test("checkout trusts server Price IDs and enforces authenticated same-origin writes", async () => {
   const source = await readFile(checkoutPath, "utf8");
   assert.match(source, /isSameOrigin\(request\)/);
   assert.match(source, /authenticatedPlayer\(request, db\)/);
+  assert.match(source, /payload\.adultPurchaser !== true/);
   assert.match(source, /config\.prices\[payload\.plan\]/);
   assert.doesNotMatch(source, /payment_method_types/);
   assert.doesNotMatch(source, /automatic_tax/);
+});
+
+test("Riot request-only pricing cannot enter paid Checkout", async () => {
+  const source = await readFile(pricingPath, "utf8");
+  assert.match(source, /disabled=\{requestOnly \|\| loading !== null\}/);
+  assert.match(source, /Official access required first/);
 });
 
 test("webhooks require Stripe's signature over the raw body", async () => {

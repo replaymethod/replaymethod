@@ -363,6 +363,9 @@ export async function ensureProductSchema(database: D1Database) {
         candidate_key text NOT NULL,
         replay_fingerprint text NOT NULL,
         mode text,
+        rank_cohort text,
+        context_key text,
+        metadata_provenance text,
         game_version text,
         detector_id text NOT NULL,
         detector_version text NOT NULL,
@@ -387,6 +390,7 @@ export async function ensureProductSchema(database: D1Database) {
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         candidate_id integer NOT NULL,
         reviewer_email text NOT NULL,
+        reviewer_qualification text DEFAULT 'unverified' NOT NULL,
         verdict text NOT NULL,
         timestamp_verified integer,
         notes text,
@@ -395,7 +399,55 @@ export async function ensureProductSchema(database: D1Database) {
         FOREIGN KEY (candidate_id) REFERENCES rl_review_candidates(id)
       )`),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_candidate_idx ON rl_review_labels (candidate_id)"),
-      database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_created_at_idx ON rl_review_labels (created_at)")
+      database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_created_at_idx ON rl_review_labels (created_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS detector_quality_snapshots (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        detector_id text NOT NULL,
+        detector_version text NOT NULL,
+        corpus_fingerprint text NOT NULL,
+        label_set_version text NOT NULL,
+        evidence_source text NOT NULL,
+        metrics_json text NOT NULL,
+        gate_json text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS detector_quality_snapshots_public_id_unique ON detector_quality_snapshots (public_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS detector_quality_snapshots_detector_created_idx ON detector_quality_snapshots (detector_id, created_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS detector_lifecycle_events (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        detector_id text NOT NULL,
+        detector_version text NOT NULL,
+        from_state text NOT NULL,
+        to_state text NOT NULL,
+        reason text NOT NULL,
+        activation_fingerprint text,
+        actor_email text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS detector_lifecycle_events_public_id_unique ON detector_lifecycle_events (public_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS detector_lifecycle_events_detector_created_idx ON detector_lifecycle_events (detector_id, created_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS player_focus_evaluations (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        focus_id integer NOT NULL,
+        analysis_request_id integer NOT NULL,
+        detector_id text NOT NULL,
+        detector_version text NOT NULL,
+        context_key text,
+        detector_evaluated integer NOT NULL,
+        opportunity_count integer DEFAULT 0 NOT NULL,
+        fired integer NOT NULL,
+        metric_value real,
+        evidence_source text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (focus_id) REFERENCES player_focuses(id),
+        FOREIGN KEY (analysis_request_id) REFERENCES analysis_requests(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_evaluations_public_id_unique ON player_focus_evaluations (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_evaluations_focus_request_detector_unique ON player_focus_evaluations (focus_id, analysis_request_id, detector_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS player_focus_evaluations_focus_created_idx ON player_focus_evaluations (focus_id, created_at)")
     ]).then(async () => {
       // Existing beta D1 databases predate the longitudinal focus columns.
       // Checked migrations remain canonical; these guarded additions keep
@@ -409,6 +461,10 @@ export async function ensureProductSchema(database: D1Database) {
       await ensureColumn(database, "player_focuses", "target_direction", "text");
       await ensureColumn(database, "player_focuses", "minimum_matches", "integer DEFAULT 3 NOT NULL");
       await ensureColumn(database, "player_focuses", "completion_reason", "text");
+      await ensureColumn(database, "rl_review_candidates", "rank_cohort", "text");
+      await ensureColumn(database, "rl_review_candidates", "context_key", "text");
+      await ensureColumn(database, "rl_review_candidates", "metadata_provenance", "text");
+      await ensureColumn(database, "rl_review_labels", "reviewer_qualification", "text DEFAULT 'unverified' NOT NULL");
     }).catch((error) => {
       productSchemaReady = null;
       throw error;

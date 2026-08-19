@@ -5,23 +5,29 @@ import {
   aggregateCalibrationRuns,
   buildReviewQueue,
   calibrationMetricsFromLabels,
+  reviewerAgreementMetrics,
+  calibrationFingerprint,
+  compareCalibrationReports,
 } from "./calibration.mjs";
 
 test("aggregates replay coverage while keeping public quality gates closed", () => {
   const report = aggregateCalibrationRuns([
     {
-      mode: "Ranked Doubles", sampledFrames: 100, parserEvents: 200, decisionEvents: 40,
+      mode: "Ranked Doubles", sampledFrames: 100, parserEvents: 200, decisionEvents: 40, evidenceSource: "real_replay",
+      rankCohort: "diamond-champion", cohortKey: "2v2:diamond-champion", metadataProvenance: "corpus-manifest",
       replayFingerprint: "replay-a",
       shadowRuns: [{ detectorId: "boost.zero_duration", detectorVersion: "0.1.0", status: "observed", candidateCount: 3, evidence: [{ startTimeSeconds: 12, startFrame: 120 }] }],
     },
     {
-      mode: "Ranked Doubles", sampledFrames: 120, parserEvents: 240, decisionEvents: 50,
+      mode: "Ranked Doubles", sampledFrames: 120, parserEvents: 240, decisionEvents: 50, evidenceSource: "real_replay",
       replayFingerprint: "replay-b",
       shadowRuns: [{ detectorId: "boost.zero_duration", detectorVersion: "0.1.0", status: "no_signal", candidateCount: 0, evidence: [] }],
     },
   ]);
 
   assert.equal(report.corpus.replayCount, 2);
+  assert.equal(report.corpus.calibrationEligibleReplayCount, 2);
+  assert.match(report.reproducibilityFingerprint, /^[a-f0-9]{64}$/);
   assert.equal(report.corpus.totalSampledFrames, 220);
   assert.equal(report.corpus.modes["Ranked Doubles"], 2);
   assert.equal(report.detectors[0].replayRuns, 2);
@@ -33,6 +39,7 @@ test("aggregates replay coverage while keeping public quality gates closed", () 
   const queue = buildReviewQueue(report);
   assert.equal(queue.candidates.length, 1);
   assert.equal(queue.candidates[0].timestampSeconds, 12);
+  assert.equal(queue.candidates[0].rankCohort, "diamond-champion");
   assert.equal(queue.candidates[0].label, null);
   queue.candidates[0].label = "confirmed";
   queue.candidates[0].timestampVerified = true;
@@ -41,6 +48,40 @@ test("aggregates replay coverage while keeping public quality gates closed", () 
   assert.equal(metrics.reviewedPositives, 1);
   assert.equal(metrics.precision, 1);
   assert.equal(metrics.timestampVerifiedRate, 1);
+});
+
+test("synthetic fixtures cannot count as calibration evidence", () => {
+  const fixture = { replayFingerprint: "fixture", evidenceSource: "synthetic_fixture", shadowRuns: [{ detectorId: "test", detectorVersion: "1", status: "observed", candidateCount: 1 }] };
+  const report = aggregateCalibrationRuns([fixture]);
+  assert.equal(report.corpus.replayCount, 1);
+  assert.equal(report.corpus.calibrationEligibleReplayCount, 0);
+  assert.equal(report.detectors[0].replayRuns, 0);
+  assert.equal(report.detectors[0].ineligibleReplayRuns, 1);
+});
+
+test("reproducibility ignores timestamps but detects source or version drift", () => {
+  const base = { schemaVersion: "test", generatedAt: "one", replays: [{ replayFingerprint: "a", evidenceSource: "real_replay", versions: { parser: "1" }, shadowRuns: [] }] };
+  const same = { ...base, generatedAt: "two" };
+  assert.equal(calibrationFingerprint(base), calibrationFingerprint(same));
+  assert.equal(compareCalibrationReports(base, same).reproducible, true);
+  const drifted = { ...same, replays: [{ ...same.replays[0], versions: { parser: "2" } }] };
+  assert.equal(compareCalibrationReports(base, drifted).versionDrift, true);
+  assert.equal(compareCalibrationReports(base, drifted).reproducible, false);
+});
+
+test("reports independent reviewer agreement without counting repeat edits twice", () => {
+  const labels = [
+    { candidateKey: "a", reviewerEmail: "one@example.com", verdict: "confirmed" },
+    { candidateKey: "a", reviewerEmail: "two@example.com", verdict: "confirmed" },
+    { candidateKey: "b", reviewerEmail: "one@example.com", verdict: "confirmed" },
+    { candidateKey: "b", reviewerEmail: "two@example.com", verdict: "rejected" },
+    { candidateKey: "b", reviewerEmail: "two@example.com", verdict: "confirmed" },
+  ];
+  const agreement = reviewerAgreementMetrics(labels);
+  assert.equal(agreement.independentReviewers, 2);
+  assert.equal(agreement.doubleReviewedCandidates, 2);
+  assert.equal(agreement.pairwiseComparisons, 2);
+  assert.equal(agreement.rawAgreement, 1);
 });
 
 test("checked-in review queue is unique, private and ready for expert labeling", async () => {

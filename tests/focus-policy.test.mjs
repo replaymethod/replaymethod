@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { explicitProgressMetric, progressState, supportedFocusFinding } from "../lib/focus-policy.mjs";
+import { explicitProgressMetric, longitudinalState, progressState, supportedFocusFinding } from "../lib/focus-policy.mjs";
 
 function finding(overrides = {}) {
   return {
@@ -66,4 +66,33 @@ test("requires the observation window before declaring an explicit target met", 
 test("does not auto-complete evidence-only or maintain-direction observations", () => {
   assert.equal(progressState({ baseline: null, latest: null, target: null, direction: null, matchesObserved: 10, minimumMatches: 3 }), "evidence_only");
   assert.equal(progressState({ baseline: 5, latest: 5, target: 5, direction: "maintain", matchesObserved: 10, minimumMatches: 3 }), "observing");
+});
+
+test("longitudinal classification requires comparable opportunities before resolving", () => {
+  const oneNonFire = longitudinalState({
+    contextKey: "2v2:diamond-champion",
+    evaluations: [{ detectorEvaluated: true, contextKey: "2v2:diamond-champion", opportunityCount: 1, fired: false }],
+    absenceCanProveResolution: true,
+  });
+  assert.equal(oneNonFire.state, "insufficient_sample");
+
+  const resolved = longitudinalState({
+    contextKey: "2v2:diamond-champion",
+    evaluations: Array.from({ length: 3 }, () => ({ detectorEvaluated: true, contextKey: "2v2:diamond-champion", opportunityCount: 2, fired: false })),
+    absenceCanProveResolution: true,
+  });
+  assert.equal(resolved.state, "resolved");
+});
+
+test("longitudinal classification separates regression and context-specific behavior", () => {
+  assert.equal(longitudinalState({
+    contextKey: "2v2:diamond-champion", baseline: 2, direction: "decrease",
+    evaluations: [2, 3, 4].map((metricValue) => ({ detectorEvaluated: true, contextKey: "2v2:diamond-champion", opportunityCount: 2, fired: true, metricValue })),
+  }).state, "regressing");
+
+  const evaluations = [
+    ...Array.from({ length: 3 }, () => ({ detectorEvaluated: true, contextKey: "1v1:diamond-champion", opportunityCount: 2, fired: true })),
+    ...Array.from({ length: 3 }, () => ({ detectorEvaluated: true, contextKey: "2v2:diamond-champion", opportunityCount: 2, fired: false })),
+  ];
+  assert.equal(longitudinalState({ evaluations, minimumMatches: 3 }).state, "context_specific");
 });

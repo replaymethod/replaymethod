@@ -1,6 +1,7 @@
 import type { AdapterResult, AdapterSuccess, GameId } from "../core/contracts";
 import { resolveAuthorizedRiotAccount, resolveRiotIntegration } from "../riot-integration.mjs";
 import { requestRocketLeagueAnalysis, resolveRocketLeagueEngine } from "../rl-engine-client.mjs";
+import { subsystemEnabled } from "../subsystem-controls.mjs";
 
 export type AnalysisInput = {
   requestId: number;
@@ -23,6 +24,8 @@ export type AnalysisInput = {
 
 export type AdapterEnv = {
   BUCKET: R2Bucket;
+  RL_ENGINE_ENABLED?: string;
+  RIOT_INGESTION_ENABLED?: string;
   RL_ENGINE_URL?: string;
   RL_ENGINE_TOKEN?: string;
   RL_ENGINE_TIMEOUT_MS?: string;
@@ -39,6 +42,9 @@ function blocked(code: string, publicMessage: string, internalMessage: string, r
 }
 
 async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promise<AdapterResult> {
+  if (!subsystemEnabled(env.RL_ENGINE_ENABLED)) {
+    return blocked("rl_engine_disabled", "Your replay is safely stored. Automated replay processing is temporarily paused.", "RL_ENGINE_ENABLED is not true.");
+  }
   if (input.evidenceType !== "replay_file" || !input.fileKey) {
     return blocked(
       "rl_binary_replay_required",
@@ -109,6 +115,9 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
 }
 
 function riotAdapter(input: AnalysisInput, env: AdapterEnv): AdapterResult {
+  if (!subsystemEnabled(env.RIOT_INGESTION_ENABLED)) {
+    return blocked("riot_ingestion_disabled", "Riot match ingestion is not active yet. Your request is preserved and no coaching was invented.", "RIOT_INGESTION_ENABLED is not true.");
+  }
   const integration = resolveRiotIntegration(input.game, env);
   if (!integration.ok) {
     return blocked(

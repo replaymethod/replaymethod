@@ -7,6 +7,7 @@ import {
   randomIntegrationIdentifier,
 } from "../../../../lib/stripe";
 import { operationalErrorCode } from "../../../../lib/request-security.mjs";
+import { subsystemEnabled } from "../../../../lib/subsystem-controls.mjs";
 
 export const runtime = "edge";
 
@@ -16,7 +17,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const payload = await request.json() as { plan?: unknown };
+    const { env } = await import("cloudflare:workers");
+    if (!subsystemEnabled((env as unknown as { BILLING_CHECKOUT_ENABLED?: string }).BILLING_CHECKOUT_ENABLED)) {
+      return Response.json({ error: "Paid checkout is not open yet." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    }
+    const payload = await request.json() as { plan?: unknown; adultPurchaser?: unknown };
+    if (payload.adultPurchaser !== true) {
+      return Response.json({ error: "Paid beta access is available only to purchasers aged 18 or over." }, { status: 400, headers: { "Cache-Control": "no-store" } });
+    }
     if (!isPaidPlan(payload.plan)) {
       return Response.json({ error: "Choose a valid Replay Method plan." }, { status: 400, headers: { "Cache-Control": "no-store" } });
     }

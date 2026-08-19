@@ -5,6 +5,7 @@ import { sendAnalysisReady } from "../email";
 import { advancePlayerFocus, type PersistedFocusFinding } from "../player-focus";
 import { operationalErrorCode } from "../request-security.mjs";
 import { blockedRetryDisposition } from "../retry-policy.mjs";
+import { subsystemEnabled } from "../subsystem-controls.mjs";
 import { synthesizeCoaching } from "./coaching";
 import type { GameId, StructuredFinding } from "./contracts";
 
@@ -15,6 +16,7 @@ export type PipelineEnv = AdapterEnv & {
   OPENAI_INPUT_COST_PER_MILLION?: string;
   OPENAI_OUTPUT_COST_PER_MILLION?: string;
   PUBLIC_SITE_URL?: string;
+  BACKGROUND_PROCESSING_ENABLED?: string;
 };
 
 type JobRow = AnalysisInput & {
@@ -102,7 +104,7 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     await setStage(env.DB, job.jobId, "ingesting", "Reading match data");
     const result = await runGameAdapter(job, env);
     if (result.kind === "blocked") {
-      const disposition = blockedRetryDisposition({ retryable: result.retryable, attempts: job.attempts, maxAttempts: job.maxAttempts });
+      const disposition = blockedRetryDisposition({ retryable: result.retryable && subsystemEnabled(env.BACKGROUND_PROCESSING_ENABLED), attempts: job.attempts, maxAttempts: job.maxAttempts });
       await env.DB.batch([
         env.DB.prepare(`UPDATE analysis_jobs SET status = ?, stage = ?, stage_label = ?, error_code = ?, error_message = ?,
           next_retry_at = ?, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
@@ -207,7 +209,7 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     }
   } catch (error) {
     const detail = errorText(error);
-    const retry = job.attempts < job.maxAttempts;
+    const retry = subsystemEnabled(env.BACKGROUND_PROCESSING_ENABLED) && job.attempts < job.maxAttempts;
     await env.DB.batch([
       env.DB.prepare(`UPDATE analysis_jobs SET status = ?, stage = 'failed', stage_label = ?, error_code = 'analysis_pipeline_failed',
         error_message = ?, next_retry_at = ?, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)

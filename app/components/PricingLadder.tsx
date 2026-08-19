@@ -53,6 +53,7 @@ const paidFeatures = [
 export default function PricingLadder({ analysisHref, game, requestOnly = false }: { analysisHref: string; game: AnalyticsGame; requestOnly?: boolean }) {
   const [loading, setLoading] = useState<PaidPlan | null>(null);
   const [error, setError] = useState("");
+  const [adultPurchaser, setAdultPurchaser] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -75,6 +76,10 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false 
   }, [game]);
 
   async function checkout(plan: PaidPlan) {
+    if (!adultPurchaser) {
+      setError("Paid beta access is available only to purchasers aged 18 or over.");
+      return;
+    }
     trackProductEvent("upgrade_intent", game, `pricing_${plan}`);
     setLoading(plan);
     setError("");
@@ -83,7 +88,7 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false 
       const response = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, adultPurchaser }),
       });
       const payload = await response.json().catch(() => ({})) as { url?: string; error?: string };
       if (!response.ok || !payload.url) throw new Error(payload.error || "Secure checkout is not available yet.");
@@ -125,17 +130,19 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false 
             <strong className="pricing-saving">{plan.saving}</strong>
             <p className="pricing-fit">{plan.fit}</p>
             <ul>{paidFeatures.map(feature => <li key={feature}>{feature}</li>)}</ul>
-            <button type="button" onClick={() => checkout(plan.key)} disabled={loading !== null}>
-              {loading === plan.key ? "Opening secure checkout…" : plan.cta}
+            <button type="button" onClick={requestOnly ? undefined : () => checkout(plan.key)} disabled={requestOnly || loading !== null}>
+              {requestOnly ? "Official access required first" : loading === plan.key ? "Opening secure checkout…" : plan.cta}
             </button>
           </article>
         ))}
       </div>
 
+      {!requestOnly && <label className="pricing-adult"><input type="checkbox" checked={adultPurchaser} onChange={event => setAdultPurchaser(event.target.checked)} /><span><strong>18+ purchaser.</strong> I confirm that I am at least 18 and can enter this renewing subscription.</span></label>}
+
       <div className="pricing-trust">
         <p><strong>Clear renewal.</strong> Monthly renews at $12 each month. The 3-month cycle renews at $27 every three months until canceled.</p>
         <p><strong>Simple cancellation.</strong> Cancel through the customer portal before renewal; paid access continues to period end and completed reports remain readable.</p>
-        <p><strong>No rank guarantee.</strong> Coaching can improve decision quality, not promise a competitive result. If you are under 18, ask a parent or guardian before purchasing.</p>
+        <p><strong>No rank guarantee.</strong> Coaching can improve decision quality, not promise a competitive result. Paid beta access is available only to purchasers aged 18 or over.</p>
       </div>
       <p className="pricing-error" role="alert" aria-live="polite">{error}</p>
     </section>

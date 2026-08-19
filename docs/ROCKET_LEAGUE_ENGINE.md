@@ -36,6 +36,10 @@ names preserve their exact identity.
 - `RL_ENGINE_TIMEOUT_MS` belongs to the web service, defaults to 90 seconds,
   and is clamped to 5–120 seconds.
 - `RL_ENGINE_URL` must use HTTPS outside explicit loopback development.
+- `RL_ENGINE_ENABLED=true` is required before the web adapter calls the worker.
+- `RL_PUBLIC_DETECTORS_ENABLED=true` is a separate process-level publication
+  switch; it never substitutes for a passing detector activation record.
+- `BACKGROUND_PROCESSING_ENABLED=true` permits automatic retry scheduling.
 
 The server sets bounded header/request/keep-alive behavior, drains on SIGTERM
 or SIGINT, and logs only the request ID, stable error code, and retryability.
@@ -107,6 +111,13 @@ Public promotion additionally uses a conservative Wilson confidence floor so a
 small apparently perfect sample cannot pass. The deterministic coaching
 composer consumes only promoted findings, outputs one primary behavior with a
 practice and verification plan, and otherwise abstains.
+
+The detector registry defines lifecycle, exact versions, supported modes,
+sample floors, dependencies, conflicts and duplicate groups. Calibration
+reports fingerprint deterministic inputs, identify version drift, track cohort
+coverage and reviewer agreement, and exclude synthetic fixtures from evidence
+counts. Promotion and demotion are intended to persist to the additive quality
+snapshot and lifecycle-event tables before an operator changes a public flag.
 
 ## Versioning
 

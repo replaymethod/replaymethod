@@ -26,6 +26,27 @@ Admin requires Sites sign-in and the configured owner identity. Set `ADMIN_USER_
 
 Due retry jobs are woken by report polling and by the worker's scheduled handler. The scheduled handler also reclaims interrupted running leases after ten minutes, fails exhausted leases while releasing their reservations, and starts queued jobs that missed their original background dispatch. Configure a production cron for that handler when the hosting environment exposes scheduled triggers; polling remains a fail-safe rather than the primary queue runner.
 
+## Emergency subsystem controls
+
+Every control is off unless its value is exactly `true`. Mission Control shows
+the flag name and current boolean state, never a secret value.
+
+| Flag | Disables when not `true` |
+| --- | --- |
+| `BILLING_CHECKOUT_ENABLED` | New paid Checkout sessions |
+| `TRANSACTIONAL_EMAIL_ENABLED` | Provider delivery attempts |
+| `RL_ENGINE_ENABLED` | Web-to-Rocket-League-worker calls |
+| `RL_PUBLIC_DETECTORS_ENABLED` | Customer-facing detector output at the worker boundary |
+| `RIOT_INGESTION_ENABLED` | Riot adapter ingestion |
+| `BACKGROUND_PROCESSING_ENABLED` | Automatic analysis retry scheduling |
+
+During an incident, turn off only the affected subsystem in the Sites
+environment, publish the configuration change, verify Mission Control and the
+relevant truthful blocked state, then investigate. Disabling email must not
+change report state; disabling billing must not break free surfaces; disabling
+the worker must preserve uploads; disabling public detectors must remain safe
+even while the worker is live.
+
 ## Backup and restore
 
 Before material schema or hosting changes:

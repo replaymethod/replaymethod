@@ -1,8 +1,10 @@
 import { getDatabase } from "../db";
 import { gameLabels, isAnalysisGame, reportUrl, type AnalysisGame } from "./analysis";
 import { analysisReadyEmail, analysisReceivedEmail } from "./email-templates.mjs";
+import { subsystemEnabled } from "./subsystem-controls.mjs";
 
 type EmailEnv = {
+  TRANSACTIONAL_EMAIL_ENABLED?: string;
   RESEND_API_KEY?: string;
   ANALYSIS_FROM_EMAIL?: string;
   PUBLIC_SITE_URL?: string;
@@ -42,7 +44,7 @@ async function emailConfiguration() {
   const from = emailEnv.ANALYSIS_FROM_EMAIL?.trim() || "";
   const validFrom = from.length <= 320 && !/[\r\n]/.test(from);
   return {
-    enabled: Boolean(apiKey && from && validFrom),
+    enabled: subsystemEnabled(emailEnv.TRANSACTIONAL_EMAIL_ENABLED) && Boolean(apiKey && from && validFrom),
     apiKey,
     from,
     siteUrl: safeSiteUrl(emailEnv.PUBLIC_SITE_URL),
