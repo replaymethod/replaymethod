@@ -2,6 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { analysisJobs, analysisRequests, gameAccounts, playerClaims, players, waitlist } from "../../../db/schema";
 import { cleanText, emailPattern, isAnalysisGame, reportUrl } from "../../../lib/analysis";
+import { attachAnalysisUsage, EntitlementError, releaseAnalysisUsage, reserveAnalysisAccess } from "../../../lib/analysis-entitlements";
 import { sendAnalysisReceived } from "../../../lib/email";
 import { createPlayerToken, expiresAt, hashPlayerToken, PLAYER_CLAIM_SECONDS } from "../../../lib/player-identity.mjs";
 
@@ -25,6 +26,7 @@ function safeFileName(value: string) {
 
 export async function POST(request: Request) {
   let uploadedKey: string | null = null;
+  let reservedPublicId: string | null = null;
   try {
     const declaredSize = Number(request.headers.get("content-length") || 0);
     if (declaredSize > 17 * 1024 * 1024) {
@@ -64,6 +66,13 @@ export async function POST(request: Request) {
     if (game === "rocket-league" && !hasFile) return Response.json({ error: "Automatic Rocket League coaching requires the original .replay file." }, { status: 400 });
     if (!hasFile && !evidenceUrl) return Response.json({ error: "Add a match, replay or VOD link." }, { status: 400 });
 
+    let bucket: R2Bucket | undefined;
+    if (hasFile) {
+      const { env } = await import("cloudflare:workers");
+      bucket = (env as unknown as { BUCKET?: R2Bucket }).BUCKET;
+      if (!bucket) return Response.json({ error: "Replay uploads are temporarily unavailable. Paste a Ballchasing or VOD link instead." }, { status: 503 });
+    }
+
     const db = await getDb();
     const recent = await db.select({ count: sql<number>`count(*)` }).from(analysisRequests).where(and(
       eq(analysisRequests.email, email),
@@ -74,24 +83,6 @@ export async function POST(request: Request) {
     }
 
     const publicId = crypto.randomUUID().replaceAll("-", "");
-    let originalFileName: string | null = null;
-    let fileSize: number | null = null;
-    let evidenceType = "link";
-
-    if (hasFile) {
-      const { env } = await import("cloudflare:workers");
-      const bucket = (env as unknown as { BUCKET?: R2Bucket }).BUCKET;
-      if (!bucket) return Response.json({ error: "Replay uploads are temporarily unavailable. Paste a Ballchasing or VOD link instead." }, { status: 503 });
-      originalFileName = safeFileName(replay.name);
-      fileSize = replay.size;
-      evidenceType = "replay_file";
-      uploadedKey = `analyses/${publicId}/${originalFileName}`;
-      await bucket.put(uploadedKey, replay.stream(), {
-        httpMetadata: { contentType: replay.type || "application/octet-stream" },
-        customMetadata: { game, publicId }
-      });
-    }
-
     await db.insert(players).values({
       publicId: crypto.randomUUID().replaceAll("-", ""),
       email
@@ -101,6 +92,23 @@ export async function POST(request: Request) {
     });
     const player = await db.select({ id: players.id }).from(players).where(eq(players.email, email)).get();
     if (!player) throw new Error("Could not create the player identity.");
+    await reserveAnalysisAccess(request, player.id, publicId);
+    reservedPublicId = publicId;
+
+    let originalFileName: string | null = null;
+    let fileSize: number | null = null;
+    let evidenceType = "link";
+
+    if (hasFile) {
+      originalFileName = safeFileName(replay.name);
+      fileSize = replay.size;
+      evidenceType = "replay_file";
+      uploadedKey = `analyses/${publicId}/${originalFileName}`;
+      await bucket.put(uploadedKey, replay.stream(), {
+        httpMetadata: { contentType: replay.type || "application/octet-stream" },
+        customMetadata: { game, publicId }
+      });
+    }
 
     const inserted = await db.insert(analysisRequests).values({
       publicId,
@@ -119,6 +127,7 @@ export async function POST(request: Request) {
       source,
       campaign
     }).returning({ id: analysisRequests.id }).get();
+    await attachAnalysisUsage(publicId, inserted.id);
 
     const provider = game === "rocket-league" ? "epic" : "riot";
     if (playerContext) {
@@ -177,6 +186,12 @@ export async function POST(request: Request) {
     }
     const isAgentPreview = new URL(request.url).hostname === "terminal.local";
     const detail = error instanceof Error ? error.message : "Unknown server error";
+    if (reservedPublicId) {
+      try { await releaseAnalysisUsage(reservedPublicId); } catch (releaseError) { console.error("analysis usage release failed", releaseError); }
+    }
+    if (error instanceof EntitlementError) {
+      return Response.json({ error: error.message }, { status: error.status, headers: { "Cache-Control": "no-store" } });
+    }
     console.error("analysis submission failed", error);
     return Response.json({
       error: isAgentPreview

@@ -80,6 +80,75 @@ export async function ensureProductSchema(database: D1Database) {
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_sessions_token_hash_unique ON player_sessions (token_hash)"),
       database.prepare("CREATE INDEX IF NOT EXISTS player_sessions_player_idx ON player_sessions (player_id)"),
       database.prepare("CREATE INDEX IF NOT EXISTS player_sessions_expires_at_idx ON player_sessions (expires_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS billing_customers (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        player_id integer NOT NULL,
+        stripe_customer_id text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS billing_customers_player_unique ON billing_customers (player_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS billing_customers_stripe_unique ON billing_customers (stripe_customer_id)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS billing_subscriptions (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        player_id integer NOT NULL,
+        stripe_customer_id text NOT NULL,
+        stripe_subscription_id text NOT NULL,
+        stripe_price_id text NOT NULL,
+        plan_key text NOT NULL,
+        status text NOT NULL,
+        current_period_start text NOT NULL,
+        current_period_end text NOT NULL,
+        cancel_at_period_end integer DEFAULT 0 NOT NULL,
+        canceled_at text,
+        ended_at text,
+        grace_until text,
+        latest_invoice_id text,
+        checkout_session_id text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS billing_subscriptions_stripe_unique ON billing_subscriptions (stripe_subscription_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS billing_subscriptions_player_status_idx ON billing_subscriptions (player_id, status)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS billing_subscriptions_customer_idx ON billing_subscriptions (stripe_customer_id)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS billing_events (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        stripe_event_id text NOT NULL,
+        type text NOT NULL,
+        status text DEFAULT 'processing' NOT NULL,
+        error_message text,
+        processed_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS billing_events_stripe_unique ON billing_events (stripe_event_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS billing_events_status_idx ON billing_events (status)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS analysis_usage (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        analysis_public_id text NOT NULL,
+        analysis_request_id integer,
+        player_id integer NOT NULL,
+        access_kind text NOT NULL,
+        plan_key text,
+        window_start text NOT NULL,
+        window_end text NOT NULL,
+        slot integer NOT NULL,
+        status text DEFAULT 'reserved' NOT NULL,
+        consumed_at text,
+        released_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (analysis_request_id) REFERENCES analysis_requests(id),
+        FOREIGN KEY (player_id) REFERENCES players(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS analysis_usage_public_id_unique ON analysis_usage (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS analysis_usage_analysis_unique ON analysis_usage (analysis_public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS analysis_usage_active_slot_unique ON analysis_usage (player_id, access_kind, window_start, slot) WHERE status IN ('reserved', 'consumed')"),
+      database.prepare("CREATE INDEX IF NOT EXISTS analysis_usage_player_window_idx ON analysis_usage (player_id, window_start, status)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS analysis_usage_request_idx ON analysis_usage (analysis_request_id)"),
       database.prepare(`CREATE TABLE IF NOT EXISTS game_accounts (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         public_id text NOT NULL,
@@ -270,7 +339,7 @@ export async function ensureProductSchema(database: D1Database) {
   await productSchemaReady;
 }
 
-export async function getDb() {
+export async function getDatabase() {
   const { env } = await import("cloudflare:workers");
   if (!env.DB) {
     throw new Error(
@@ -280,5 +349,10 @@ export async function getDb() {
 
   const database = env.DB as D1Database;
   await ensureProductSchema(database);
+  return database;
+}
+
+export async function getDb() {
+  const database = await getDatabase();
   return drizzle(database, { schema });
 }

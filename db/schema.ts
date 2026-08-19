@@ -112,6 +112,80 @@ export const playerSessions = sqliteTable("player_sessions", {
   index("player_sessions_expires_at_idx").on(table.expiresAt)
 ]);
 
+export const billingCustomers = sqliteTable("billing_customers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("billing_customers_player_unique").on(table.playerId),
+  uniqueIndex("billing_customers_stripe_unique").on(table.stripeCustomerId)
+]);
+
+export const billingSubscriptions = sqliteTable("billing_subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  stripeSubscriptionId: text("stripe_subscription_id").notNull(),
+  stripePriceId: text("stripe_price_id").notNull(),
+  planKey: text("plan_key").notNull(),
+  status: text("status").notNull(),
+  currentPeriodStart: text("current_period_start").notNull(),
+  currentPeriodEnd: text("current_period_end").notNull(),
+  cancelAtPeriodEnd: integer("cancel_at_period_end", { mode: "boolean" }).notNull().default(false),
+  canceledAt: text("canceled_at"),
+  endedAt: text("ended_at"),
+  graceUntil: text("grace_until"),
+  latestInvoiceId: text("latest_invoice_id"),
+  checkoutSessionId: text("checkout_session_id"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("billing_subscriptions_stripe_unique").on(table.stripeSubscriptionId),
+  index("billing_subscriptions_player_status_idx").on(table.playerId, table.status),
+  index("billing_subscriptions_customer_idx").on(table.stripeCustomerId)
+]);
+
+export const billingEvents = sqliteTable("billing_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  stripeEventId: text("stripe_event_id").notNull(),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("processing"),
+  errorMessage: text("error_message"),
+  processedAt: text("processed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("billing_events_stripe_unique").on(table.stripeEventId),
+  index("billing_events_status_idx").on(table.status)
+]);
+
+export const analysisUsage = sqliteTable("analysis_usage", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  analysisPublicId: text("analysis_public_id").notNull(),
+  analysisRequestId: integer("analysis_request_id").references(() => analysisRequests.id),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  accessKind: text("access_kind").notNull(),
+  planKey: text("plan_key"),
+  windowStart: text("window_start").notNull(),
+  windowEnd: text("window_end").notNull(),
+  slot: integer("slot").notNull(),
+  status: text("status").notNull().default("reserved"),
+  consumedAt: text("consumed_at"),
+  releasedAt: text("released_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("analysis_usage_public_id_unique").on(table.publicId),
+  uniqueIndex("analysis_usage_analysis_unique").on(table.analysisPublicId),
+  uniqueIndex("analysis_usage_active_slot_unique").on(table.playerId, table.accessKind, table.windowStart, table.slot)
+    .where(sql`${table.status} IN ('reserved', 'consumed')`),
+  index("analysis_usage_player_window_idx").on(table.playerId, table.windowStart, table.status),
+  index("analysis_usage_request_idx").on(table.analysisRequestId)
+]);
+
 export const gameAccounts = sqliteTable("game_accounts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   publicId: text("public_id").notNull(),

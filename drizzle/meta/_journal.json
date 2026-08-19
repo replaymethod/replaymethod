@@ -57,6 +57,13 @@
       "when": 1787110507535,
       "tag": "0007_early_loa",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1787112763930,
+      "tag": "0008_nebulous_glorian",
+      "breakpoints": true
     }
   ]
 }

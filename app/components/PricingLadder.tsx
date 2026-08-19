@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type PaidPlan = "quarterly" | "monthly";
 
@@ -52,6 +52,13 @@ const paidFeatures = [
 export default function PricingLadder({ analysisHref }: { analysisHref: string }) {
   const [loading, setLoading] = useState<PaidPlan | null>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("checkout") === "canceled") {
+      const timer = window.setTimeout(() => setError("Checkout canceled. No plan was started and no charge was made."), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, []);
 
   async function checkout(plan: PaidPlan) {
     setLoading(plan);

@@ -99,6 +99,10 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
           .bind(result.retryable ? "retry" : "blocked", result.publicMessage, result.code, result.internalMessage, Date.now() - started, job.jobId),
         env.DB.prepare("UPDATE analysis_requests SET status = 'blocked', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(job.requestId)
       ]);
+      if (!result.retryable) {
+        await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(job.requestId).run();
+      }
       return;
     }
 
@@ -150,7 +154,9 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
         estimated_cost_micros = ?, duration_ms = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
         .bind(result.versions.parser, result.versions.analyzer, result.versions.detector,
           `${result.versions.coaching}+${synthesis.model}`, result.versions.schema,
-          result.estimatedCostMicros + synthesis.costMicros, durationMs, readyAt, job.jobId)
+          result.estimatedCostMicros + synthesis.costMicros, durationMs, readyAt, job.jobId),
+      env.DB.prepare(`UPDATE analysis_usage SET status = 'consumed', consumed_at = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE analysis_request_id = ? AND status = 'reserved'`).bind(readyAt, job.requestId)
     ]);
 
     if (job.playerId && primaryFinding) {
@@ -183,6 +189,10 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
       env.DB.prepare("UPDATE analysis_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
         .bind(retry ? "analyzing" : "failed", job.requestId)
     ]);
+    if (!retry) {
+      await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(job.requestId).run();
+    }
     console.error("analysis job failed", { publicId, detail });
   }
 }
