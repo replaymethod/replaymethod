@@ -44,6 +44,46 @@ test("separates liveness from configuration readiness", async () => withServer(a
   assert.equal((await readiness.json()).status, "not_ready");
 }, { token: "short" }));
 
+test("health remains responsive while replay processing is active", async () => {
+  let releaseReplay;
+  let markStarted;
+  const replayStarted = new Promise((resolve) => { markStarted = resolve; });
+  const replayReleased = new Promise((resolve) => { releaseReplay = resolve; });
+
+  await withServer(async (base) => {
+    const analysis = fetch(`${base}/v1/inspect/rocket-league`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/octet-stream",
+        "X-Replay-Method-Request": requestId,
+        "X-Replay-Method-Player": "Player",
+      },
+      body: new Uint8Array([1]),
+    });
+
+    await replayStarted;
+    try {
+      const health = await fetch(`${base}/healthz`);
+      assert.equal(health.status, 200);
+      assert.equal((await health.json()).activeRequests, 1);
+    } finally {
+      releaseReplay();
+    }
+
+    const response = await analysis;
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { kind: "inspection", normalized: { ok: true } });
+  }, {
+    token,
+    processReplay: async () => {
+      markStarted();
+      await replayReleased;
+      return { kind: "inspection", normalized: { ok: true } };
+    },
+  });
+});
+
 test("analysis rejects missing bearer token", async () => withServer(async (base) => {
   const response = await fetch(`${base}/v1/analyze/rocket-league`, {
     method: "POST",
