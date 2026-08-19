@@ -174,7 +174,15 @@ export async function POST(request: Request) {
     });
     const ownershipUrl = new URL(`/access/${claimToken}`, request.url).toString();
     let emailSent = false;
-    try { emailSent = await sendAnalysisReceived({ email, game, url: ownershipUrl }); } catch { /* status link remains the delivery fallback */ }
+    try {
+      emailSent = await sendAnalysisReceived({
+        analysisRequestId: inserted.id,
+        analysisPublicId: publicId,
+        email,
+        game,
+        url: ownershipUrl,
+      });
+    } catch { /* status link remains the delivery fallback */ }
 
     return Response.json({ publicId, jobPublicId, url, emailSent }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {

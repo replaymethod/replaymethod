@@ -2,6 +2,7 @@
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 import { processAnalysisJob } from "../lib/core/pipeline";
+import { processDueEmailDeliveries } from "../lib/email";
 
 interface Env {
   ASSETS: Fetcher;
@@ -99,7 +100,7 @@ const worker = {
   },
 
   async scheduled(_: unknown, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(processDueRetries(env));
+    ctx.waitUntil(Promise.all([processDueRetries(env), processDueEmailDeliveries(env.DB)]));
   },
 };
 

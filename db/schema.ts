@@ -186,6 +186,29 @@ export const analysisUsage = sqliteTable("analysis_usage", {
   index("analysis_usage_request_idx").on(table.analysisRequestId)
 ]);
 
+export const emailDeliveries = sqliteTable("email_deliveries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id),
+  kind: text("kind").notNull(),
+  provider: text("provider").notNull().default("resend"),
+  status: text("status").notNull().default("pending"),
+  idempotencyKey: text("idempotency_key").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  providerMessageId: text("provider_message_id"),
+  lastErrorCode: text("last_error_code"),
+  nextRetryAt: text("next_retry_at"),
+  acceptedAt: text("accepted_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("email_deliveries_public_id_unique").on(table.publicId),
+  uniqueIndex("email_deliveries_request_kind_unique").on(table.analysisRequestId, table.kind),
+  uniqueIndex("email_deliveries_idempotency_unique").on(table.idempotencyKey),
+  index("email_deliveries_retry_idx").on(table.status, table.nextRetryAt)
+]);
+
 export const gameAccounts = sqliteTable("game_accounts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   publicId: text("public_id").notNull(),

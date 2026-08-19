@@ -174,7 +174,15 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
 
     try {
       const base = env.PUBLIC_SITE_URL || "https://replaymethod.xyz";
-      await sendAnalysisReady({ email: job.email, game: job.game, url: reportUrl(base, job.publicId), mistake: report.highestImpactMistake });
+      await sendAnalysisReady({
+        database: env.DB,
+        analysisRequestId: job.requestId,
+        analysisPublicId: job.publicId,
+        email: job.email,
+        game: job.game,
+        url: reportUrl(base, job.publicId),
+        mistake: report.highestImpactMistake,
+      });
     } catch (error) {
       console.warn("analysis ready email failed", error);
     }

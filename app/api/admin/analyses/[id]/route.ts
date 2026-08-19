@@ -62,6 +62,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (becomingReady) {
       try {
         emailSent = await sendAnalysisReady({
+          analysisRequestId: existing.id,
+          analysisPublicId: existing.publicId,
           email: existing.email,
           game: existing.game,
           url: reportUrl(request.url, existing.publicId),
