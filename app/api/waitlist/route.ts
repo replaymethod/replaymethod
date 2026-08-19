@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     const db = await getDb();
     const inserted = await db.insert(waitlist).values({ email, game, source, campaign, privacyVersion: "2026-08-15" }).onConflictDoNothing().returning({ id: waitlist.id });
-    return Response.json({ created: inserted.length > 0, message: inserted.length ? "Your founding spot is reserved." : "You’re already on this game’s waitlist." }, { status: 201 });
+    return Response.json({ created: inserted.length > 0, message: inserted.length ? "Your beta signup is confirmed." : "You’re already on this game’s waitlist." }, { status: 201 });
   } catch {
     return Response.json({ error: "We couldn’t add you right now. Try again." }, { status: 500 });
   }

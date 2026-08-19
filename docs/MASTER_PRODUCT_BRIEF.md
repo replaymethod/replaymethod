@@ -115,31 +115,31 @@ generic advice, single-match overreaction and unsupported completeness claims.
 
 ### Free
 
-- first complete evidence-backed analysis;
+- one complete evidence-backed diagnosis per verified player during beta;
 - same detector quality, confidence gates and abstention behavior as paid;
 - one primary focus, evidence moments, one queue rule and a focused plan;
 - saved private report;
-- no card required;
-- after account-based limits exist: one focused check-in every rolling 30 days,
-  one active focus and a visible reset date.
+- no card and no automatic renewal;
+- a blocked, insufficient-evidence or technically failed attempt does not consume
+  the useful diagnosis.
 
-### Founding 100
+### Paid beta
 
-- planned price: **$9 per month**;
-- first 100 valid founding members;
-- price held for the first 12 paid months while continuously subscribed;
-- four complete analyses per billing month;
+- **$27 USD every three months** ($9/month effective) or **$12 USD monthly**;
+- the three-month cycle is recommended because it saves exactly $9/25% versus
+  three monthly payments and supports a bounded improvement cycle;
+- four successfully completed analyses per 30-day entitlement window;
 - cross-match recurrence and pattern memory;
 - active-focus verification and adaptive next-focus selection;
-- priority processing;
-- one month of unused-analysis rollover, capped at four;
-- cancellation stops future renewal;
+- unused analyses do not roll over;
+- cancellation stops the next renewal, preserves access through the paid period,
+  and does not remove completed reports;
 - no charge before a separate, explicit checkout.
 
-Do not launch quarterly, six-month or annual commitments during the founding
-beta. Review them only after 8–12 weeks of real paid-cohort retention and cost
-data. A future public price around $12–$15 is only a hypothesis if the recurring
-loop proves valuable. A later annual plan may use a transparent discount.
+Do not launch six-month or annual commitments during beta. Research an annual
+option only after meaningful three-month cohort retention, use and refund data
+exists. The public pricing UI must give the $27 total charge and renewal cadence
+at least equal prominence to the $9/month equivalent.
 
 ### Upgrade moments
 
@@ -147,7 +147,7 @@ Show the paid continuation only after value is visible:
 
 1. after evidence and the primary focus have been viewed;
 2. when the player chooses to track that focus across new matches;
-3. when another replay is submitted before the free reset;
+3. when another replay is submitted after the free diagnosis;
 4. when several matches are required to separate recurrence from a one-off.
 
 Primary paid message:
@@ -183,11 +183,11 @@ redesign for its own sake. Strengthen the conversion journey in this order:
 4. **Method:** Replay -> Reveal -> Practice -> Prove.
 5. **Comparison:** contrast stat trackers, generic AI and Replay Method without
    dishonest claims about named competitors.
-6. **Free versus Founding:** show exactly what is free now and what the planned
-   $9 improvement loop adds. Do not ask for a card before the report.
+6. **Free versus paid:** show exactly what the free diagnosis includes and what
+   the $12 monthly/$27 three-month improvement loop adds. Do not ask for a card
+   before the report.
 7. **Post-report offer:** only after the useful diagnosis, offer continued
-   tracking, pattern memory and verification. During beta this reserves founding
-   access; it does not charge.
+   tracking, pattern memory and verification. Waitlist signup does not charge.
 8. **Trust:** explain supported inputs, privacy, confidence, limitations and no
    rank guarantee in plain language.
 9. **Reduce noise:** shorten duplicated persuasion and keep one dominant action
@@ -289,7 +289,7 @@ coach-worthy moments.
 6. add player-level history and active-focus verification;
 7. instrument upgrade intent and cost per successful report;
 8. add payment only after the paid benefits genuinely exist;
-9. recruit and measure the first founding cohort;
+9. recruit and measure the first paid beta cohorts;
 10. expand to Riot games only through approved opt-in access.
 
 ## Metrics that decide whether the business works

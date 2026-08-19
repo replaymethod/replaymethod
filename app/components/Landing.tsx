@@ -36,7 +36,7 @@ const configs: Record<GameKey, Config> = {
     title: "Stop losing for the same reason.",
     accent: "Fix it. Prove it changed.",
     lead: "Replay Method is not another stats dashboard or AI chatbot. It finds the repeated decision holding you back, gives you one rule to train, then checks future matches for proof that the habit changed.",
-    cta: "Reserve my founding spot",
+    cta: "Join beta updates",
     currency: "rank",
     loss: "You queue again hoping this session will be different. Three hours later, you’re back where you started.",
     diagnosis: "Your decision-making drops when the match gets close.",
@@ -54,7 +54,7 @@ const configs: Record<GameKey, Config> = {
     title: "Stop guessing why you lose.",
     accent: "Find the decision costing your LP.",
     lead: "Replay Method reads your match history, finds the decisions draining your LP, and gives you one focused plan for your role, champion and rank.",
-    cta: "Reserve my League analysis",
+    cta: "Join the League beta list",
     currency: "LP",
     loss: "You win lane, lose the game, blame the team—and queue again without knowing what actually broke down.",
     diagnosis: "You give away your lead during the 14–20 minute transition.",
@@ -72,7 +72,7 @@ const configs: Record<GameKey, Config> = {
     title: "Your aim isn’t the whole problem.",
     accent: "Find the rounds costing your RR.",
     lead: "Replay Method finds the fights, positioning and utility mistakes quietly draining your RR—then tells you what to fix before your next queue.",
-    cta: "Reserve my VALORANT analysis",
+    cta: "Join the VALORANT beta list",
     currency: "RR",
     loss: "You top-frag and still lose. You aim train, queue again and repeat the same rounds without seeing why.",
     diagnosis: "Your first-death rate spikes after your team loses two rounds in a row.",
@@ -90,7 +90,7 @@ const configs: Record<GameKey, Config> = {
     title: "Stop grinding the same rank.",
     accent: "Find the habit costing your MMR.",
     lead: "Upload one representative ranked replay. Replay Method finds the invisible rotation, challenge and boost habits costing you games before you grind another 500 matches.",
-    cta: "Reserve my replay analysis",
+    cta: "Join the replay beta list",
     currency: "MMR",
     loss: "You feel faster. Your mechanics improve. But the rank graph keeps ending in the same place.",
     diagnosis: "You follow the play too closely after your teammate commits.",
@@ -156,7 +156,7 @@ function WaitlistForm({ game, config, placement, id }: { game: GameKey; config: 
       const result = await response.json() as { created?: boolean; message?: string; error?: string };
       if (!response.ok) throw new Error(result.error || "Try again");
       setStatus("success");
-      setMessage(result.message || "Your founding spot is reserved.");
+      setMessage(result.message || "Your beta signup is confirmed.");
       if (result.created) trackEvent(game, "signup", placement);
       setEmail("");
       setConsent(false);
@@ -167,7 +167,7 @@ function WaitlistForm({ game, config, placement, id }: { game: GameKey; config: 
   }
 
   if (status === "success") {
-    return <div className="signup-success" id={id} role="status"><span>✓</span><div><b>You’re on the founding list.</b><p>{message} We’ll email you when a suitable private beta spot opens. No charge today.</p></div></div>;
+    return <div className="signup-success" id={id} role="status"><span>✓</span><div><b>You’re on the beta list.</b><p>{message} We’ll email you when a suitable private beta spot opens. No charge today.</p></div></div>;
   }
 
   return <div className="form-wrap" id={id}>
@@ -176,7 +176,7 @@ function WaitlistForm({ game, config, placement, id }: { game: GameKey; config: 
         <label className="sr-only" htmlFor={`email-${placement}-${game}`}>Email address</label>
         <input id={`email-${placement}-${game}`} name="email" type="email" required autoComplete="email" inputMode="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} />
         <input className="hp-field" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" />
-        <button disabled={status === "loading"}>{status === "loading" ? "Reserving…" : config.cta}<b>→</b></button>
+        <button disabled={status === "loading"}>{status === "loading" ? "Joining…" : config.cta}<b>→</b></button>
       </div>
       <label className="consent"><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)} /><span>Email me private beta access and launch updates. I can unsubscribe anytime. <a href="/privacy">Privacy</a> · <a href="/terms">Waitlist terms</a></span></label>
     </form>
@@ -235,13 +235,13 @@ export default function Landing({ game = "general" }: { game?: GameKey }) {
           }
         />
 
-    <section className="free-layer shell"><div className="section-intro"><span className="kicker">VALUE BEFORE PAYMENT</span><h2>Don’t take our word for it.<br />Use the method for free.</h2><p>Submit a real match and receive one evidence-backed correction before deciding whether Replay Method deserves your money.</p></div><div className="free-layer-grid"><a className="free-card featured" href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "free_layer_analysis")}><span>FREE FOUNDING BETA</span><h3>Real match analysis</h3><p>Send one match, replay or VOD. Get your highest-impact repeated mistake, evidence moments and a focused next-queue plan.</p><b>Submit my match →</b></a><a className="free-card" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "free_layer_check")}><span>60-SECOND SELF CHECK</span><h3>Climb Leak Check</h3><p>No match ready? Find a likely leak class and leave with one immediate focus.</p><b>Run the check →</b></a><a className="free-card" href="/guides"><span>FREE REVIEW SYSTEM</span><h3>Replay & VOD checklists</h3><p>Review the moments that decide games instead of watching an entire match without structure.</p><b>Open the guide library →</b></a></div></section>
+    <section className="free-layer shell"><div className="section-intro"><span className="kicker">VALUE BEFORE PAYMENT</span><h2>Don’t take our word for it.<br />Use the method for free.</h2><p>Submit a real match and receive one evidence-backed correction before deciding whether Replay Method deserves your money.</p></div><div className="free-layer-grid"><a className="free-card featured" href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "free_layer_analysis")}><span>FREE PRODUCT BETA</span><h3>Real match analysis</h3><p>Send one match, replay or VOD. Get your highest-impact repeated mistake, evidence moments and a focused next-queue plan.</p><b>Submit my match →</b></a><a className="free-card" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "free_layer_check")}><span>60-SECOND SELF CHECK</span><h3>Climb Leak Check</h3><p>No match ready? Find a likely leak class and leave with one immediate focus.</p><b>Run the check →</b></a><a className="free-card" href="/guides"><span>FREE REVIEW SYSTEM</span><h3>Replay & VOD checklists</h3><p>Review the moments that decide games instead of watching an entire match without structure.</p><b>Open the guide library →</b></a></div></section>
 
     <section className="product-section shell" id="product"><div className="section-intro"><span className="kicker">THE PRODUCT, IN ONE LOOP</span><h2>Evidence in. One priority out.<br />Progress verified.</h2><p>The free report delivers a real diagnosis. The improvement loop keeps watching the same decision across future matches until the evidence says it changed.</p></div><div className="product-demo"><div className="demo-sidebar"><span>EXAMPLE PLAYER REPORT</span><strong>{config.label}</strong><div className="demo-tabs" role="tablist" aria-label="Example report views"><button className={demoTab === "diagnosis" ? "active" : ""} onClick={() => setDemoTab("diagnosis")}>01 Evidence</button><button className={demoTab === "plan" ? "active" : ""} onClick={() => setDemoTab("plan")}>02 One focus</button><button className={demoTab === "verify" ? "active" : ""} onClick={() => setDemoTab("verify")}>03 Proof</button></div><small>Illustrative product preview—not a claimed player result.</small></div><div className="demo-main">
       {demoTab === "diagnosis" && <div className="demo-panel"><div className="demo-status"><span>HIGH IMPACT PATTERN</span><b>Repeated across recent losses</b></div><h3>{config.diagnosis}</h3><p>{config.evidence}</p><div className="timeline"><span>LOSS 01<i /></span><span>LOSS 02<i /></span><span>WIN 03</span><span>LOSS 04<i /></span><span>LOSS 05<i /></span></div><div className="coach-note"><i>AI</i><div><small>WHY IT MATTERS</small><b>Fixing the repeated decision creates more value than adding another hour of unfocused grinding.</b></div></div></div>}
       {demoTab === "plan" && <div className="demo-panel"><div className="demo-status cyan"><span>NEXT-QUEUE RULE</span><b>One focus. No overload.</b></div><h3>{config.rule}</h3><p>{config.plan}</p><div className="focus-card"><span>BEFORE YOU QUEUE</span><b>Review the rule for 30 seconds.</b><small>Then play normally and focus on recognizing only this decision.</small></div><div className="focus-card"><span>AFTER THE MATCH</span><b>Mark the moment: followed, missed or not applicable.</b><small>Replay Method uses the next matches to adjust the focus.</small></div></div>}
       {demoTab === "verify" && <div className="demo-panel"><div className="demo-status green"><span>FOCUS TREND</span><b>Example progress view</b></div><h3>{config.verify}</h3><p>A rank graph alone cannot tell you whether the underlying habit improved. Replay Method tracks the decision first, then the result.</p><div className="verify-chart"><div><span>WEEK 01</span><b style={{ height: "34%" }}>34%</b></div><div><span>WEEK 02</span><b style={{ height: "51%" }}>51%</b></div><div><span>WEEK 03</span><b style={{ height: "72%" }}>72%</b></div></div><small className="demo-disclaimer">Example values for product demonstration. Improvement is not guaranteed.</small></div>}
-    </div></div><div className="demo-conversion"><div><span>FOUNDING BETA IS LIVE</span><b>Your first real match analysis is free.</b><p>See whether the method is useful on your own gameplay before deciding whether a subscription is worth it.</p></div><a href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "demo_analysis")}>Submit my first match →</a></div></section>
+    </div></div><div className="demo-conversion"><div><span>PRODUCT BETA IS OPEN</span><b>Your first real match analysis is free.</b><p>See whether the method is useful on your own gameplay before deciding whether a subscription is worth it.</p></div><a href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "demo_analysis")}>Submit my first match →</a></div></section>
 
     <section className="pain"><div className="shell pain-grid"><div><span className="kicker">THE HARDSTUCK LOOP</span><h2>{config.loss}</h2><p>More hours only make bad patterns harder to break when nobody shows you what the pattern is.</p></div><div className="loop"><div><b>01</b><span>Queue with hope</span></div><i>↓</i><div><b>02</b><span>Repeat the same mistake</span></div><i>↓</i><div><b>03</b><span>Blame aim, luck or teammates</span></div><i>↓</i><div className="hot"><b>04</b><span>Queue again anyway</span></div></div></div></section>
 
@@ -259,7 +259,7 @@ export default function Landing({ game = "general" }: { game?: GameKey }) {
 
     <section className="faq shell"><div className="section-intro"><span className="kicker">NO BULLSHIT FAQ</span><h2>Know exactly what you’re submitting.</h2></div><div className="faq-list"><details><summary>Is Replay Method live today?<b>+</b></summary><p>The production-quality beta foundation is live. Rocket League uses original .replay files; official League and VALORANT account ingestion is awaiting Riot production approval. A report is only produced when the available evidence supports it.</p></details><details><summary>Does Replay Method guarantee I rank up?<b>+</b></summary><p>No honest coach can guarantee a rank. Replay Method exposes patterns, focuses practice and tracks behavior. You still have to play and apply the feedback.</p></details><details><summary>Which games are supported?<b>+</b></summary><p>Rocket League is the first deep replay adapter. League of Legends and VALORANT share the same product foundation and will activate through official opt-in Riot connections after approval.</p></details><details><summary>What can I submit?<b>+</b></summary><p>Rocket League automation requires the original PC .replay file. League and VALORANT beta requests can preserve a representative match link, but unverified public profiles are never used to invent private-match coaching.</p></details><details><summary>What happens after submission?<b>+</b></summary><p>You immediately receive a private status link. It shows the real pipeline stage, report evidence and engine versions—or an honest blocked state when access or evidence is insufficient.</p></details><details><summary>Why not just use a stat tracker?<b>+</b></summary><p>Trackers are excellent at showing rank, history and performance. Replay Method turns repeated patterns into one prioritized correction you can apply in the next match.</p></details></div></section>
 
-    <section className="final"><div className="shell"><span className="kicker">REPLAY. REVEAL. PRACTICE. PROVE.</span><h2>Stop hoping the rank changes.<br />Change what creates the rank.</h2><p className="final-lead">Submit one real match. Get the first Replay Method report free.</p><a className="final-analysis-cta" href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "final_analysis")}>Analyze my match — free →</a><p className="final-alt">Not ready to submit? Join the founding updates below.</p><WaitlistForm game={game} config={config} placement="final_form" id="final-signup" /><small>Private beta · First analysis free · No card</small></div></section>
+    <section className="final"><div className="shell"><span className="kicker">REPLAY. REVEAL. PRACTICE. PROVE.</span><h2>Stop hoping the rank changes.<br />Change what creates the rank.</h2><p className="final-lead">Submit one real match. Get the first Replay Method report free.</p><a className="final-analysis-cta" href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "final_analysis")}>Analyze my match — free →</a><p className="final-alt">Not ready to submit? Join beta updates below.</p><WaitlistForm game={game} config={config} placement="final_form" id="final-signup" /><small>Private beta · First analysis free · No card</small></div></section>
     <footer className="shell"><div className="brand"><span className="logo">↻</span><span>replay<span>method</span></span></div><p>A better way to get better.</p><div className="footer-links"><a href="/analyze">Free analysis</a><a href="/reports">My reports</a><a href="/guides">Guides</a><a href="mailto:contact@replaymethod.xyz">Contact</a><a href="/privacy">Privacy</a><a href="/beta-terms">Beta terms</a></div><small>Not affiliated with Riot Games, Psyonix or Epic Games.</small></footer>
     <div className="mobile-join"><div><span>FIRST MATCH FREE</span><b>Get a private diagnosis</b></div><a href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "mobile_analysis")}>Analyze →</a></div>
   </main>;

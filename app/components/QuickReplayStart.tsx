@@ -170,7 +170,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       <label className="quick-email"><span>Private report email *</span><input type="email" autoComplete="email" inputMode="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@email.com" required /></label>
       <p className="quick-email-note">Upload first, email last. Used to deliver and recover this private report—not for marketing unless you choose it below.</p>
       <label className="quick-check"><input type="checkbox" checked={dataConsent} onChange={event => setDataConsent(event.target.checked)} required /><span>Process this replay and email to deliver my private beta analysis. <a href="/privacy" target="_blank">Privacy</a></span></label>
-      <label className="quick-check optional"><input type="checkbox" checked={updatesConsent} onChange={event => setUpdatesConsent(event.target.checked)} /><span>Also send product updates and founding access. Optional.</span></label>
+      <label className="quick-check optional"><input type="checkbox" checked={updatesConsent} onChange={event => setUpdatesConsent(event.target.checked)} /><span>Also send product updates and beta-access news. Optional.</span></label>
       <button className="quick-submit" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "START FREE ANALYSIS →"}</span></button>
       <small>No card · Private status link appears immediately · The engine stops instead of guessing</small>
     </div>}

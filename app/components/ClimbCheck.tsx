@@ -81,7 +81,7 @@ function ResultSignup({ game, leak }: { game: Game; leak: Leak }) {
       const result = await response.json() as { created?: boolean; message?: string; error?: string };
       if (!response.ok) throw new Error(result.error || "Try again");
       setStatus("success");
-      setMessage(result.message || "Your founding spot is reserved.");
+      setMessage(result.message || "Your beta signup is confirmed.");
       if (result.created) sendEvent("signup", game, "climb_check_result_form");
     } catch (error) {
       setStatus("error");
@@ -90,12 +90,12 @@ function ResultSignup({ game, leak }: { game: Game; leak: Leak }) {
   }
 
   if (status === "success") {
-    return <div className="result-signup-success" role="status"><i>✓</i><div><b>You’re on the founding list.</b><p>{message} We’ll invite suitable testers to a free first beta analysis.</p></div></div>;
+    return <div className="result-signup-success" role="status"><i>✓</i><div><b>You’re on the beta list.</b><p>{message} We’ll invite suitable testers to a free first beta analysis.</p></div></div>;
   }
 
   return <form className="result-signup" onSubmit={submit}>
-    <div className="result-signup-copy"><span>FREE FIRST BETA ANALYSIS</span><h3>Test the real method on your gameplay.</h3><p>Reserve a founding spot. No card and no charge today.</p></div>
-    <div className="result-signup-fields"><label className="sr-only" htmlFor={`result-email-${game}`}>Email address</label><input id={`result-email-${game}`} type="email" required autoComplete="email" inputMode="email" placeholder="you@email.com" value={email} onChange={event => setEmail(event.target.value)} /><input className="hp-field" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" /><button disabled={status === "loading"}>{status === "loading" ? "Reserving…" : "Reserve free analysis →"}</button></div>
+    <div className="result-signup-copy"><span>FREE FIRST BETA ANALYSIS</span><h3>Test the real method on your gameplay.</h3><p>Join the beta list. No card and no charge today.</p></div>
+    <div className="result-signup-fields"><label className="sr-only" htmlFor={`result-email-${game}`}>Email address</label><input id={`result-email-${game}`} type="email" required autoComplete="email" inputMode="email" placeholder="you@email.com" value={email} onChange={event => setEmail(event.target.value)} /><input className="hp-field" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" /><button disabled={status === "loading"}>{status === "loading" ? "Joining…" : "Join beta list →"}</button></div>
     <label className="consent"><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)} /><span>Email me private beta access and launch updates. I can unsubscribe anytime. <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></label>
     {message && <p className={`result-signup-message ${status}`} aria-live="polite">{message}</p>}
   </form>;
