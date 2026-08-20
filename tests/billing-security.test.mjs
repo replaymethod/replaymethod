@@ -28,23 +28,24 @@ test("closed or Riot request-only pricing cannot enter paid Checkout", async () 
 
 test("all displayed paid durations map only to server-owned Stripe Price IDs", async () => {
   const source = await readFile(stripePath, "utf8");
-  for (const plan of ["annual", "semiannual", "quarterly", "monthly"]) {
+  for (const plan of ["quarterly", "monthly"]) {
     assert.match(source, new RegExp(`value === "${plan}"`));
     assert.match(source, new RegExp(`prices\\.${plan}`));
   }
   assert.match(source, /Record<PaidPlan, string>/);
 });
 
-test("pricing preserves every duration while leading with proof and a low-risk paid start", async () => {
+test("pricing keeps the beta choice small while leading with proof and a low-risk paid start", async () => {
   const source = await readFile(pricingPath, "utf8");
-  const orderedPlans = ["annual", "semiannual", "quarterly", "monthly"];
+  const orderedPlans = ["monthly", "quarterly"];
   const positions = orderedPlans.map(plan => source.indexOf(`key: "${plan}"`));
   assert.ok(positions.every(position => position >= 0));
   assert.deepEqual([...positions].sort((a, b) => a - b), positions);
-  for (const price of ["$89", "$49", "$27", "$12", "$0"]) assert.match(source, new RegExp(`\\${price}`));
+  for (const price of ["$5.99", "$15.99", "$0"]) assert.match(source, new RegExp(`\\${price}`));
+  for (const retiredPlan of ["annual", "semiannual"]) assert.doesNotMatch(source, new RegExp(`key: "${retiredPlan}"`));
   assert.match(source, /useState<PlanKey>\("free"\)/);
   assert.match(source, /LOWEST-RISK PAID START/);
-  assert.match(source, /LOWEST EFFECTIVE RATE/);
+  assert.match(source, /ONE IMPROVEMENT CYCLE/);
   assert.doesNotMatch(source, /MOST POPULAR/i);
 });
 

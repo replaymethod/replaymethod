@@ -566,11 +566,10 @@ main{overflow:clip;background:linear-gradient(180deg,rgba(4,6,14,.25),rgba(7,10,
 
 /* Pricing: complete card at a time on phones; no clipped carousel. */
 .pricing-mobile-tabs{display:none}
-.pricing-grid>[data-plan="free"]{order:1;grid-column:span 3}
-.pricing-grid>[data-plan="monthly"]{order:2;grid-column:span 3}
-.pricing-grid>[data-plan="quarterly"]{order:3;grid-column:span 2}
-.pricing-grid>[data-plan="semiannual"]{order:4;grid-column:span 2}
-.pricing-grid>[data-plan="annual"]{order:5;grid-column:span 2}
+.pricing-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pricing-grid>[data-plan="free"]{order:1;grid-column:span 1}
+.pricing-grid>[data-plan="monthly"]{order:2;grid-column:span 1}
+.pricing-grid>[data-plan="quarterly"]{order:3;grid-column:span 1}
 .pricing-capabilities li{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:10px;padding:0!important}
 .pricing-capabilities li:before{content:none!important}
 .pricing-capabilities li>i{display:grid;place-items:center;width:38px;height:28px;border:1px solid #34415e;border-radius:7px;background:#0a0f1d;color:#7defff;font-size:7px;font-style:normal;font-weight:900;letter-spacing:.04em}

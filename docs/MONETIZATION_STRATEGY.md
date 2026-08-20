@@ -1,31 +1,30 @@
 # Replay Method public pricing contract
 
-Last updated: 2026-08-19.
+Last updated: 2026-08-20.
 
 This document contains only the product facts needed to build and present Replay
 Method pricing truthfully. Competitor research, unit economics, CAC tolerance and
 commercial sensitivity analysis are private.
 
-The earlier $9/month Founding 100 scarcity proposal is superseded. Following the
-owner's 2026-08-19 packaging decision, the transparent $89/$49/$27/$12 duration
-ladder is the selected paid structure alongside the free first diagnosis.
+The earlier $9/month Founding 100 scarcity proposal and the later four-duration
+$89/$49/$27/$12 ladder are superseded. The 2026-08-20 launch review selected a
+smaller beta choice: free proof, $5.99 monthly, or $15.99 every three months.
+The evidence and reversible experiment design are recorded in
+`docs/PRICING_RESEARCH_2026-08-20.md`.
 
 ## Selected beta offers
 
 | Offer | Customer charge | Included use | Renewal |
 | --- | ---: | --- | --- |
 | First diagnosis | $0; no card | One successfully completed, full-quality evidence-backed analysis per verified player during beta | None |
-| 12-month climb — lowest effective rate | $89 USD every twelve months; $7.42/month effective | Four successfully completed analyses in each 30-day entitlement window | $89 every twelve months until canceled |
-| 6-month climb | $49 USD every six months; $8.17/month effective | Four successfully completed analyses in each 30-day entitlement window | $49 every six months until canceled |
-| 3-month cycle | $27 USD every three months; $9/month effective | Four successfully completed analyses in each 30-day entitlement window | $27 every three months until canceled |
-| Monthly | $12 USD per month | Four successfully completed analyses in each 30-day entitlement window | $12 monthly until canceled |
+| Monthly — lowest commitment | $5.99 USD per month | Four successfully completed analyses in each 30-day entitlement window | $5.99 monthly until canceled |
+| 3-month cycle | $15.99 USD every three months; $5.33/month effective | Four successfully completed analyses in each 30-day entitlement window | $15.99 every three months until canceled |
 
-The annual plan has the objectively lowest effective monthly rate and saves $55
-(38%) versus twelve monthly payments. The six-month plan saves $23 (32%), and the
-three-month plan saves $9 (25%). Public UI must show the total charged today and
-at renewal at least as prominently as every effective monthly equivalent. Plan
-mix, retention, refunds, support and utilization must be measured closely; longer
-commitments are reversible owner-directed commercial experiments, not proof of demand.
+The three-month plan saves $1.98 (11%) versus three monthly payments. Public UI
+must show the total charged today and at renewal at least as prominently as the
+effective monthly equivalent. Plan mix, conversion, retention, refunds, support,
+utilization and contribution margin must be measured closely. This launch price
+is a reversible commercial hypothesis, not proof of demand.
 
 ## What payment changes
 
@@ -55,10 +54,8 @@ delivered report does.
 
 ## Renewal and cancellation
 
-- Monthly access renews at $12 each month until canceled.
-- The three-month cycle renews at $27 every three months until canceled.
-- The six-month climb renews at $49 every six months until canceled.
-- The twelve-month climb renews at $89 every twelve months until canceled.
+- Monthly access renews at $5.99 each month until canceled.
+- The three-month cycle renews at $15.99 every three months until canceled.
 - Cancellation is self-service through Stripe Customer Portal.
 - Cancellation stops the next renewal and preserves paid access through the
   current paid period.
@@ -71,11 +68,9 @@ delivered report does.
 
 Recommended order:
 
-1. twelve-month climb;
-2. six-month climb;
-3. three-month cycle;
-4. flexible monthly plan;
-5. free first diagnosis.
+1. free first diagnosis;
+2. flexible monthly plan;
+3. three-month improvement cycle.
 
 The recommendation is a transparent label, not a hidden default. Each plan must
 show:
@@ -110,7 +105,7 @@ The primary message remains:
 ## Measurement before changing the offer
 
 Measure successful free completion, report usefulness, free-to-paid conversion,
-plan mix, analysis use, churn, three-/six-/twelve-month renewal,
+plan mix, analysis use, monthly retention, three-month renewal,
 refunds/disputes, support confusion and cost per completed report. Do not use a
 longer commitment to disguise weak retention, and do not weaken the free detector
 to force conversion.

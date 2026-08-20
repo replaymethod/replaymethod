@@ -125,11 +125,11 @@ generic advice, single-match overreaction and unsupported completeness claims.
 
 ### Paid beta
 
-- **$89 USD every twelve months** ($7.42/month effective), **$49 USD every six
-  months** ($8.17/month effective), **$27 USD every three months** ($9/month
-  effective), or **$12 USD monthly**;
-- present the longest commitment first while showing the full amount charged and
-  renewal cadence at least as prominently as every effective monthly rate;
+- **$5.99 USD monthly** or **$15.99 USD every three months** ($5.33/month
+  effective);
+- present the free proof first, then monthly and the three-month cycle; show the
+  full amount charged and renewal cadence at least as prominently as every
+  effective monthly rate;
 - four successfully completed analyses per 30-day entitlement window;
 - cross-match recurrence and pattern memory;
 - active-focus verification and adaptive next-focus selection;
@@ -138,11 +138,12 @@ generic advice, single-match overreaction and unsupported completeness claims.
   and does not remove completed reports;
 - no charge before a separate, explicit checkout.
 
-Six- and twelve-month commitments are owner-directed, reversible commercial
-experiments. Closely measure plan mix, useful-report completion, retention,
-utilization, refunds, disputes and support confusion. Do not use long commitments
-to hide weak retention, and do not open paid checkout before the engine and legal
-activation gates pass.
+Six- and twelve-month commitments were retired from the beta offer on 2026-08-20.
+They may return only if observed retention and willingness-to-pay support them.
+Closely measure plan mix, useful-report completion, retention, utilization,
+refunds, disputes, support confusion and contribution margin. Do not use long
+commitments to hide weak retention, and do not open paid checkout before the
+engine, cost and legal activation gates pass.
 
 ### Upgrade moments
 
@@ -187,7 +188,7 @@ redesign for its own sake. Strengthen the conversion journey in this order:
 5. **Comparison:** contrast stat trackers, generic AI and Replay Method without
    dishonest claims about named competitors.
 6. **Free versus paid:** show exactly what the free diagnosis includes and what
-   the $12 monthly/$27 three-month improvement loop adds. Do not ask for a card
+   the $5.99 monthly/$15.99 three-month improvement loop adds. Do not ask for a card
    before the report.
 7. **Post-report offer:** only after the useful diagnosis, offer continued
    tracking, pattern memory and verification. Waitlist signup does not charge.

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { trackProductEvent, type AnalyticsGame } from "../../lib/client-analytics";
 
-type PaidPlan = "annual" | "semiannual" | "quarterly" | "monthly";
+type PaidPlan = "quarterly" | "monthly";
 type PlanKey = PaidPlan | "free";
 
 const plans: Array<{
@@ -19,49 +19,27 @@ const plans: Array<{
   featured?: boolean;
 }> = [
   {
-    key: "annual",
-    number: "01",
-    eyebrow: "12-MONTH CLIMB",
-    price: "$89",
-    period: "every 12 months",
-    equivalent: "$7.42/month effective · $89 charged today and at renewal",
-    saving: "Save $55 vs twelve monthly payments (38%)",
-    fit: "For players committing to a full season of measured improvement.",
-    cta: "Choose the 12-month climb →",
-  },
-  {
-    key: "semiannual",
+    key: "monthly",
     number: "02",
-    eyebrow: "6-MONTH CLIMB",
-    price: "$49",
-    period: "every 6 months",
-    equivalent: "$8.17/month effective · $49 charged today and at renewal",
-    saving: "Save $23 vs six monthly payments (32%)",
-    fit: "For building and verifying more than one focused habit across a ranked split.",
-    cta: "Choose the 6-month climb →",
+    eyebrow: "MONTH TO MONTH",
+    price: "$5.99",
+    period: "per month",
+    equivalent: "$5.99 charged today and monthly",
+    saving: "Lowest commitment",
+    fit: "For proving the improvement loop without a large upfront charge.",
+    cta: "Choose monthly →",
+    featured: true,
   },
   {
     key: "quarterly",
     number: "03",
     eyebrow: "3-MONTH CYCLE",
-    price: "$27",
+    price: "$15.99",
     period: "every 3 months",
-    equivalent: "$9/month effective · $27 charged today and at renewal",
-    saving: "Save $9 vs three monthly payments (25%)",
+    equivalent: "$5.33/month effective · $15.99 charged today and at renewal",
+    saving: "Save $1.98 vs three monthly payments (11%)",
     fit: "For giving one focused change enough matches to become measurable.",
     cta: "Choose the 3-month cycle →",
-  },
-  {
-    key: "monthly",
-    number: "04",
-    eyebrow: "MONTH TO MONTH",
-    price: "$12",
-    period: "per month",
-    equivalent: "$12 charged today and monthly",
-    saving: "Maximum flexibility",
-    fit: "For continuing the improvement loop without a longer commitment.",
-    cta: "Choose monthly →",
-    featured: true,
   },
 ];
 
@@ -75,10 +53,8 @@ const paidFeatures = [
 
 const mobileChoices: Array<{ key: PlanKey; label: string; price: string }> = [
   { key: "free", label: "Start free", price: "$0" },
-  { key: "monthly", label: "Monthly", price: "$12" },
-  { key: "quarterly", label: "3 months", price: "$27" },
-  { key: "semiannual", label: "6 months", price: "$49" },
-  { key: "annual", label: "12 months", price: "$89" },
+  { key: "monthly", label: "Monthly", price: "$5.99" },
+  { key: "quarterly", label: "3 months", price: "$15.99" },
 ];
 
 export default function PricingLadder({ analysisHref, game, requestOnly = false, checkoutOpen = false, replayReady = true }: { analysisHref: string; game: AnalyticsGame; requestOnly?: boolean; checkoutOpen?: boolean; replayReady?: boolean }) {
@@ -137,7 +113,7 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false,
       <div className="pricing-heading">
         <span className="kicker">PROVE VALUE FIRST. THEN CHOOSE CADENCE.</span>
         <h2 id="pricing-title">{requestOnly ? "Official access first. Payment comes later." : "Start free. Commit only after the product earns it."}</h2>
-        <p>{requestOnly ? "League and VALORANT paid access cannot begin until official opt-in ingestion is active. You can preserve a free beta request without a card today." : replayReady ? "The first supported analysis is free. Monthly is the lowest-risk paid next step; longer cycles lower the effective rate only for players who already want continued verification." : "Prices are shown for transparency, but checkout and replay intake remain closed until the production quality, tax and platform gates are complete. Joining the beta list is free."}</p>
+        <p>{requestOnly ? "League and VALORANT paid access cannot begin until official opt-in ingestion is active. You can preserve a free beta request without a card today." : replayReady ? "The first supported analysis is free. Continue month to month for $5.99, or choose one three-month improvement cycle only after the evidence earns it." : "Prices are shown for transparency, but checkout and replay intake remain closed until the production quality, tax and platform gates are complete. Joining the beta list is free."}</p>
       </div>
       <div className="pricing-mobile-tabs" role="tablist" aria-label="Choose a plan to compare">
         {mobileChoices.map(choice => <button type="button" role="tab" aria-selected={activePlan === choice.key} className={activePlan === choice.key ? "active" : ""} onClick={() => setActivePlan(choice.key)} key={choice.key}><span>{choice.label}</span><b>{choice.price}</b></button>)}
@@ -148,7 +124,7 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false,
           <article className={`pricing-card ${plan.featured ? "featured" : ""} ${activePlan === plan.key ? "mobile-active" : ""}`} data-plan={plan.key} key={plan.key} aria-busy={loading === plan.key}>
             <div className="pricing-rank"><span>{plan.number}</span>{plan.eyebrow}</div>
             {plan.featured && <strong className="pricing-badge">LOWEST-RISK PAID START</strong>}
-            {plan.key === "annual" && <strong className="pricing-badge">LOWEST EFFECTIVE RATE · SAVE 38%</strong>}
+            {plan.key === "quarterly" && <strong className="pricing-badge">ONE IMPROVEMENT CYCLE · SAVE 11%</strong>}
             <div className="pricing-price"><b>{plan.price}</b><span>{plan.period}</span></div>
             <p className="pricing-equivalent">{plan.equivalent}</p>
             <strong className="pricing-saving">{plan.saving}</strong>
@@ -161,7 +137,7 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false,
         ))}
 
         <a className={`pricing-card free ${activePlan === "free" ? "mobile-active" : ""}`} data-plan="free" href={analysisHref} aria-label={requestOnly ? "Save a free Riot access beta request" : replayReady ? "Start one free Replay Method evidence check" : "Join the free Replay Method replay beta list"}>
-          <div className="pricing-rank"><span>05</span>START WITH PROOF</div>
+          <div className="pricing-rank"><span>01</span>START WITH PROOF</div>
           <div className="pricing-price"><b>$0</b><span>{requestOnly ? "access request" : replayReady ? "first evidence check" : "beta request"}</span></div>
           <p className="pricing-equivalent">{requestOnly ? "Private request · no card · no renewal" : replayReady ? "Verified outcome · no card · no renewal" : "First-access email · no file · no card"}</p>
           <strong className="pricing-saving">{requestOnly ? "Official ingestion remains pending" : replayReady ? "Experience the quality standard first" : "Production quality validation remains in progress"}</strong>
@@ -177,7 +153,7 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false,
       {!requestOnly && checkoutOpen && <label className="pricing-adult"><input type="checkbox" checked={adultPurchaser} onChange={event => setAdultPurchaser(event.target.checked)} /><span><strong>18+ purchaser.</strong> I confirm that I am at least 18 and can enter this renewing subscription.</span></label>}
 
       <div className="pricing-trust">
-        <p><strong>Clear renewal.</strong> Plans renew at the displayed total: $89 yearly, $49 every six months, $27 every three months or $12 monthly.</p>
+        <p><strong>Clear renewal.</strong> Plans renew at the displayed total: $5.99 monthly or $15.99 every three months.</p>
         <p><strong>Simple cancellation.</strong> Cancel through the customer portal before renewal; paid access continues to period end and completed reports remain readable.</p>
         <p><strong>No rank guarantee.</strong> Coaching can improve decision quality, not promise a competitive result. Paid beta access is available only to purchasers aged 18 or over.</p>
       </div>
