@@ -14,6 +14,9 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 const localBindingConfig = {
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
+  vars: {
+    REPLAYMETHOD_E2E_FIXTURES: process.env.REPLAYMETHOD_E2E_FIXTURES === "true" ? "true" : "false",
+  },
   d1_databases: d1
     ? [
         {

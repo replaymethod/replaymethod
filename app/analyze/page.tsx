@@ -15,9 +15,12 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
   const initialHypothesis = query.hypothesis?.trim().slice(0, 120) || "";
   const initialPlatform = ["pc", "ps5", "xbox", "switch"].includes(query.platform || "") ? query.platform as "pc" | "ps5" | "xbox" | "switch" : null;
   let engineOpen = false;
+  let videoOpen = false;
   try {
     const { env } = await import("cloudflare:workers");
-    engineOpen = subsystemEnabled((env as unknown as { RL_ENGINE_ENABLED?: string }).RL_ENGINE_ENABLED);
+    const runtime = env as unknown as { RL_ENGINE_ENABLED?: string; RL_PUBLIC_DETECTORS_ENABLED?: string; RL_VIDEO_ANALYSIS_ENABLED?: string };
+    engineOpen = subsystemEnabled(runtime.RL_ENGINE_ENABLED) && subsystemEnabled(runtime.RL_PUBLIC_DETECTORS_ENABLED);
+    videoOpen = subsystemEnabled(runtime.RL_VIDEO_ANALYSIS_ENABLED);
   } catch { /* Local and static previews keep replay intake safely closed. */ }
-  return <AnalyzeFlow initialGame={initialGame} initialHypothesis={initialHypothesis} initialPlatform={initialPlatform} engineOpen={engineOpen} />;
+  return <AnalyzeFlow initialGame={initialGame} initialHypothesis={initialHypothesis} initialPlatform={initialPlatform} engineOpen={engineOpen} videoOpen={videoOpen} />;
 }

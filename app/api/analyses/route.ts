@@ -86,8 +86,16 @@ export async function POST(request: Request) {
 
     if (game === "rocket-league" && platform === "pc" && hasReplay) {
       const { env } = await import("cloudflare:workers");
-      if (!subsystemEnabled((env as unknown as { RL_ENGINE_ENABLED?: string }).RL_ENGINE_ENABLED)) {
+      const runtime = env as unknown as { RL_ENGINE_ENABLED?: string; RL_PUBLIC_DETECTORS_ENABLED?: string };
+      if (!subsystemEnabled(runtime.RL_ENGINE_ENABLED) || !subsystemEnabled(runtime.RL_PUBLIC_DETECTORS_ENABLED)) {
         return Response.json({ error: "Rocket League replay intake is temporarily closed while the production quality gate is completed. Join the beta list for first access." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "86400" } });
+      }
+    }
+
+    if (game === "rocket-league" && platform !== "pc") {
+      const { env } = await import("cloudflare:workers");
+      if (!subsystemEnabled((env as unknown as { RL_VIDEO_ANALYSIS_ENABLED?: string }).RL_VIDEO_ANALYSIS_ENABLED)) {
+        return Response.json({ error: "Console video analysis is not live yet. Join the console waitlist for first access." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "86400" } });
       }
     }
 

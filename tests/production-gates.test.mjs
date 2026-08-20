@@ -14,13 +14,15 @@ test("Rocket League intake fails closed before upload storage", async () => {
   assert.ok(gate < storage, "engine gate must run before the replay is stored");
 });
 
-test("closed production landing sends replay CTAs to the waitlist", async () => {
+test("closed production landing sends players to a working free tool or waitlist", async () => {
   const landing = await read("../app/components/Landing.tsx");
   const home = await read("../app/page.tsx");
   assert.match(home, /RL_ENGINE_ENABLED/);
+  assert.match(home, /RL_PUBLIC_DETECTORS_ENABLED/);
   assert.match(landing, /const intakeHref = replayClosed \? "#join-beta" : analysisHref/);
-  assert.match(landing, /engineOpen \? <><QuickReplayStart/);
-  assert.match(landing, /No file or card today/);
+  assert.match(landing, /Try the free Climb Check/);
+  assert.match(landing, /Console video analysis and official Riot match analysis are not live yet/);
+  assert.doesNotMatch(landing, /QuickReplayStart/);
 });
 
 test("verified player data controls require auth, origin and explicit deletion confirmation", async () => {

@@ -144,6 +144,8 @@ export type AdapterBlocked = {
   publicMessage: string;
   internalMessage: string;
   retryable: boolean;
+  candidatePlayers?: string[];
+  userResolvable?: boolean;
 };
 
 export type AdapterResult = AdapterSuccess | AdapterBlocked;

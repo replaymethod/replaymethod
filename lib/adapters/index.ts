@@ -38,8 +38,16 @@ export type AdapterEnv = {
   RIOT_API_TIMEOUT_MS?: string;
 };
 
-function blocked(code: string, publicMessage: string, internalMessage: string, retryable = false): AdapterResult {
-  return { kind: "blocked", code, publicMessage, internalMessage, retryable };
+function blocked(code: string, publicMessage: string, internalMessage: string, retryable = false, candidatePlayers: string[] = []): AdapterResult {
+  return {
+    kind: "blocked",
+    code,
+    publicMessage,
+    internalMessage,
+    retryable,
+    candidatePlayers,
+    userResolvable: ["subject_player_not_found", "subject_player_ambiguous"].includes(code) && candidatePlayers.length > 0,
+  };
 }
 
 async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promise<AdapterResult> {
@@ -89,6 +97,7 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
       publicMessage: string;
       internalMessage: string;
       retryable: boolean;
+      candidatePlayers: string[];
     }> = {};
     try { detail = await response.json(); } catch { /* a non-contract worker must still fail safely */ }
     return blocked(
@@ -96,6 +105,7 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
       detail.publicMessage || "This replay version or file could not be parsed safely.",
       detail.internalMessage || "RL engine returned HTTP 422 without a structured error.",
       detail.retryable === true,
+      Array.isArray(detail.candidatePlayers) ? detail.candidatePlayers : [],
     );
   }
   if (response.status === 401 || response.status === 403) {

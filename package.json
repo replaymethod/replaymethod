@@ -11,6 +11,10 @@
     "build": "bash scripts/build-verified.sh",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/*.test.mjs services/rl-engine/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:desktop": "playwright test --project=desktop-chromium",
+    "test:e2e:mobile": "playwright test --project=mobile-chromium",
+    "test:release": "npm run lint && npm test && npm run test:e2e",
     "rl-engine:start": "node services/rl-engine/server.mjs",
     "rl-engine:test": "node --test services/rl-engine/*.test.mjs",
     "rl-engine:calibrate": "node scripts/calibrate-rl-engine.mjs",
@@ -31,6 +35,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
     "@tailwindcss/postcss": "4.2.1",
+    "@playwright/test": "^1.62.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",

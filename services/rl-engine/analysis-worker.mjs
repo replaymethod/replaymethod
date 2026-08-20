@@ -19,6 +19,7 @@ parentPort.once("message", ({ operation, bytes, player, rank, publicOutputEnable
         name: error?.name,
         code: error?.code,
         publicMessage: error?.publicMessage,
+        candidatePlayers: error?.candidatePlayers,
         message: error instanceof Error ? error.message : "Unknown replay worker failure.",
       },
     });

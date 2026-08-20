@@ -65,9 +65,9 @@ export default function HardstuckHook({
     <section className="hardstuck-hook" aria-labelledby="hardstuck-title">
       <div className="shell hardstuck-shell">
         <div className="hardstuck-copy">
-          <span className="kicker">10-SECOND HARDSTUCK CHECK</span>
-          <h2 id="hardstuck-title">What keeps happening in your losses?</h2>
-          <p>Pick the closest pattern. Your replay decides whether the hypothesis is actually true.</p>
+          <span className="kicker">START WITH THE PROBLEM</span>
+          <h2 id="hardstuck-title">What keeps going wrong?</h2>
+          <p>Pick the closest answer. We turn it into one clear thing to check next match.</p>
         </div>
 
         <div className="hardstuck-game">
@@ -101,15 +101,15 @@ export default function HardstuckHook({
 
           <div className="hardstuck-console" data-selected={selected ?? "idle"}>
             <div className="hardstuck-console-head">
-              <span>HYPOTHESIS CONSOLE</span>
+              <span>YOUR STARTING POINT</span>
               <span className="hardstuck-console-status">
                 <i aria-hidden="true" />
-                {selected === null ? "WAITING FOR INPUT" : selectedContext ? "HYPOTHESIS ARMED" : `PATTERN 0${selected + 1} LOCKED`}
+                {selected === null ? "CHOOSE ONE" : selectedContext ? "READY FOR THE NEXT MATCH" : `PATTERN 0${selected + 1} SELECTED`}
               </span>
             </div>
 
             <div className={`hypothesis-calibrator ${selectedPattern ? "ready" : ""}`}>
-              <div><span>CALIBRATE THE HYPOTHESIS</span><b>{selectedPattern ? "When does it usually break?" : "Choose a pattern to unlock"}</b></div>
+              <div><span>MAKE IT SPECIFIC</span><b>{selectedPattern ? "When does it usually happen?" : "Choose a pattern first"}</b></div>
               <div role="group" aria-label="Choose when the pattern usually happens">
                 {pressureContexts.map((item, index) => <button type="button" disabled={!selectedPattern} className={context === index ? "active" : ""} aria-pressed={context === index} onClick={() => setContext(index)} key={item.key}><span>0{index + 1}</span><b>{item.label}</b><small>{item.detail}</small></button>)}
               </div>
@@ -137,16 +137,16 @@ export default function HardstuckHook({
               aria-live="polite"
               aria-atomic="true"
             >
-              <span>{selectedContext ? "HYPOTHESIS READY TO TEST" : selectedPattern ? "POSSIBLE SIGNAL" : "SELECT A RECURRING PATTERN"}</span>
+              <span>{selectedContext ? "READY TO TEST" : selectedPattern ? "POSSIBLE PATTERN" : "CHOOSE WHAT FEELS FAMILIAR"}</span>
               <strong>
                 {selectedPattern
                   ? `${selectedPattern.hypothesis}${selectedContext ? ` You notice it most ${selectedContext.phrase}.` : ""}`
-                  : "The match may contain a repeated decision your final score never shows."}
+                  : "The result changes, but one costly decision may keep returning."}
               </strong>
               <p>
                 {selectedPattern
-                  ? selectedContext ? "Locked as a test—not a diagnosis. The replay still has to support frequency, impact and counter-evidence." : "Add the pressure context, then let match evidence decide whether the pattern is real and worth fixing."
-                  : "Choose the closest match. We will treat it as a hypothesis until the replay supports it."}
+                  ? selectedContext ? "This is a starting point, not a diagnosis. Use it as the one thing to watch in your next review." : "Add when it happens so the next check has one clear target."
+                  : "Choose the closest answer. You can change it at any time."}
               </p>
             </div>
 

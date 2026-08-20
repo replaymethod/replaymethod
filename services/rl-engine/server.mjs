@@ -70,6 +70,7 @@ function clientError(response, error) {
     code: known ? error.code : "rl_engine_failure",
     publicMessage: known ? error.publicMessage : "The replay engine failed safely. Your upload was not converted into coaching.",
     internalMessage: (error instanceof Error ? error.message : "Unknown replay engine failure.").slice(0, 1800),
+    candidatePlayers: inputError && Array.isArray(error.candidatePlayers) ? error.candidatePlayers : undefined,
     retryable: !known,
   });
 }
@@ -97,8 +98,9 @@ function replayWorkerError(payload) {
     const error = new ReplayInputError(
       payload.code,
       payload.publicMessage ?? "The replay could not be parsed safely.",
+      payload.message,
+      Array.isArray(payload.candidatePlayers) ? payload.candidatePlayers : [],
     );
-    if (typeof payload.message === "string") error.message = payload.message;
     return error;
   }
   const error = new Error(

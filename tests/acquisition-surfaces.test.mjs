@@ -38,9 +38,10 @@ test("distinguishes Riot access requests from evidence-gated replay outcomes", a
     source("../app/analyze/page.tsx"),
   ]);
   assert.match(landing, /const riotRequest = game === "league" \|\| game === "valorant"/);
-  assert.match(landing, /Official ingestion is pending/);
+  assert.match(landing, /Automated match analysis opens after official Riot access/);
   assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
   assert.match(intake, /START REPLAY EVIDENCE CHECK/);
+  assert.match(intake, /Automated League and VALORANT analysis is not live/);
   assert.doesNotMatch(quickReplay, /Get one priority|START FREE ANALYSIS/);
   assert.doesNotMatch(metadata, /get one focused Replay Method diagnosis/i);
 });

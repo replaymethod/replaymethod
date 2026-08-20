@@ -25,6 +25,11 @@ const stageOrder: Record<string, number> = {
   completed: 5
 };
 
+function utcTimestamp(value: string) {
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  return new Date(/[zZ]$|[+-]\d{2}:?\d{2}$/.test(normalized) ? normalized : `${normalized}Z`).getTime();
+}
+
 function stopCopy(data: PublicReportData) {
   const code = data.processing?.errorCode;
   if (code === "rl_engine_not_configured") return {
@@ -50,7 +55,9 @@ function stopCopy(data: PublicReportData) {
   if (code === "subject_player_not_found" || code === "subject_player_ambiguous" || code === "replay_players_missing") return {
     kicker: "PLAYER IDENTITY NEEDED",
     title: "The replay parsed, but we could not safely identify which player is you.",
-    body: "Use the exact in-game player name shown in that replay. Your original file is preserved, so operations can retry it without another upload."
+    body: data.processing?.candidatePlayers.length
+      ? "Choose your exact in-game name below. Your original private replay is preserved and will be retried without another upload."
+      : "Use the exact in-game player name shown in that replay. Your original file is preserved, so support can retry it without another upload."
   };
   return data.status === "failed" ? {
     kicker: "ANALYSIS NEEDS ATTENTION",
@@ -70,6 +77,21 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
   const [caseStudyConsent, setCaseStudyConsent] = useState(false);
   const [feedbackState, setFeedbackState] = useState<"idle" | "saving" | "saved" | "error">(initial.feedbackScore ? "saved" : "idle");
   const [copied, setCopied] = useState(false);
+  const [clock, setClock] = useState<number | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState("");
+  const [identityRetryState, setIdentityRetryState] = useState<"idle" | "saving" | "queued" | "error">("idle");
+  const [interactive, setInteractive] = useState(false);
+
+  useEffect(() => {
+    const hydrationTimer = window.setTimeout(() => setInteractive(true), 0);
+    const updateClock = () => setClock(Date.now());
+    updateClock();
+    const timer = window.setInterval(updateClock, 10000);
+    return () => {
+      window.clearTimeout(hydrationTimer);
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("replaymethod-report-ids") || "[]") as string[];
@@ -90,13 +112,19 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
 
   useEffect(() => {
     if (["ready", "blocked", "failed"].includes(data.status)) return;
-    const timer = window.setInterval(async () => {
+    let cancelled = false;
+    const refresh = async () => {
       try {
         const response = await fetch(`/api/analyses/${data.publicId}`, { cache: "no-store" });
-        if (response.ok) setData(await response.json() as PublicReportData);
+        if (response.ok && !cancelled) setData(await response.json() as PublicReportData);
       } catch { /* next poll retries */ }
-    }, 15000);
-    return () => window.clearInterval(timer);
+    };
+    void refresh();
+    const timer = window.setInterval(refresh, 10000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, [data.publicId, data.status]);
 
   const copyLink = async () => {
@@ -120,9 +148,50 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
     trackProductEvent("upgrade_intent", data.game as "league" | "valorant" | "rocket-league", "report_improvement_loop", "report");
   };
 
+  const retryWithPlayer = async () => {
+    if (!selectedPlayer) return;
+    setIdentityRetryState("saving");
+    try {
+      const response = await fetch(`/api/analyses/${data.publicId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player: selectedPlayer }),
+      });
+      if (!response.ok) {
+        setIdentityRetryState("error");
+        return;
+      }
+      setIdentityRetryState("queued");
+      setData(previous => ({
+        ...previous,
+        status: "received",
+        processing: previous.processing ? {
+          ...previous.processing,
+          status: "queued",
+          stage: "queued",
+          stageLabel: "Player selected · replay preserved",
+          attempts: 0,
+          errorCode: null,
+          nextRetryAt: null,
+          updatedAt: new Date().toISOString(),
+          candidatePlayers: [],
+        } : null,
+      }));
+    } catch {
+      setIdentityRetryState("error");
+    }
+  };
+
   const statusIndex = data.status === "ready" ? stages.length - 1 : stageOrder[data.processing?.stage || "queued"] ?? 0;
-  const stopped = data.status === "blocked" || data.status === "failed";
-  const stoppedCopy = stopped ? stopCopy(data) : null;
+  const processingTime = data.processing?.updatedAt ? utcTimestamp(data.processing.updatedAt) : 0;
+  const stale = clock !== null && processingTime > 0 && !["ready", "blocked", "failed"].includes(data.status) && clock - processingTime >= 180_000;
+  const stopped = data.status === "blocked" || data.status === "failed" || stale;
+  const stoppedCopy = stale ? {
+    kicker: "AUTOMATIC RECOVERY STARTED",
+    title: "This analysis took too long. We are restarting it safely.",
+    body: "You do not need to upload the replay again. Keep this private link open; the next status check will either continue the analysis or show a concrete reason it stopped."
+  } : stopped ? stopCopy(data) : null;
+  const identityResolvable = stopped && ["subject_player_not_found", "subject_player_ambiguous"].includes(data.processing?.errorCode || "") && Boolean(data.processing?.candidatePlayers.length);
   const evidence = data.report?.evidenceDetails.length
     ? data.report.evidenceDetails.map(item => ({
       label: item.round != null ? `ROUND · ${item.round}` : item.timestamp != null ? `MATCH TIME · ${Math.floor(item.timestamp / 60)}:${String(Math.floor(item.timestamp % 60)).padStart(2, "0")}` : item.label,
@@ -136,7 +205,7 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
     <section className="report-shell shell">
       <header className="report-top"><div><span>PRIVATE PLAYER REPORT</span><h1>{data.gameLabel}</h1><p>{data.currentRank}{data.targetRank ? ` → ${data.targetRank}` : ""} · Submitted {new Date(`${data.createdAt}Z`).toLocaleDateString("en-GB", { dateStyle: "medium" })}</p></div><i className={data.status}>{data.status === "ready" ? "READY" : stopped ? "PAUSED" : "PROCESSING"}</i></header>
 
-      {data.status !== "ready" ? <div className={`report-pending ${stopped ? "stopped" : ""}`}><div className="scan-orb"><i /><b>{stopped ? "!" : "↻"}</b></div><span>{stoppedCopy?.kicker || (data.processing?.stageLabel ? "AUTOMATED MATCH ANALYSIS" : "MATCH SECURED")}</span><h2>{stoppedCopy?.title || data.processing?.stageLabel || "Your match is queued."}</h2><p>{stoppedCopy?.body || "Replay Method is reading the submitted match, measuring repeated patterns and selecting one evidence-backed coaching focus."}</p><div className="status-track">{stages.map((stage, index) => <div className={index <= statusIndex && !stopped ? "active" : index < statusIndex ? "complete" : ""} key={stage.key}><i>{index < statusIndex ? "✓" : index + 1}</i><span>{stage.label}</span></div>)}</div><aside>{stopped ? <><b>No fake certainty.</b><span>We stop when the available data cannot support a reliable report.</span></> : delivery === "email" ? <><b>Confirmation sent.</b><span>We’ll send another email when the report is ready.</span></> : <><b>Keep this private link.</b><span>Your report will appear here automatically when it is ready.</span></>}</aside></div> : data.report && <>
+      {data.status !== "ready" ? <div className={`report-pending ${stopped ? "stopped" : ""}`}><div className="scan-orb"><i /><b>{stopped ? "!" : "↻"}</b></div><span>{stoppedCopy?.kicker || (data.processing?.stageLabel ? "AUTOMATED MATCH ANALYSIS" : "MATCH SECURED")}</span><h2>{stoppedCopy?.title || data.processing?.stageLabel || "Your match is queued."}</h2><p>{stoppedCopy?.body || "Replay Method is reading the submitted match, measuring repeated patterns and selecting one evidence-backed coaching focus."}</p>{identityResolvable && <section className="player-resolution" aria-labelledby="player-resolution-title"><div><span>PLAYERS FOUND IN THIS REPLAY</span><h3 id="player-resolution-title">Which one is you?</h3><p>Choose the exact name below. We will reuse the original private replay file.</p></div><div className="player-resolution-options" role="radiogroup" aria-label="Players identified in the replay">{data.processing?.candidatePlayers.map(player => <button type="button" role="radio" disabled={!interactive} aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} key={player} onClick={() => { setSelectedPlayer(player); setIdentityRetryState("idle"); }}>{player}</button>)}</div><button className="player-resolution-submit" type="button" disabled={!interactive || !selectedPlayer || identityRetryState === "saving"} onClick={retryWithPlayer}>{identityRetryState === "saving" ? "Starting…" : identityRetryState === "queued" ? "Retry queued ✓" : "Analyze this saved replay →"}</button>{identityRetryState === "error" && <p role="alert">The replay could not be queued. Refresh this private report and try again.</p>}</section>}<div className="status-track">{stages.map((stage, index) => <div className={index <= statusIndex && !stopped ? "active" : index < statusIndex ? "complete" : ""} key={stage.key}><i>{index < statusIndex ? "✓" : index + 1}</i><span>{stage.label}</span></div>)}</div><aside>{stopped ? <><b>No fake certainty.</b><span>We stop when the available data cannot support a reliable report.</span></> : delivery === "email" ? <><b>Confirmation sent.</b><span>We’ll send another email when the report is ready.</span></> : <><b>Keep this private link.</b><span>Your report will appear here automatically when it is ready.</span></>}</aside></div> : data.report && <>
         <div className="report-hero"><div><span>YOUR PRIMARY LEAK</span><h2>{data.report.highestImpactMistake}</h2><div className="report-cost"><small>WHY IT COSTS</small><p>{data.report.whyItCosts}</p></div></div><aside><small>CONFIDENCE</small><b>{data.report.confidenceLabel ? `${data.report.confidenceLabel.toUpperCase()} CONFIDENCE` : "QUALITY REVIEWED"}</b><span>{confidence == null ? "Evidence checked before publishing" : `${confidence}% detector confidence · ${data.report.analysisSource === "automated" ? "automated" : "reviewed"}`}</span><em>Confidence in this finding for this match—not a rank-up probability.</em></aside></div>
 
         <section className="report-evidence"><header><span>01 · EVIDENCE</span><h2>Why Replay Method thinks this.</h2><p>Specific observations from the submitted match—not a generic personality score.</p></header><div>{evidence.map((moment, index) => <article key={`${moment.text}-${index}`}><b>{moment.label}</b><p>{moment.text}</p></article>)}</div></section>

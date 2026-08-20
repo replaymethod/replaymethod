@@ -17,11 +17,12 @@ export const NORMALIZER_VERSION = "rocket-league-normalizer@0.2.0";
 let initialized = false;
 
 export class ReplayInputError extends Error {
-  constructor(code, publicMessage, internalMessage = publicMessage) {
+  constructor(code, publicMessage, internalMessage = publicMessage, candidatePlayers = []) {
     super(internalMessage);
     this.name = "ReplayInputError";
     this.code = code;
     this.publicMessage = publicMessage;
+    this.candidatePlayers = [...new Set(candidatePlayers.filter((name) => typeof name === "string" && name.trim()).map((name) => name.trim()))].slice(0, 8);
   }
 }
 
@@ -186,11 +187,14 @@ function resolvePlayer(meta, requestedIdentity) {
       "subject_player_not_found",
       `We parsed the replay but could not find “${candidates[0] || "the submitted player"}”. Use the exact in-game name shown in the match.`,
       `Requested ${JSON.stringify(candidates)}; replay players: ${players.map((player) => player.name).join(", ")}`,
+      players.map((player) => player.name),
     );
   }
   throw new ReplayInputError(
     "subject_player_ambiguous",
     "More than one replay player matched that identity. Add the exact platform ID.",
+    `Requested ${JSON.stringify(candidates)}; matching replay players: ${exact.map((player) => player.name).join(", ")}`,
+    exact.map((player) => player.name),
   );
 }
 

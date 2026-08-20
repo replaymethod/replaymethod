@@ -2,10 +2,8 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
 import { FormEvent, useEffect, useState } from "react";
-import QuickReplayStart from "./QuickReplayStart";
 import HardstuckHook from "./HardstuckHook";
 import PricingLadder from "./PricingLadder";
-import InteractiveReportPreview from "./InteractiveReportPreview";
 import GameHeroExperience from "./GameHeroExperience";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 
@@ -27,10 +25,10 @@ type Config = {
 const configs: Record<GameKey, Config> = {
   general: {
     label: "Competitive gaming",
-    eyebrow: "EVIDENCE-FIRST REPLAY COACH · ROCKET LEAGUE QUALITY BETA",
-    title: "Stop grinding blind.",
-    accent: "Turn one replay into your next clear focus.",
-    lead: "Upload a real Rocket League replay. The quality beta verifies the match, player and evidence timeline today; coaching appears only after a detector earns the right to make a public claim.",
+    eyebrow: "ONE MATCH · ONE MISTAKE · ONE NEXT STEP",
+    title: "Stop losing for the same reason.",
+    accent: "See what to change next.",
+    lead: "Replay Method finds the decision behind the result, turns it into one clear cue, then checks whether it changes. Try the method free while match analysis completes validation.",
     cta: "Join beta updates",
     diagnosis: "Your decision-making drops when the match gets close.",
     plan: "Slow the game down after a lost fight. Reset before forcing the next play.",
@@ -43,7 +41,7 @@ const configs: Record<GameKey, Config> = {
     eyebrow: "STOP DONATING LP",
     title: "Stop guessing why you lose.",
     accent: "Find the decision costing your LP.",
-    lead: "Replay Method is preparing an opt-in League workflow that can turn official match and timeline evidence into one focused plan. Riot production access is still pending.",
+    lead: "See how Replay Method turns a League decision into one playable cue. Automated match analysis opens after official Riot access; the free walkthrough works now.",
     cta: "Join the League beta list",
     diagnosis: "You give away your lead during the 14–20 minute transition.",
     plan: "Convert priority into vision before the second objective. Stop taking isolated river fights.",
@@ -56,7 +54,7 @@ const configs: Record<GameKey, Config> = {
     eyebrow: "STOP BLEEDING RR",
     title: "Your aim isn’t the whole problem.",
     accent: "Find the rounds costing your RR.",
-    lead: "Replay Method is preparing an opt-in VALORANT workflow for supported fights, round patterns and utility evidence. Riot production access is still pending.",
+    lead: "See how Replay Method turns a round decision into one playable cue. Automated match analysis opens after official Riot access; the free walkthrough works now.",
     cta: "Join the VALORANT beta list",
     diagnosis: "Your first-death rate spikes after your team loses two rounds in a row.",
     plan: "Change your opening position after a loss streak. Preserve utility for the retake instead of forcing contact.",
@@ -69,7 +67,7 @@ const configs: Record<GameKey, Config> = {
     eyebrow: "BREAK THE HARDSTUCK LOOP",
     title: "Stop grinding blind.",
     accent: "Turn one replay into your next clear focus.",
-    lead: "Choose your platform. PC gets deep .replay evidence; console players get a clear video-beta path—no dead-end Windows instructions.",
+    lead: "See the decision before the goal and leave with one cue for your next match. PC replay analysis is in final validation; console video analysis is on the waitlist.",
     cta: "Join the replay beta list",
     diagnosis: "You follow the play too closely after your teammate commits.",
     plan: "Hold one layer deeper and enter through back post. Stop turning a 1v1 into a double commit.",
@@ -78,6 +76,25 @@ const configs: Record<GameKey, Config> = {
     verify: "Double commits fall while controlled defensive touches rise."
   }
 };
+
+function ProductStory() {
+  return <div className="simple-method" id="how">
+    <article><i>01</i><span>SHOW THE MATCH</span><h3>Start with one real problem.</h3><p>Add a replay when your game is supported—or use the free Climb Check today.</p></article>
+    <article><i>02</i><span>SEE THE DECISION</span><h3>Find what happened before the loss.</h3><p>The useful moment is usually earlier than the goal, death or lost round.</p></article>
+    <article><i>03</i><span>PLAY ONE CUE</span><h3>Take one rule into the next match.</h3><p>No wall of advice. One trigger, one action and a clear way to check it.</p></article>
+  </div>;
+}
+
+function Availability({ engineOpen }: { engineOpen: boolean }) {
+  return <section className="availability shell" id="status">
+    <div className="section-intro"><span className="kicker">WHAT WORKS TODAY</span><h2>No fake “live” labels.</h2><p>Try what is ready. Join the waitlist for what is not.</p></div>
+    <div className="availability-grid">
+      <article className="ready"><span>AVAILABLE NOW</span><h3>Free Climb Check</h3><p>Choose the pattern you keep seeing and leave with a focused hypothesis.</p><a href="/climb-check">Try it free →</a></article>
+      <article className={engineOpen ? "ready" : "testing"}><span>{engineOpen ? "OPEN BETA" : "FINAL VALIDATION"}</span><h3>Rocket League · PC</h3><p>{engineOpen ? "Upload an original .replay file for an evidence check." : "The parser is online. Public coaching stays closed until detector quality is proven."}</p><a href={engineOpen ? "/analyze?game=rocket-league&platform=pc" : "#join-beta"}>{engineOpen ? "Start free check" : "Join first access"} →</a></article>
+      <article className="wait"><span>WAITLIST</span><h3>Console · League · VALORANT</h3><p>Console video analysis and official Riot match analysis are not live yet.</p><a href="#join-beta">Join the waitlist →</a></article>
+    </div>
+  </section>;
+}
 
 const sentViews = new Set<string>();
 
@@ -161,9 +178,7 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
   const replayClosed = !riotRequest && !engineOpen;
   const intakeHref = replayClosed ? "#join-beta" : analysisHref;
   const intakeLabel = riotRequest ? "Save beta request" : replayClosed ? "Join replay beta" : "Start evidence check";
-  const lead = replayClosed
-    ? "PC replay engine: final quality gate. Console video lane: next. Join first access—no file or card today."
-    : config.lead;
+  const lead = config.lead;
 
   useEffect(() => {
     const key = `replaymethod-view-${location.pathname}`;
@@ -179,17 +194,17 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
   };
 
   return <main>
-    <div className="launch-bar"><strong>{riotRequest ? "RIOT ACCESS BETA" : replayClosed ? "REPLAY BETA ACCESS" : "REPLAY EVIDENCE BETA"}</strong><span>{riotRequest ? "Preserve an opt-in request. Official ingestion is pending." : replayClosed ? "The production quality gate is finishing. No file or card today." : "Submit one real replay. See the verified outcome."}</span><a href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "launch_bar")}>{intakeLabel} →</a></div>
-    <nav className="nav shell"><a className="brand" href="/" aria-label="Replay Method home"><span className="logo">↻</span><span>replay<span>method</span></span></a><div className="nav-links"><a href={replayClosed ? "/#join-beta" : "/analyze"}>Beta access</a><a href="#product">Sample report</a><a href="/guides">Guides</a><a href="#pricing">Pricing</a></div><a className="nav-cta" href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "nav_analysis")}>{intakeLabel}</a></nav>
+    <div className="launch-bar"><strong>FREE TO TRY NOW</strong><span>Find the problem you keep repeating in 60 seconds.</span><a href="/climb-check" onClick={() => trackEvent(game, "tool_start", "launch_bar")}>Start free →</a></div>
+    <nav className="nav shell"><a className="brand" href="/" aria-label="Replay Method home"><span className="logo">↻</span><span>replay<span>method</span></span></a><div className="nav-links"><a href="#problem">The problem</a><a href="#how">How it works</a><a href="#status">Availability</a><a href="#pricing">Pricing</a></div><a className="nav-cta" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "nav_free_check")}>Try free</a></nav>
 
     <section className="hero shell">
-      <div className="hero-copy"><div className="eyebrow"><i /> {config.eyebrow}</div><h1>{config.title}<br /><em>{config.accent}</em></h1><p className="lead">{lead}</p><GameLinks current={game} placement="hero_picker" />{(game === "general" || game === "rocket-league") && engineOpen ? <><QuickReplayStart placement={game === "general" ? "home_quick_replay" : "rl_quick_replay"} /><div className="hero-quiet-actions"><button className="hero-secondary" onClick={previewProduct}>See a sample report <span>↓</span></button><a href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "hero_full_intake")}>Use the full intake instead →</a></div></> : <div className="hero-actions"><a className="hero-primary" href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "hero_analysis")}><span>{riotRequest ? "OFFICIAL ACCESS PENDING" : "ENGINE VALIDATION IN PROGRESS"} · NO CARD</span><b>{riotRequest ? "Save my beta request" : "Join the replay beta"} <i>→</i></b></a><button className="hero-secondary" onClick={previewProduct}>Play the product walkthrough <span>↓</span></button></div>}<div className="hero-proof"><span><i>01</i> Real match evidence</span><span><i>02</i> Honest abstention</span><span><i>03</i> No card</span></div><div className="hero-route-links"><a className="hero-plan-summary" href="#pricing" onClick={() => trackEvent(game, "cta_click", "hero_pricing")}><span>PLANS</span><b>First check planned free · paid checkout closed</b><i>↓</i></a><a className="hero-beta-link" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "hero_climb_check")}>No replay ready? Run the 60-second Climb Check →</a></div>
+      <div className="hero-copy"><div className="eyebrow"><i /> {config.eyebrow}</div><h1>{config.title}<br /><em>{config.accent}</em></h1><p className="lead">{lead}</p><GameLinks current={game} placement="hero_picker" /><div className="hero-actions clear-actions"><a className="hero-primary" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "hero_climb_check")}><span>60 SECONDS · NO CARD</span><b>Try the free Climb Check <i>→</i></b></a><button className="hero-secondary" onClick={previewProduct}>See how it works <span>↓</span></button></div><div className="hero-proof"><span><i>01</i> Pick one problem</span><span><i>02</i> Get one cue</span><span><i>03</i> Test it next match</span></div><div className="hero-route-links"><a className="hero-plan-summary" href="#status"><span>LIVE STATUS</span><b>{engineOpen ? "Rocket League PC beta is open" : "Free tool live · match analysis validating"}</b><i>↓</i></a></div>
       </div>
       <div className="visual-wrap"><div className="orb orb-a" /><div className="orb orb-b" /><div className="example-tag">PLAY THE PRODUCT</div><GameHeroExperience game={game} /></div>
     </section>
 
     <section className="proof-ribbon"><div className="shell"><span><b>01</b> REPLAY</span><i>→</i><span><b>02</b> REVEAL</span><i>→</i><span><b>03</b> PRACTICE</span><i>→</i><span><b>04</b> PROVE</span></div></section>
-        <HardstuckHook
+        <div id="problem"><HardstuckHook
           analysisHref={intakeHref}
           requestOnly={riotRequest}
           intakeClosed={replayClosed}
@@ -197,9 +212,11 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
           onAnalysisStart={() =>
             trackEvent(game, "analysis_start", "hardstuck_hook")
           }
-        />
+        /></div>
 
-    <section className="product-section shell" id="product"><div className="section-intro"><span className="kicker">PLAY THE REPORT</span><h2>Spot it. Train it.<br />Prove it changed.</h2><p>Three rounds. One real decision loop. Every value is example data.</p></div><InteractiveReportPreview config={config} game={game} /><div className="demo-conversion"><div><span>{riotRequest ? "RIOT ACCESS REQUESTS ARE OPEN" : replayClosed ? "REPLAY BETA LIST IS OPEN" : "FIRST CHECK · $0"}</span><b>{riotRequest ? "Save your official-access request." : replayClosed ? "Get first access." : "Try the real evidence pipeline."}</b><p>{riotRequest ? "No unsupported ingestion." : replayClosed ? "We email you when the engine clears its gate." : "Your replay decides whether a finding is strong enough to show."}</p></div><a href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "demo_analysis")}>{intakeLabel} →</a></div></section>
+    <section className="product-section shell" id="product"><div className="section-intro"><span className="kicker">THE WHOLE PRODUCT IN THREE STEPS</span><h2>Problem. Decision. Next move.</h2><p>Understand the method before you give us a file or email.</p></div><ProductStory /><div className="demo-conversion simple-conversion"><div><span>WORKS NOW · FREE</span><b>Start with the problem you recognize.</b><p>The Climb Check takes about one minute.</p></div><a href="/climb-check" onClick={() => trackEvent(game, "tool_start", "method_climb_check")}>Try it free →</a></div></section>
+
+    <Availability engineOpen={engineOpen} />
 
     <PricingLadder analysisHref={intakeHref} game={game} requestOnly={riotRequest} checkoutOpen={checkoutOpen} replayReady={!replayClosed} />
 

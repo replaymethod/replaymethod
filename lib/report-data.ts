@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { analysisFindings, analysisJobs, analysisRequests } from "../db/schema";
 import { gameLabels, isAnalysisGame, parseLines, publicIdPattern } from "./analysis";
+import { decodePlayerResolutionContext } from "./player-resolution.mjs";
 
 type EvidenceDetail = {
   label: string;
@@ -29,6 +30,8 @@ export type PublicReportData = {
     durationMs: number | null;
     estimatedCostMicros: number;
     nextRetryAt: string | null;
+    updatedAt: string;
+    candidatePlayers: string[];
     versions: {
       parser: string | null;
       analyzer: string | null;
@@ -92,6 +95,7 @@ export async function loadPublicReport(publicId: string): Promise<PublicReportDa
     db.select().from(analysisJobs).where(eq(analysisJobs.analysisRequestId, row.id)).get(),
     db.select().from(analysisFindings).where(eq(analysisFindings.analysisRequestId, row.id)).orderBy(asc(analysisFindings.priority)).get()
   ]);
+  const resolution = decodePlayerResolutionContext(job?.errorMessage);
 
   return {
     publicId: row.publicId,
@@ -112,6 +116,8 @@ export async function loadPublicReport(publicId: string): Promise<PublicReportDa
       durationMs: job.durationMs,
       estimatedCostMicros: job.estimatedCostMicros,
       nextRetryAt: job.nextRetryAt,
+      updatedAt: job.updatedAt,
+      candidatePlayers: resolution.candidatePlayers,
       versions: {
         parser: job.parserVersion,
         analyzer: job.analyzerVersion,

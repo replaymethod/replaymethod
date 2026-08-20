@@ -6,6 +6,7 @@ import { advancePlayerFocus, type PersistedFocusFinding } from "../player-focus"
 import { operationalErrorCode } from "../request-security.mjs";
 import { blockedRetryDisposition } from "../retry-policy.mjs";
 import { subsystemEnabled } from "../subsystem-controls.mjs";
+import { encodePlayerResolutionContext } from "../player-resolution.mjs";
 import { synthesizeCoaching } from "./coaching";
 import type { GameId, StructuredFinding } from "./contracts";
 
@@ -111,11 +112,11 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
           next_retry_at = ?, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
           .bind(disposition.jobStatus, disposition.jobStage,
             disposition.jobStatus === "retry" ? "Replay worker retry scheduled" : result.publicMessage,
-            result.code, result.internalMessage, disposition.nextRetryAt, Date.now() - started, job.jobId),
+            result.code, encodePlayerResolutionContext(result.internalMessage, result.candidatePlayers), disposition.nextRetryAt, Date.now() - started, job.jobId),
         env.DB.prepare("UPDATE analysis_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
           .bind(disposition.requestStatus, job.requestId)
       ]);
-      if (disposition.releaseUsage) {
+      if (disposition.releaseUsage && !result.userResolvable) {
         await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
           updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(job.requestId).run();
       }

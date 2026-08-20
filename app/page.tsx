@@ -6,9 +6,9 @@ export default async function Home(){
   let engineOpen = false;
   try {
     const { env } = await import("cloudflare:workers");
-    const runtime = env as unknown as { BILLING_CHECKOUT_ENABLED?: string; RL_ENGINE_ENABLED?: string };
+    const runtime = env as unknown as { BILLING_CHECKOUT_ENABLED?: string; RL_ENGINE_ENABLED?: string; RL_PUBLIC_DETECTORS_ENABLED?: string };
     checkoutOpen = subsystemEnabled(runtime.BILLING_CHECKOUT_ENABLED);
-    engineOpen = subsystemEnabled(runtime.RL_ENGINE_ENABLED);
+    engineOpen = subsystemEnabled(runtime.RL_ENGINE_ENABLED) && subsystemEnabled(runtime.RL_PUBLIC_DETECTORS_ENABLED);
   } catch { /* Local and static previews keep checkout safely closed. */ }
   return <Landing checkoutOpen={checkoutOpen} engineOpen={engineOpen}/>;
 }

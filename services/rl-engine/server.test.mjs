@@ -3,6 +3,7 @@ import { once } from "node:events";
 import { request as httpRequest } from "node:http";
 import test from "node:test";
 import { createServer, ENGINE_VERSION, MAX_REPLAY_BYTES, PARSER_VERSION } from "./server.mjs";
+import { ReplayInputError } from "./parser.mjs";
 
 const token = "test-token-that-is-long-enough";
 const requestId = "11111111111111111111111111111111";
@@ -132,6 +133,33 @@ test("analysis rejects invalid replay safely", async () => withServer(async (bas
   const body = await response.json();
   assert.equal(body.code, "invalid_replay");
   assert.equal(body.kind, "blocked");
+}));
+
+test("player identity errors return the parsed roster as structured recovery data", async () => withServer(async (base) => {
+  const response = await fetch(`${base}/v1/inspect/rocket-league`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/octet-stream",
+      "X-Replay-Method-Request": requestId,
+      "X-Replay-Method-Player": "WrongPlayer",
+    },
+    body: new Uint8Array([1]),
+  });
+  assert.equal(response.status, 422);
+  const body = await response.json();
+  assert.equal(body.code, "subject_player_not_found");
+  assert.deepEqual(body.candidatePlayers, ["GarrettG", "Turtle", "Moses"]);
+}, {
+  token,
+  processReplay: async () => {
+    throw new ReplayInputError(
+      "subject_player_not_found",
+      "Choose the exact player from this replay.",
+      "Requested WrongPlayer.",
+      ["GarrettG", "Turtle", "Moses"],
+    );
+  },
 }));
 
 test("declared oversized input is rejected before reading", async () => withServer(async (base) => {
