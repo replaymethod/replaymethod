@@ -66,6 +66,8 @@ test("runtime recovery and response headers fail closed without blocking healthy
   assert.doesNotMatch(worker, /updated_at <= datetime\('now', '-10 minutes'\)/);
   assert.match(worker, /updated_at <= datetime\('now', '-3 minutes'\)/);
   assert.match(worker, /Restarting interrupted analysis/);
+  assert.match(worker, /Analysis engine did not respond/);
+  assert.match(worker, /attempts >= max_attempts/);
   assert.match(worker, /status = 'queued' AND updated_at <= datetime\('now', '-1 minute'\)/);
   assert.match(reportClient, /void refresh\(\)/);
   assert.match(reportClient, /window\.setInterval\(refresh, 10000\)/);
