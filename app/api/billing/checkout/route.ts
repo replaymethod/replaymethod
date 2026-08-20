@@ -67,9 +67,12 @@ export async function POST(request: Request) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${config.siteUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.siteUrl}/?checkout=canceled#pricing`,
+      billing_address_collection: "auto",
+      customer_update: { address: "auto", name: "auto" },
       metadata: { player_public_id: player.publicId, plan_key: payload.plan },
       subscription_data: { metadata: { player_public_id: player.publicId, plan_key: payload.plan } },
       integration_identifier: randomIntegrationIdentifier(),
+      ...(config.managedPaymentsEnabled ? { managed_payments: { enabled: true } } : {}),
     }, { idempotencyKey: `replay_method_checkout_${player.publicId}_${payload.plan}_${bucket}` });
 
     if (!session.url) throw new Error("Stripe did not return a Checkout URL.");

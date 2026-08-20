@@ -1,51 +1,67 @@
 "use client";
 
-import { KeyboardEvent, PointerEvent, useRef, useState } from "react";
+import { CSSProperties, KeyboardEvent, PointerEvent, useRef, useState } from "react";
 
 type Point = { x: number; y: number };
-type Read = "challenge" | "shadow" | "rotate" | null;
 
-const steps = ["Create the moment", "Make the read", "Train the correction", "Prove the change"] as const;
+const missions = [
+  { short: "BOOST", title: "Collect the small boost pad", detail: "Small pads keep you in the play without abandoning the net." },
+  { short: "ROTATE", title: "Enter through back post", detail: "Take the far post first. You keep the play in front of your car." },
+  { short: "CLEAR", title: "Meet the ball from the safe side", detail: "Drive through the ball. Your approach sends the clear away from your own goal." },
+  { short: "PROOF", title: "Decision complete", detail: "Replay Method can now test whether this coverage choice repeats in real matches." },
+] as const;
 
-const clamp = (value: number) => Math.max(7, Math.min(93, value));
+const targets = [{ x: 31, y: 70 }, { x: 12, y: 34 }, { x: 47, y: 47 }] as const;
+const clamp = (value: number) => Math.max(6, Math.min(94, value));
+const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 
 export default function ReplayArenaWalkthrough() {
   const fieldRef = useRef<HTMLDivElement>(null);
-  const [player, setPlayer] = useState<Point>({ x: 25, y: 68 });
-  const [step, setStep] = useState(0);
-  const [read, setRead] = useState<Read>(null);
+  const [player, setPlayer] = useState<Point>({ x: 18, y: 78 });
+  const [heading, setHeading] = useState(-18);
+  const [stage, setStage] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const [proofRunning, setProofRunning] = useState(false);
-  const [message, setMessage] = useState("Drag the highlighted blue car toward the ball. Touch and keyboard work too.");
+  const [boost, setBoost] = useState(21);
+  const [mistakes, setMistakes] = useState(0);
+  const [feedback, setFeedback] = useState("Drag the blue car through the glowing route. Arrow keys work too.");
+  const [feedbackTone, setFeedbackTone] = useState<"neutral" | "good" | "warn">("neutral");
 
   const movePlayer = (point: Point) => {
+    if (stage === 3) return;
     const next = { x: clamp(point.x), y: clamp(point.y) };
+    const angle = Math.atan2(next.y - player.y, next.x - player.x) * (180 / Math.PI);
+    if (Math.abs(next.x - player.x) + Math.abs(next.y - player.y) > 0.5) setHeading(angle);
     setPlayer(next);
-    if (step === 0 && next.x > 42) {
-      setStep(1);
-      setMessage("Moment captured: your teammate is already committed. Choose the next read.");
+
+    if (stage < 2 && distance(next, targets[2]) < 9) {
+      setMistakes(value => value + 1);
+      setFeedbackTone("warn");
+      setFeedback("Too early: your teammate is already committed. Finish the cyan route before attacking the ball.");
+      return;
     }
-    if (step >= 2 && next.x < 36 && next.y > 62) {
-      setStep(3);
-      setMessage("Safe layer restored. Replay Method can now compare this decision in later matches.");
+
+    if (distance(next, targets[stage]) >= (stage === 2 ? 10 : 8)) return;
+    if (stage === 0) {
+      setBoost(33);
+      setStage(1);
+      setFeedbackTone("good");
+      setFeedback("+12 boost. You stayed close enough to defend—now rotate through the far post.");
+    } else if (stage === 1) {
+      setStage(2);
+      setFeedbackTone("good");
+      setFeedback("Back post secured. The play is in front of you; drive through the ball for a safe clear.");
+    } else {
+      setStage(3);
+      setBoost(value => Math.max(0, value - 8));
+      setFeedbackTone("good");
+      setFeedback("Clean clear. One input became a measurable replay decision: boost path → coverage → outcome.");
     }
   };
 
   const pointFromPointer = (event: PointerEvent<HTMLDivElement>) => {
     const bounds = fieldRef.current?.getBoundingClientRect();
     if (!bounds) return null;
-    return {
-      x: ((event.clientX - bounds.left) / bounds.width) * 100,
-      y: ((event.clientY - bounds.top) / bounds.height) * 100,
-    };
-  };
-
-  const chooseRead = (choice: Exclude<Read, null>) => {
-    setRead(choice);
-    setStep(2);
-    if (choice === "challenge") setMessage("Counter-evidence flags the dive: both blue cars attack the same ball. Now drag back into the cyan target.");
-    if (choice === "shadow") setMessage("Shadowing preserves time, but the support lane is still narrow. Drag into the cyan target to restore coverage.");
-    if (choice === "rotate") setMessage("Best-supported read: rotate behind the play. Drag into the cyan target to lock the correction.");
+    return { x: ((event.clientX - bounds.left) / bounds.width) * 100, y: ((event.clientY - bounds.top) / bounds.height) * 100 };
   };
 
   const keyboardMove = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -60,76 +76,61 @@ export default function ReplayArenaWalkthrough() {
     movePlayer({ x: player.x + direction.x, y: player.y + direction.y });
   };
 
-  const runProof = () => {
-    setProofRunning(true);
-    setMessage("Replaying the corrected shape across the next matches…");
-    setPlayer({ x: 52, y: 49 });
-    window.setTimeout(() => setPlayer({ x: 41, y: 60 }), 420);
-    window.setTimeout(() => setPlayer({ x: 29, y: 72 }), 840);
-    window.setTimeout(() => {
-      setProofRunning(false);
-      setMessage("Proof loop complete: coverage held in the example recheck. Real reports only say this when replay evidence supports it.");
-    }, 1280);
-  };
-
   const reset = () => {
-    setPlayer({ x: 25, y: 68 });
-    setStep(0);
-    setRead(null);
-    setProofRunning(false);
-    setMessage("Drag the highlighted blue car toward the ball. Touch and keyboard work too.");
+    setPlayer({ x: 18, y: 78 });
+    setHeading(-18);
+    setStage(0);
+    setBoost(21);
+    setMistakes(0);
+    setFeedbackTone("neutral");
+    setFeedback("Drag the blue car through the glowing route. Arrow keys work too.");
   };
 
-  return <div className="arena-console">
-    <div className="arena-console-head">
-      <div><small>REPLAY METHOD · PLAYABLE PRODUCT WALKTHROUGH</small><strong>2v2 decision lab</strong></div>
-      <span><i /> ROCKET LEAGUE ENGINE</span>
-    </div>
+  const carStyle = { left: `${player.x}%`, top: `${player.y}%`, "--car-angle": `${heading}deg` } as CSSProperties;
+
+  return <div className="arcade-console">
+    <header className="arcade-head">
+      <div><small>PLAYABLE REPLAY LESSON · 2V2</small><strong>Back-post rescue</strong></div>
+      <div className="arcade-score"><span className="blue">BLUE <b>{stage === 3 ? 1 : 0}</b></span><em>0:{String(Math.max(0, 18 - stage * 5)).padStart(2, "0")}</em><span>ORANGE <b>0</b></span></div>
+    </header>
+
+    <div className="arcade-objective"><span>OBJECTIVE</span><b>{missions[stage].title}</b><small>{stage < 3 ? `${stage + 1} / 3` : "CLEAR ✓"}</small></div>
 
     <div
       ref={fieldRef}
-      className={`decision-field step-${step} ${dragging ? "is-dragging" : ""} ${proofRunning ? "is-proving" : ""}`}
+      className={`arcade-field arcade-stage-${stage} ${dragging ? "is-driving" : ""}`}
       onPointerMove={event => { if (dragging) { const point = pointFromPointer(event); if (point) movePlayer(point); } }}
       onPointerUp={event => { setDragging(false); event.currentTarget.releasePointerCapture?.(event.pointerId); }}
       onPointerCancel={() => setDragging(false)}
     >
-      <span className="field-half" /><span className="field-circle" /><span className="field-goal left" /><span className="field-goal right" />
-      <span className="field-zone blue" /><span className="field-zone red" />
-      {step >= 2 && <span className="rotation-target"><b>SAFE LAYER</b><small>DRAG HERE</small></span>}
-      <i className="arena-ball" />
+      <span className="arcade-pitch-stripes" /><span className="arcade-half" /><span className="arcade-circle" />
+      <span className="arcade-goal blue" /><span className="arcade-goal orange" />
+      {[{ x: 31, y: 70 }, { x: 31, y: 30 }, { x: 69, y: 30 }, { x: 69, y: 70 }].map((pad, index) => <i className={`boost-pad ${index === 0 ? "mission-pad" : ""}`} style={{ left: `${pad.x}%`, top: `${pad.y}%` }} key={`${pad.x}-${pad.y}`} />)}
+      <span className="arcade-route"><i /><i /><i /></span>
+      {stage < 3 && <span className={`arcade-target target-${stage}`}><i>{stage + 1}</i><b>{missions[stage].short}</b></span>}
+      <i className="arcade-ball"><span /></i>
       <button
         type="button"
-        className="arena-car blue controlled"
-        aria-label="Controlled blue car. Drag it or use the arrow keys."
-        style={{ left: `${player.x}%`, top: `${player.y}%` }}
+        className="arcade-car player"
+        aria-label="Blue car. Drag it through the glowing route or use the arrow keys."
+        style={carStyle}
         onPointerDown={event => { setDragging(true); event.currentTarget.parentElement?.setPointerCapture?.(event.pointerId); }}
         onKeyDown={keyboardMove}
-      ><span>YOU</span></button>
-      <i className="arena-car blue teammate"><span>B2</span></i>
-      <i className="arena-car red opponent-one"><span>R1</span></i>
-      <i className="arena-car red opponent-two"><span>R2</span></i>
-      <span className="decision-vector" />
-      <div className="field-hud"><span>BLUE 0</span><b>4:18</b><span>0 RED</span></div>
+      ><span>YOU</span><i /></button>
+      <i className="arcade-car blue-mate"><span>MATE</span><i /></i>
+      <i className="arcade-car orange-one"><span>O1</span><i /></i>
+      <i className="arcade-car orange-two"><span>O2</span><i /></i>
+      <div className="arcade-boost"><span>BOOST</span><b>{boost}</b><i><em style={{ width: `${boost}%` }} /></i></div>
+      {stage === 0 && <div className="arcade-start-hint"><b>DRAG TO DRIVE</b><span>Follow 1 → 2 → 3</span></div>}
+      {stage === 3 && <div className="goal-burst"><i /><b>NICE CLEAR!</b><span>+100 decision score</span></div>}
     </div>
 
-    <div className="arena-progress" aria-label="Walkthrough progress">
-      {steps.map((label, index) => <button type="button" className={index === step ? "active" : index < step ? "done" : ""} onClick={() => setStep(index)} key={label}><span>0{index + 1}</span><b>{label}</b></button>)}
+    <div className="arcade-steps" aria-label="Mission progress">
+      {missions.slice(0, 3).map((mission, index) => <span className={index < stage ? "done" : index === stage ? "active" : ""} key={mission.short}><i>{index < stage ? "✓" : index + 1}</i><b>{mission.short}</b></span>)}
     </div>
 
-    <div className="arena-mission" aria-live="polite">
-      <div><small>MISSION 0{step + 1}</small><strong>{steps[step]}</strong><p>{message}</p></div>
-      <b>{step === 0 ? "DRAG" : step === 1 ? "READ" : step === 2 ? "ROTATE" : "PROOF"}</b>
-    </div>
+    <div className={`arcade-feedback ${feedbackTone}`} aria-live="polite"><i>{feedbackTone === "warn" ? "!" : feedbackTone === "good" ? "✓" : "i"}</i><div><b>{missions[stage].detail}</b><p>{feedback}</p></div></div>
 
-    {step === 1 && <div className="read-actions" role="group" aria-label="Choose the next illustrative action">
-      <button type="button" className={read === "challenge" ? "selected" : ""} aria-pressed={read === "challenge"} onClick={() => chooseRead("challenge")}><span>01</span><b>Challenge</b><small>Fast, but duplicates coverage</small></button>
-      <button type="button" className={read === "shadow" ? "selected" : ""} aria-pressed={read === "shadow"} onClick={() => chooseRead("shadow")}><span>02</span><b>Shadow</b><small>Preserve time and options</small></button>
-      <button type="button" className={read === "rotate" ? "selected" : ""} aria-pressed={read === "rotate"} onClick={() => chooseRead("rotate")}><span>03</span><b>Rotate behind</b><small>Restore the safe layer</small></button>
-    </div>}
-
-    <div className="arena-footer">
-      <button type="button" onClick={step === 3 ? runProof : reset} disabled={proofRunning}><span>{step === 3 ? proofRunning ? "RUNNING PROOF LOOP" : "RUN THE PROOF LOOP" : "RESET THE PLAY"}</span><i>→</i></button>
-      <small>Playable example—not a claimed diagnosis. Real coaching remains evidence gated.</small>
-    </div>
+    <footer className="arcade-footer"><div><span>DECISION SCORE</span><b>{Math.max(0, stage * 100 - mistakes * 15)}</b><small>{mistakes ? `${mistakes} early challenge${mistakes === 1 ? "" : "s"}` : "Clean read so far"}</small></div><button type="button" onClick={reset}>{stage === 3 ? "PLAY AGAIN" : "RESET RUN"}<i>↻</i></button></footer>
   </div>;
 }

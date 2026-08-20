@@ -1,8 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useState } from "react";
-
-type DemoTab = "diagnosis" | "plan" | "verify";
+import { useMemo, useState } from "react";
 
 type PreviewConfig = {
   label: string;
@@ -13,90 +11,103 @@ type PreviewConfig = {
   verify: string;
 };
 
-const tabs: Array<{ key: DemoTab; label: string; mission: string }> = [
-  { key: "diagnosis", label: "Evidence", mission: "Inspect the moment" },
-  { key: "plan", label: "One focus", mission: "Lock the queue rule" },
-  { key: "verify", label: "Proof", mission: "Check the next matches" },
-];
+type AnswerState = { round: number; choice: number; correct: boolean } | null;
 
-const moments = [
-  { time: "3:42", label: "Lane collapse", detail: "Both cars enter the same channel while the safe layer behind the play disappears." },
-  { time: "2:18", label: "Repeat signal", detail: "The same commitment shape returns after a neutral reset, increasing confidence that it is not a one-off." },
-  { time: "0:54", label: "Counter-example", detail: "A deeper hold preserves two options. The report keeps this evidence so it does not overstate the pattern." },
-] as const;
+const roundNames = ["SPOT THE LEAK", "LOCK THE CUE", "READ THE PROOF"] as const;
 
 export default function InteractiveReportPreview({ config }: { config: PreviewConfig }) {
-  const [tab, setTab] = useState<DemoTab>("diagnosis");
-  const [moment, setMoment] = useState(0);
-  const [scrub, setScrub] = useState(18);
-  const [playing, setPlaying] = useState(false);
-  const [missionChecks, setMissionChecks] = useState([false, false, false]);
-  const [proofMatch, setProofMatch] = useState(0);
-  const tabIndex = tabs.findIndex(item => item.key === tab);
+  const rocketLeague = config.label === "Rocket League";
+  const [round, setRound] = useState(0);
+  const [score, setScore] = useState(0);
+  const [answer, setAnswer] = useState<AnswerState>(null);
+  const [selectedMoment, setSelectedMoment] = useState(1);
 
-  useEffect(() => {
-    if (!playing) return;
-    const timer = window.setInterval(() => setScrub(value => {
-      const next = Math.min(100, value + 4);
-      setMoment(next < 38 ? 0 : next < 72 ? 1 : 2);
-      if (next === 100) setPlaying(false);
-      return next;
-    }), 90);
-    return () => window.clearInterval(timer);
-  }, [playing]);
+  const copy = useMemo(() => ({
+    question: [
+      rocketLeague ? "Which freeze-frame shows the costly decision—not just the bad outcome?" : "Which moment contains the repeated decision—not just the final outcome?",
+      "Which cue is short enough to recognize while you are actually playing?",
+      "What is the honest conclusion after three comparison matches?",
+    ][round],
+    helper: [
+      "Read teammate position, your lane and what remains uncovered.",
+      "The best cue controls one behavior. It does not promise a rank result.",
+      "Look for direction and sample size before claiming the habit is fixed.",
+    ][round],
+  }), [rocketLeague, round]);
 
-  const moveTab = (event: KeyboardEvent<HTMLButtonElement>, current: DemoTab) => {
-    const currentIndex = tabs.findIndex(item => item.key === current);
-    let nextIndex = currentIndex;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = (currentIndex + 1) % tabs.length;
-    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-    else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = tabs.length - 1;
-    else return;
-    event.preventDefault();
-    const next = tabs[nextIndex].key;
-    setTab(next);
-    document.getElementById(`demo-tab-${next}`)?.focus();
+  const moments = rocketLeague ? [
+    { time: "3:42", label: "Goal conceded", note: "Visible outcome; the decision happened earlier.", correct: false, positions: "outcome" },
+    { time: "3:47", label: "Coverage collapses", note: "Teammate commits and you enter the same lane.", correct: true, positions: "leak" },
+    { time: "0:54", label: "Safe counter-example", note: "A deeper hold preserves two defensive options.", correct: false, positions: "counter" },
+  ] : [
+    { time: "12:18", label: "Final outcome", note: "The result is visible, but the decision happened earlier.", correct: false, positions: "outcome" },
+    { time: "12:11", label: "Decision window", note: "The repeated choice appears before the outcome.", correct: true, positions: "leak" },
+    { time: "18:04", label: "Counter-example", note: "A different choice preserves more options.", correct: false, positions: "counter" },
+  ];
+
+  const choices = round === 1 ? [
+    { title: "Play faster and force the next opening.", detail: "Vague, emotional and difficult to measure.", correct: false },
+    { title: config.rule, detail: "One trigger, one action and a visible replay outcome.", correct: true },
+    { title: "Win three games before changing anything.", detail: "Rank is noisy and does not isolate the behavior.", correct: false },
+  ] : [
+    { title: "The problem is permanently fixed.", detail: "Three matches cannot support a permanent claim.", correct: false },
+    { title: "The behavior is improving; keep the cue and collect more evidence.", detail: "Direction is positive, while confidence is still limited.", correct: true },
+    { title: "The cue failed because match two was worse.", detail: "One noisy match should not erase the full comparison.", correct: false },
+  ];
+
+  const choose = (choice: number, correct: boolean) => {
+    if (answer?.round === round) return;
+    setAnswer({ round, choice, correct });
+    if (correct) setScore(value => value + 100);
   };
 
-  const advance = () => setTab(tabs[(tabIndex + 1) % tabs.length].key);
+  const next = () => {
+    if (round === 2) {
+      setRound(0);
+      setScore(0);
+      setAnswer(null);
+      setSelectedMoment(1);
+      return;
+    }
+    setRound(value => value + 1);
+    setAnswer(null);
+  };
 
-  return <div className="product-demo interactive-report">
-    <div className="demo-sidebar">
-      <span>EXAMPLE PLAYER REPORT</span><strong>{config.label}</strong>
-      <div className="report-mission"><small>MISSION PROGRESS</small><b>{String(tabIndex + 1).padStart(2, "0")} / 03</b><i><span style={{ width: `${((tabIndex + 1) / 3) * 100}%` }} /></i></div>
-      <div className="demo-tabs" role="tablist" aria-label="Example report views">
-        {tabs.map((item, index) => <button id={`demo-tab-${item.key}`} role="tab" aria-selected={tab === item.key} aria-controls={`demo-panel-${item.key}`} tabIndex={tab === item.key ? 0 : -1} className={tab === item.key ? "active" : ""} onKeyDown={event => moveTab(event, item.key)} onClick={() => setTab(item.key)} key={item.key}><span>0{index + 1}</span><b>{item.label}</b><small>{item.mission}</small></button>)}
-      </div>
-      <small>Illustrative product preview—not a claimed player result.</small>
-    </div>
+  const feedback = answer ? answer.correct
+    ? ["Correct. You selected the decision window before the result.", "Locked. The cue is specific, playable and measurable.", "Correct. The trend supports continued testing—not a victory claim."][round]
+    : ["Not quite. Rewind to the moment where coverage disappears.", "Too broad. Choose the cue with one trigger and one visible action.", "That conclusion outruns the evidence. Use the cautious trend statement."][round]
+    : "Choose one answer to reveal how Replay Method reasons.";
 
-    <div className="demo-main">
-      {tab === "diagnosis" && <div className="demo-panel" id="demo-panel-diagnosis" role="tabpanel" aria-labelledby="demo-tab-diagnosis">
-        <div className="demo-status"><span>PRIMARY PATTERN · EXAMPLE</span><b>Counter-evidence retained</b></div>
-        <h3>{config.diagnosis}</h3><p>{config.evidence}</p>
-        <div className="moment-player">
-          <div className="moment-viewport" aria-hidden="true"><span className="moment-field-line" /><i className={`moment-ball m${moment}`} /><i className="moment-player-dot player" /><i className="moment-player-dot teammate" /><i className="moment-player-dot opponent" /><b>{moments[moment].time}</b></div>
-          <div className="moment-copy" aria-live="polite"><small>EVIDENCE MOMENT {moment + 1}</small><strong>{moments[moment].label}</strong><p>{moments[moment].detail}</p></div>
+  return <div className="review-game">
+    <header className="review-game-head"><div><small>EXAMPLE PLAYER REPORT · PLAYABLE</small><strong>Replay review challenge</strong></div><div className="review-score"><span>SCORE</span><b>{String(score).padStart(3, "0")}</b></div></header>
+
+    <div className="review-rounds">{roundNames.map((name, index) => <span className={index < round ? "done" : index === round ? "active" : ""} key={name}><i>{index < round ? "✓" : index + 1}</i><b>{name}</b></span>)}</div>
+
+    <section className="review-stage">
+      <div className="review-prompt"><span>ROUND {round + 1} / 3 · {roundNames[round]}</span><h3>{copy.question}</h3><p>{copy.helper}</p></div>
+
+      {round === 0 && <>
+        <div className={`review-replay-frame state-${moments[selectedMoment].positions}`}>
+          <div className="review-field"><span className="review-half" /><span className="review-circle" /><span className="review-net left" /><span className="review-net right" /><i className="review-ball" /><i className="review-dot you">YOU</i><i className="review-dot mate">MATE</i><i className="review-dot rival">O1</i><i className="review-dot rival-two">O2</i><em>{moments[selectedMoment].time}</em></div>
+          <div><small>FREEZE FRAME</small><b>{moments[selectedMoment].label}</b><p>{moments[selectedMoment].note}</p></div>
         </div>
-        <div className="report-scrubber"><button type="button" onClick={() => { if (scrub >= 100) setScrub(0); setPlaying(value => !value); }} aria-pressed={playing}>{playing ? "PAUSE" : scrub >= 100 ? "REPLAY" : "PLAY"}</button><input aria-label="Scrub the illustrative replay" type="range" min="0" max="100" value={scrub} onChange={event => { const value = Number(event.target.value); setPlaying(false); setScrub(value); setMoment(value < 38 ? 0 : value < 72 ? 1 : 2); }} /><b>{String(Math.round(scrub)).padStart(2, "0")}%</b></div>
-        <div className="moment-controls" role="group" aria-label="Choose an illustrative evidence moment">{moments.map((item, index) => <button type="button" className={moment === index ? "active" : ""} aria-pressed={moment === index} onClick={() => { setMoment(index); setScrub([18, 54, 86][index]); setPlaying(false); }} key={item.time}><span>{item.time}</span><b>{index === 2 ? "Counter" : `Signal 0${index + 1}`}</b></button>)}</div>
-      </div>}
+        <div className="review-moment-choices">{moments.map((moment, index) => <button type="button" className={`${selectedMoment === index ? "selected" : ""} ${answer?.choice === index ? answer.correct ? "correct" : "wrong" : ""}`} onClick={() => { setSelectedMoment(index); choose(index, moment.correct); }} key={moment.time}><span>{moment.time}</span><b>{moment.label}</b><small>{index === 1 ? "DECISION" : index === 2 ? "COUNTER" : "OUTCOME"}</small></button>)}</div>
+      </>}
 
-      {tab === "plan" && <div className="demo-panel" id="demo-panel-plan" role="tabpanel" aria-labelledby="demo-tab-plan">
-        <div className="demo-status cyan"><span>NEXT-QUEUE MISSION</span><b>One focus. No overload.</b></div><h3>{config.rule}</h3><p>{config.plan}</p>
-        {[["BEFORE QUEUE", "Read the rule once.", "30 sec"], ["IN MATCH", "Recognize the decision; do not chase a score.", "1 cue"], ["AFTER MATCH", "Mark followed, missed or not applicable.", "3 states"]].map((mission, index) => <button type="button" className={`focus-mission ${missionChecks[index] ? "completed" : ""}`} aria-pressed={missionChecks[index]} onClick={() => setMissionChecks(values => values.map((value, itemIndex) => itemIndex === index ? !value : value))} key={mission[0]}><span>{mission[0]}</span><b>{mission[1]}</b><i>{missionChecks[index] ? "DONE ✓" : mission[2]}</i></button>)}
-        <div className="focus-progress"><span><i style={{ width: `${(missionChecks.filter(Boolean).length / 3) * 100}%` }} /></span><b>{missionChecks.filter(Boolean).length} / 3 mission actions locked</b></div>
-      </div>}
+      {round === 1 && <div className="cue-choices">{choices.map((choice, index) => <button type="button" className={answer?.choice === index ? answer.correct ? "correct" : "wrong" : ""} onClick={() => choose(index, choice.correct)} key={choice.title}><i>{String.fromCharCode(65 + index)}</i><div><b>{choice.title}</b><small>{choice.detail}</small></div></button>)}</div>}
 
-      {tab === "verify" && <div className="demo-panel" id="demo-panel-verify" role="tabpanel" aria-labelledby="demo-tab-verify">
-        <div className="demo-status green"><span>FOCUS TREND · EXAMPLE</span><b>Behavior before rank</b></div><h3>{config.verify}</h3><p>A rank graph alone cannot show whether the underlying habit changed. Replay Method checks the same supported decision first.</p>
-        <div className="verify-quest">{[["01", "Baseline", "Signal found"], ["02", "Practice", "Rule carried"], ["03", "Recheck", "Compare evidence"]].map((item, index) => <span className={proofMatch === index ? "active" : ""} key={item[0]}><button type="button" onClick={() => setProofMatch(index)}><em>{item[0]}</em><b>{item[1]}</b><small>{item[2]}</small></button>{index < 2 && <i>→</i>}</span>)}</div>
-        <div className="proof-readout" aria-live="polite"><span>SELECTED MATCH 0{proofMatch + 1}</span><b>{["Baseline mapped: the duplicate-commit signal appears in 34% of supported windows.", "Practice carried: the queue rule is visible, but coverage still breaks under pressure.", "Recheck: safe-layer coverage holds more often in this illustrative comparison."][proofMatch]}</b></div>
-        <div className="verify-chart">{[34, 51, 72].map((value, index) => <button type="button" className={proofMatch === index ? "active" : ""} onClick={() => setProofMatch(index)} aria-label={`Inspect illustrative match ${index + 1}, ${value} percent`} key={value}><span>MATCH 0{index + 1}</span><b style={{ height: `${value}%` }}>{value}%</b></button>)}</div><small className="demo-disclaimer">Example values for interaction only. Improvement is not guaranteed.</small>
-      </div>}
+      {round === 2 && <>
+        <div className="proof-match-grid">{[
+          { match: "01", value: 34, label: "Baseline", state: "Signal found" },
+          { match: "02", value: 29, label: "Practice", state: "Mixed evidence" },
+          { match: "03", value: 18, label: "Recheck", state: "Fewer repeats" },
+        ].map(item => <div key={item.match}><span>MATCH {item.match}</span><div><i style={{ height: `${item.value * 2}%` }} /><b>{item.value}%</b></div><strong>{item.label}</strong><small>{item.state}</small></div>)}</div>
+        <div className="proof-choices">{choices.map((choice, index) => <button type="button" className={answer?.choice === index ? answer.correct ? "correct" : "wrong" : ""} onClick={() => choose(index, choice.correct)} key={choice.title}><i>{String.fromCharCode(65 + index)}</i><b>{choice.title}</b></button>)}</div>
+      </>}
+    </section>
 
-      <button className="report-advance" type="button" onClick={advance}><span>{tabIndex === tabs.length - 1 ? "RESTART THE WALKTHROUGH" : `NEXT: ${tabs[tabIndex + 1].mission.toUpperCase()}`}</span><i>→</i></button>
-    </div>
+    <div className={`review-feedback ${answer ? answer.correct ? "good" : "warn" : ""}`} aria-live="polite"><i>{answer ? answer.correct ? "+100" : "TRY" : "?"}</i><div><b>{feedback}</b><small>{answer?.correct ? round === 0 ? config.diagnosis : round === 1 ? config.plan : config.verify : config.evidence}</small></div></div>
+
+    <footer className="review-game-footer"><small>Illustrative challenge—never a diagnosis or rank guarantee.</small><button type="button" disabled={!answer?.correct} onClick={next}>{round === 2 ? "PLAY AGAIN" : "NEXT ROUND"}<i>→</i></button></footer>
   </div>;
 }

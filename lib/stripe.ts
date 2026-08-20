@@ -11,6 +11,7 @@ type StripeEnvironment = {
   STRIPE_PRICE_QUARTERLY?: string;
   STRIPE_PRICE_MONTHLY?: string;
   STRIPE_PRICE_SEMIANNUAL?: string;
+  STRIPE_MANAGED_PAYMENTS_ENABLED?: string;
   PUBLIC_SITE_URL?: string;
 };
 
@@ -50,6 +51,7 @@ export async function billingConfiguration() {
   return {
     stripe: await stripeClient(),
     prices: { monthly, quarterly, ...(semiannual ? { semiannual } : {}) } satisfies PriceMap,
+    managedPaymentsEnabled: env.STRIPE_MANAGED_PAYMENTS_ENABLED?.trim() === "true",
     siteUrl: safeSiteUrl(env.PUBLIC_SITE_URL),
     webhookSecret: env.STRIPE_WEBHOOK_SECRET?.trim() || "",
   };
