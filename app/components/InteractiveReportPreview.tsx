@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { GameKey } from "./Landing";
 
 type PreviewConfig = {
   label: string;
@@ -15,8 +16,12 @@ type AnswerState = { round: number; choice: number; correct: boolean } | null;
 
 const roundNames = ["SPOT THE LEAK", "LOCK THE CUE", "READ THE PROOF"] as const;
 
-export default function InteractiveReportPreview({ config }: { config: PreviewConfig }) {
-  const rocketLeague = config.label === "Rocket League";
+export default function InteractiveReportPreview({ config, game }: { config: PreviewConfig; game: GameKey }) {
+  const rocketLeague = game === "rocket-league";
+  const league = game === "league";
+  const valorant = game === "valorant";
+  const gameClass = rocketLeague ? "rocket-league" : league ? "league" : valorant ? "valorant" : "general";
+  const playerLabels = rocketLeague ? ["YOU", "MATE", "O1", "O2"] : league ? ["YOU", "JG", "MID", "FOG"] : valorant ? ["YOU", "MATE", "DEF", "?"] : ["YOU", "ALLY", "RIVAL", "?"];
   const [round, setRound] = useState(0);
   const [score, setScore] = useState(0);
   const [answer, setAnswer] = useState<AnswerState>(null);
@@ -24,25 +29,33 @@ export default function InteractiveReportPreview({ config }: { config: PreviewCo
 
   const copy = useMemo(() => ({
     question: [
-      rocketLeague ? "Which freeze-frame shows the costly decision—not just the bad outcome?" : "Which moment contains the repeated decision—not just the final outcome?",
+      rocketLeague ? "Which freeze-frame shows the costly decision—not just the bad outcome?" : league ? "Where did the objective setup actually break?" : valorant ? "Which moment made first contact impossible to trade?" : "Which moment created the repeated loss—not just the final result?",
       "Which cue is short enough to recognize while you are actually playing?",
       "What is the honest conclusion after three comparison matches?",
     ][round],
     helper: [
-      "Read teammate position, your lane and what remains uncovered.",
+      rocketLeague ? "Read teammate position, your lane and what remains uncovered." : league ? "Read the wave, river vision and objective clock." : valorant ? "Read spacing, utility and the contact lane." : "Read the available options, ally state and what disappears next.",
       "The best cue controls one behavior. It does not promise a rank result.",
       "Look for direction and sample size before claiming the habit is fixed.",
     ][round],
-  }), [rocketLeague, round]);
+  }), [league, rocketLeague, round, valorant]);
 
   const moments = rocketLeague ? [
     { time: "3:42", label: "Goal conceded", note: "Visible outcome; the decision happened earlier.", correct: false, positions: "outcome" },
     { time: "3:47", label: "Coverage collapses", note: "Teammate commits and you enter the same lane.", correct: true, positions: "leak" },
     { time: "0:54", label: "Safe counter-example", note: "A deeper hold preserves two defensive options.", correct: false, positions: "counter" },
+  ] : league ? [
+    { time: "18:21", label: "Dragon lost", note: "Visible outcome; setup failed before the fight.", correct: false, positions: "outcome" },
+    { time: "17:42", label: "Priority spent top", note: "The pushed wave never becomes river vision.", correct: true, positions: "leak" },
+    { time: "24:08", label: "Clean setup", note: "Reset timing creates vision before the objective.", correct: false, positions: "counter" },
+  ] : valorant ? [
+    { time: "R7 · 0:46", label: "First death", note: "Visible outcome; the isolated contact began earlier.", correct: false, positions: "outcome" },
+    { time: "R7 · 0:52", label: "Trade gap opens", note: "You cross the choke four metres ahead of support.", correct: true, positions: "leak" },
+    { time: "R10 · 0:39", label: "Supported entry", note: "Utility lands as the second player closes the gap.", correct: false, positions: "counter" },
   ] : [
-    { time: "12:18", label: "Final outcome", note: "The result is visible, but the decision happened earlier.", correct: false, positions: "outcome" },
-    { time: "12:11", label: "Decision window", note: "The repeated choice appears before the outcome.", correct: true, positions: "leak" },
-    { time: "18:04", label: "Counter-example", note: "A different choice preserves more options.", correct: false, positions: "counter" },
+    { time: "04:12", label: "Visible loss", note: "The scoreboard changes after the key decision has passed.", correct: false, positions: "outcome" },
+    { time: "04:18", label: "Options collapse", note: "One early commitment removes the safe follow-up.", correct: true, positions: "leak" },
+    { time: "11:06", label: "Clean counter", note: "A patient choice preserves two useful next actions.", correct: false, positions: "counter" },
   ];
 
   const choices = round === 1 ? [
@@ -88,7 +101,7 @@ export default function InteractiveReportPreview({ config }: { config: PreviewCo
 
       {round === 0 && <>
         <div className={`review-replay-frame state-${moments[selectedMoment].positions}`}>
-          <div className="review-field"><span className="review-half" /><span className="review-circle" /><span className="review-net left" /><span className="review-net right" /><i className="review-ball" /><i className="review-dot you">YOU</i><i className="review-dot mate">MATE</i><i className="review-dot rival">O1</i><i className="review-dot rival-two">O2</i><em>{moments[selectedMoment].time}</em></div>
+          <div className={`review-field ${gameClass}`}><span className="review-half" /><span className="review-circle" /><span className="review-net left" /><span className="review-net right" />{rocketLeague ? <i className="review-ball" /> : league ? <i className="review-objective">DRG</i> : valorant ? <i className="review-site">A</i> : <i className="review-objective">READ</i>}<i className="review-dot you">{playerLabels[0]}</i><i className="review-dot mate">{playerLabels[1]}</i><i className="review-dot rival">{playerLabels[2]}</i><i className="review-dot rival-two">{playerLabels[3]}</i><em>{moments[selectedMoment].time}</em></div>
           <div><small>FREEZE FRAME</small><b>{moments[selectedMoment].label}</b><p>{moments[selectedMoment].note}</p></div>
         </div>
         <div className="review-moment-choices">{moments.map((moment, index) => <button type="button" className={`${selectedMoment === index ? "selected" : ""} ${answer?.choice === index ? answer.correct ? "correct" : "wrong" : ""}`} onClick={() => { setSelectedMoment(index); choose(index, moment.correct); }} key={moment.time}><span>{moment.time}</span><b>{moment.label}</b><small>{index === 1 ? "DECISION" : index === 2 ? "COUNTER" : "OUTCOME"}</small></button>)}</div>

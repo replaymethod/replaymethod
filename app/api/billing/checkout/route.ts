@@ -68,7 +68,6 @@ export async function POST(request: Request) {
       success_url: `${config.siteUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.siteUrl}/?checkout=canceled#pricing`,
       billing_address_collection: "auto",
-      customer_update: { address: "auto", name: "auto" },
       metadata: { player_public_id: player.publicId, plan_key: payload.plan },
       subscription_data: { metadata: { player_public_id: player.publicId, plan_key: payload.plan } },
       integration_identifier: randomIntegrationIdentifier(),

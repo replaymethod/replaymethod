@@ -5,9 +5,8 @@ import { FormEvent, useEffect, useState } from "react";
 import QuickReplayStart from "./QuickReplayStart";
 import HardstuckHook from "./HardstuckHook";
 import PricingLadder from "./PricingLadder";
-import InteractiveEvidencePipeline from "./InteractiveEvidencePipeline";
 import InteractiveReportPreview from "./InteractiveReportPreview";
-import ReplayArenaWalkthrough from "./ReplayArenaWalkthrough";
+import GameHeroExperience from "./GameHeroExperience";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 
 export type GameKey = "general" | "league" | "valorant" | "rocket-league";
@@ -186,7 +185,7 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
     <section className="hero shell">
       <div className="hero-copy"><div className="eyebrow"><i /> {config.eyebrow}</div><h1>{config.title}<br /><em>{config.accent}</em></h1><p className="lead">{lead}</p><GameLinks current={game} placement="hero_picker" />{(game === "general" || game === "rocket-league") && engineOpen ? <><QuickReplayStart placement={game === "general" ? "home_quick_replay" : "rl_quick_replay"} /><div className="hero-quiet-actions"><button className="hero-secondary" onClick={previewProduct}>See a sample report <span>↓</span></button><a href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "hero_full_intake")}>Use the full intake instead →</a></div></> : <div className="hero-actions"><a className="hero-primary" href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "hero_analysis")}><span>{riotRequest ? "OFFICIAL ACCESS PENDING" : "ENGINE VALIDATION IN PROGRESS"} · NO CARD</span><b>{riotRequest ? "Save my beta request" : "Join the replay beta"} <i>→</i></b></a><button className="hero-secondary" onClick={previewProduct}>Play the product walkthrough <span>↓</span></button></div>}<div className="hero-proof"><span><i>01</i> Real match evidence</span><span><i>02</i> Honest abstention</span><span><i>03</i> No card</span></div><div className="hero-route-links"><a className="hero-plan-summary" href="#pricing" onClick={() => trackEvent(game, "cta_click", "hero_pricing")}><span>PLANS</span><b>First check planned free · paid checkout closed</b><i>↓</i></a><a className="hero-beta-link" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "hero_climb_check")}>No replay ready? Run the 60-second Climb Check →</a></div>
       </div>
-      <div className="visual-wrap"><div className="orb orb-a" /><div className="orb orb-b" /><div className="example-tag">PLAY THE PRODUCT</div>{game === "general" || game === "rocket-league" ? <ReplayArenaWalkthrough /> : <InteractiveEvidencePipeline label={config.label} />}</div>
+      <div className="visual-wrap"><div className="orb orb-a" /><div className="orb orb-b" /><div className="example-tag">PLAY THE PRODUCT</div><GameHeroExperience game={game} /></div>
     </section>
 
     <section className="proof-ribbon"><div className="shell"><span><b>01</b> REPLAY</span><i>→</i><span><b>02</b> REVEAL</span><i>→</i><span><b>03</b> PRACTICE</span><i>→</i><span><b>04</b> PROVE</span></div></section>
@@ -200,7 +199,7 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
           }
         />
 
-    <section className="product-section shell" id="product"><div className="section-intro"><span className="kicker">PLAY THE REPORT</span><h2>Spot it. Train it.<br />Prove it changed.</h2><p>Three rounds. One real decision loop. Every value is example data.</p></div><InteractiveReportPreview config={config} /><div className="demo-conversion"><div><span>{riotRequest ? "RIOT ACCESS REQUESTS ARE OPEN" : replayClosed ? "REPLAY BETA LIST IS OPEN" : "FIRST CHECK · $0"}</span><b>{riotRequest ? "Save your official-access request." : replayClosed ? "Get first access." : "Try the real evidence pipeline."}</b><p>{riotRequest ? "No unsupported ingestion." : replayClosed ? "We email you when the engine clears its gate." : "Your replay decides whether a finding is strong enough to show."}</p></div><a href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "demo_analysis")}>{intakeLabel} →</a></div></section>
+    <section className="product-section shell" id="product"><div className="section-intro"><span className="kicker">PLAY THE REPORT</span><h2>Spot it. Train it.<br />Prove it changed.</h2><p>Three rounds. One real decision loop. Every value is example data.</p></div><InteractiveReportPreview config={config} game={game} /><div className="demo-conversion"><div><span>{riotRequest ? "RIOT ACCESS REQUESTS ARE OPEN" : replayClosed ? "REPLAY BETA LIST IS OPEN" : "FIRST CHECK · $0"}</span><b>{riotRequest ? "Save your official-access request." : replayClosed ? "Get first access." : "Try the real evidence pipeline."}</b><p>{riotRequest ? "No unsupported ingestion." : replayClosed ? "We email you when the engine clears its gate." : "Your replay decides whether a finding is strong enough to show."}</p></div><a href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "demo_analysis")}>{intakeLabel} →</a></div></section>
 
     <PricingLadder analysisHref={intakeHref} game={game} requestOnly={riotRequest} checkoutOpen={checkoutOpen} replayReady={!replayClosed} />
 

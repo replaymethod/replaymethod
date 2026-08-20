@@ -16,7 +16,7 @@ test("checkout trusts server Price IDs and enforces authenticated same-origin wr
   assert.match(source, /payload\.adultPurchaser !== true/);
   assert.match(source, /config\.prices\[payload\.plan\]/);
   assert.match(source, /managedPaymentsEnabled \? \{ managed_payments: \{ enabled: true \} \} : \{\}/);
-  assert.match(source, /customer_update: \{ address: "auto", name: "auto" \}/);
+  assert.doesNotMatch(source, /customer_update/);
   assert.doesNotMatch(source, /payment_method_types/);
   assert.doesNotMatch(source, /automatic_tax/);
 });

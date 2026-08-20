@@ -1,136 +1,118 @@
 "use client";
 
-import { CSSProperties, KeyboardEvent, PointerEvent, useRef, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 
-type Point = { x: number; y: number };
+type Read = "challenge" | "rotate" | "boost";
 
-const missions = [
-  { short: "BOOST", title: "Collect the small boost pad", detail: "Small pads keep you in the play without abandoning the net." },
-  { short: "ROTATE", title: "Enter through back post", detail: "Take the far post first. You keep the play in front of your car." },
-  { short: "CLEAR", title: "Meet the ball from the safe side", detail: "Drive through the ball. Your approach sends the clear away from your own goal." },
-  { short: "PROOF", title: "Decision complete", detail: "Replay Method can now test whether this coverage choice repeats in real matches." },
-] as const;
+const reads: { id: Read; key: string; title: string; detail: string }[] = [
+  { id: "challenge", key: "A", title: "Challenge now", detail: "Attack before the opponent settles." },
+  { id: "rotate", key: "B", title: "Rotate through back post", detail: "Preserve the net and two useful options." },
+  { id: "boost", key: "C", title: "Leave for corner boost", detail: "Trade coverage for a full tank." },
+];
 
-const targets = [{ x: 31, y: 70 }, { x: 12, y: 34 }, { x: 47, y: 47 }] as const;
-const clamp = (value: number) => Math.max(6, Math.min(94, value));
-const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
+const clamp = (value: number) => Math.max(0, Math.min(100, value));
 
 export default function ReplayArenaWalkthrough() {
-  const fieldRef = useRef<HTMLDivElement>(null);
-  const [player, setPlayer] = useState<Point>({ x: 18, y: 78 });
-  const [heading, setHeading] = useState(-18);
-  const [stage, setStage] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const [boost, setBoost] = useState(21);
-  const [mistakes, setMistakes] = useState(0);
-  const [feedback, setFeedback] = useState("Drag the blue car through the glowing route. Arrow keys work too.");
-  const [feedbackTone, setFeedbackTone] = useState<"neutral" | "good" | "warn">("neutral");
+  const [frame, setFrame] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [read, setRead] = useState<Read | null>(null);
+  const [evidence, setEvidence] = useState(true);
+  const [locked, setLocked] = useState(false);
 
-  const movePlayer = (point: Point) => {
-    if (stage === 3) return;
-    const next = { x: clamp(point.x), y: clamp(point.y) };
-    const angle = Math.atan2(next.y - player.y, next.x - player.x) * (180 / Math.PI);
-    if (Math.abs(next.x - player.x) + Math.abs(next.y - player.y) > 0.5) setHeading(angle);
-    setPlayer(next);
+  useEffect(() => {
+    if (!playing) return;
+    const timer = window.setInterval(() => {
+      setFrame(value => {
+        const next = clamp(value + 1);
+        if (next >= 72) setPlaying(false);
+        return next;
+      });
+    }, 72);
+    return () => window.clearInterval(timer);
+  }, [playing]);
 
-    if (stage < 2 && distance(next, targets[2]) < 9) {
-      setMistakes(value => value + 1);
-      setFeedbackTone("warn");
-      setFeedback("Too early: your teammate is already committed. Finish the cyan route before attacking the ball.");
-      return;
-    }
+  const decisionReady = frame >= 58;
+  const correct = read === "rotate";
+  const phase = frame < 30 ? "BUILDUP" : frame < 58 ? "PRESSURE" : frame < 76 ? "DECISION WINDOW" : "OUTCOME";
+  const clock = useMemo(() => {
+    const seconds = Math.max(0, 247 - Math.round(frame * .15));
+    return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  }, [frame]);
 
-    if (distance(next, targets[stage]) >= (stage === 2 ? 10 : 8)) return;
-    if (stage === 0) {
-      setBoost(33);
-      setStage(1);
-      setFeedbackTone("good");
-      setFeedback("+12 boost. You stayed close enough to defend—now rotate through the far post.");
-    } else if (stage === 1) {
-      setStage(2);
-      setFeedbackTone("good");
-      setFeedback("Back post secured. The play is in front of you; drive through the ball for a safe clear.");
-    } else {
-      setStage(3);
-      setBoost(value => Math.max(0, value - 8));
-      setFeedbackTone("good");
-      setFeedback("Clean clear. One input became a measurable replay decision: boost path → coverage → outcome.");
-    }
+  const restart = () => {
+    setFrame(0);
+    setRead(null);
+    setLocked(false);
+    setPlaying(true);
   };
 
-  const pointFromPointer = (event: PointerEvent<HTMLDivElement>) => {
-    const bounds = fieldRef.current?.getBoundingClientRect();
-    if (!bounds) return null;
-    return { x: ((event.clientX - bounds.left) / bounds.width) * 100, y: ((event.clientY - bounds.top) / bounds.height) * 100 };
+  const choose = (choice: Read) => {
+    setPlaying(false);
+    setFrame(value => Math.max(value, 68));
+    setRead(choice);
+    setLocked(false);
   };
 
-  const keyboardMove = (event: KeyboardEvent<HTMLButtonElement>) => {
-    const delta = event.shiftKey ? 7 : 3;
-    const directions: Record<string, Point> = {
-      ArrowLeft: { x: -delta, y: 0 }, ArrowRight: { x: delta, y: 0 },
-      ArrowUp: { x: 0, y: -delta }, ArrowDown: { x: 0, y: delta },
-    };
-    const direction = directions[event.key];
-    if (!direction) return;
-    event.preventDefault();
-    movePlayer({ x: player.x + direction.x, y: player.y + direction.y });
-  };
+  const positions = {
+    you: { left: `${22 + frame * .24}%`, top: `${78 - frame * .27}%` },
+    mate: { left: `${39 + frame * .13}%`, top: `${38 + frame * .03}%` },
+    o1: { left: `${64 - frame * .07}%`, top: `${37 + frame * .05}%` },
+    o2: { left: `${76 - frame * .05}%`, top: `${67 - frame * .08}%` },
+    ball: { left: `${58 - frame * .045}%`, top: `${44 + frame * .015}%` },
+  } satisfies Record<string, CSSProperties>;
 
-  const reset = () => {
-    setPlayer({ x: 18, y: 78 });
-    setHeading(-18);
-    setStage(0);
-    setBoost(21);
-    setMistakes(0);
-    setFeedbackTone("neutral");
-    setFeedback("Drag the blue car through the glowing route. Arrow keys work too.");
-  };
-
-  const carStyle = { left: `${player.x}%`, top: `${player.y}%`, "--car-angle": `${heading}deg` } as CSSProperties;
-
-  return <div className="arcade-console">
-    <header className="arcade-head">
-      <div><small>PLAYABLE REPLAY LESSON · 2V2</small><strong>Back-post rescue</strong></div>
-      <div className="arcade-score"><span className="blue">BLUE <b>{stage === 3 ? 1 : 0}</b></span><em>0:{String(Math.max(0, 18 - stage * 5)).padStart(2, "0")}</em><span>ORANGE <b>0</b></span></div>
+  return <div className={`replay-lens ${locked ? "is-locked" : ""}`}>
+    <header className="lens-head">
+      <div><small>INTERACTIVE REPLAY LENS · ILLUSTRATIVE MATCH</small><strong>Find the decision before the goal.</strong></div>
+      <div className="lens-live"><i /> ANALYSIS PREVIEW</div>
     </header>
 
-    <div className="arcade-objective"><span>OBJECTIVE</span><b>{missions[stage].title}</b><small>{stage < 3 ? `${stage + 1} / 3` : "CLEAR ✓"}</small></div>
+    <div className="lens-workspace">
+      <div className="lens-stage">
+        <div className="lens-stage-top">
+          <span><i>{phase}</i><b>{clock}</b></span>
+          <button type="button" className={evidence ? "active" : ""} aria-pressed={evidence} onClick={() => setEvidence(value => !value)}><i /> EVIDENCE LAYER</button>
+        </div>
 
-    <div
-      ref={fieldRef}
-      className={`arcade-field arcade-stage-${stage} ${dragging ? "is-driving" : ""}`}
-      onPointerMove={event => { if (dragging) { const point = pointFromPointer(event); if (point) movePlayer(point); } }}
-      onPointerUp={event => { setDragging(false); event.currentTarget.releasePointerCapture?.(event.pointerId); }}
-      onPointerCancel={() => setDragging(false)}
-    >
-      <span className="arcade-pitch-stripes" /><span className="arcade-half" /><span className="arcade-circle" />
-      <span className="arcade-goal blue" /><span className="arcade-goal orange" />
-      {[{ x: 31, y: 70 }, { x: 31, y: 30 }, { x: 69, y: 30 }, { x: 69, y: 70 }].map((pad, index) => <i className={`boost-pad ${index === 0 ? "mission-pad" : ""}`} style={{ left: `${pad.x}%`, top: `${pad.y}%` }} key={`${pad.x}-${pad.y}`} />)}
-      <span className="arcade-route"><i /><i /><i /></span>
-      {stage < 3 && <span className={`arcade-target target-${stage}`}><i>{stage + 1}</i><b>{missions[stage].short}</b></span>}
-      <i className="arcade-ball"><span /></i>
-      <button
-        type="button"
-        className="arcade-car player"
-        aria-label="Blue car. Drag it through the glowing route or use the arrow keys."
-        style={carStyle}
-        onPointerDown={event => { setDragging(true); event.currentTarget.parentElement?.setPointerCapture?.(event.pointerId); }}
-        onKeyDown={keyboardMove}
-      ><span>YOU</span><i /></button>
-      <i className="arcade-car blue-mate"><span>MATE</span><i /></i>
-      <i className="arcade-car orange-one"><span>O1</span><i /></i>
-      <i className="arcade-car orange-two"><span>O2</span><i /></i>
-      <div className="arcade-boost"><span>BOOST</span><b>{boost}</b><i><em style={{ width: `${boost}%` }} /></i></div>
-      {stage === 0 && <div className="arcade-start-hint"><b>DRAG TO DRIVE</b><span>Follow 1 → 2 → 3</span></div>}
-      {stage === 3 && <div className="goal-burst"><i /><b>NICE CLEAR!</b><span>+100 decision score</span></div>}
+        <div className={`lens-field ${evidence ? "show-evidence" : ""}`}>
+          <span className="lens-stripes" /><span className="lens-midline" /><span className="lens-circle" />
+          <span className="lens-net blue" /><span className="lens-net orange" />
+          <span className="lens-danger"><i /> NET COVERAGE</span>
+          <span className="lens-lane lane-you" /><span className="lens-lane lane-mate" />
+          <i className="lens-ball" style={positions.ball}><span /></i>
+          <i className="lens-car you" style={positions.you}><span>YOU</span></i>
+          <i className="lens-car mate" style={positions.mate}><span>MATE</span></i>
+          <i className="lens-car rival one" style={positions.o1}><span>O1</span></i>
+          <i className="lens-car rival two" style={positions.o2}><span>O2</span></i>
+          {decisionReady && <div className="lens-freeze"><i /> DECISION FOUND · 0.7s BEFORE COMMIT</div>}
+        </div>
+
+        <div className="lens-transport">
+          <button type="button" aria-label={playing ? "Pause replay" : "Play replay"} onClick={() => { if (frame >= 100) setFrame(0); setPlaying(value => !value); }}>{playing ? "Ⅱ" : "▶"}</button>
+          <span>{clock}</span>
+          <div><input type="range" min="0" max="100" value={frame} aria-label="Replay timeline" onChange={event => { setPlaying(false); setRead(null); setLocked(false); setFrame(Number(event.target.value)); }} style={{ "--lens-progress": `${frame}%` } as CSSProperties} /><i className="setup" /><i className="decision" /><i className="goal" /></div>
+          <button type="button" aria-label="Restart replay" onClick={restart}>↻</button>
+        </div>
+        <div className="lens-timeline-labels"><span>SETUP</span><span>TEAMMATE COMMITS</span><span>GOAL</span></div>
+      </div>
+
+      <aside className="lens-readout">
+        <div className="lens-readout-head"><span>REPLAY METHOD READ</span><b>{locked ? "CUE LOCKED" : decisionReady ? "YOUR DECISION" : "SCANNING MATCH"}</b><small>{locked ? "Ready for next queue" : decisionReady ? "Choose the safest next action" : "Press play. We stop before the outcome."}</small></div>
+
+        <div className="lens-signals">
+          <div><span>LANE OVERLAP</span><b className={decisionReady ? "warn" : ""}>{decisionReady ? "HIGH" : "—"}</b><i><em style={{ width: decisionReady ? "84%" : "18%" }} /></i></div>
+          <div><span>NET COVERAGE</span><b className={decisionReady ? "warn" : ""}>{decisionReady ? "OPEN" : "—"}</b><i><em style={{ width: decisionReady ? "27%" : "74%" }} /></i></div>
+          <div><span>YOUR BOOST</span><b>{decisionReady ? "41" : "—"}</b><i><em style={{ width: decisionReady ? "41%" : "50%" }} /></i></div>
+        </div>
+
+        {!decisionReady ? <button type="button" className="lens-start" onClick={restart}><span>PLAY THE 8-SECOND REPLAY</span><i>▶</i></button> : <div className="lens-choices">
+          {reads.map(choice => <button type="button" className={read === choice.id ? choice.id === "rotate" ? "correct" : "wrong" : ""} onClick={() => choose(choice.id)} key={choice.id}><i>{choice.key}</i><div><b>{choice.title}</b><small>{choice.detail}</small></div></button>)}
+        </div>}
+
+        {read && <div className={`lens-result ${correct ? "correct" : "wrong"}`} aria-live="polite"><span>{correct ? "CLEAN READ" : "REWIND"}</span><b>{correct ? "You preserve two options instead of duplicating the commit." : read === "challenge" ? "Your teammate is already on the ball. A second challenge removes the last defender." : "Forty-one boost is enough. Leaving the net is the expensive trade."}</b>{correct && !locked && <button type="button" onClick={() => setLocked(true)}>LOCK NEXT-MATCH CUE <i>→</i></button>}{locked && <p><i>✓</i> When teammate crosses the ball line, hold back post until the play resets.</p>}</div>}
+      </aside>
     </div>
 
-    <div className="arcade-steps" aria-label="Mission progress">
-      {missions.slice(0, 3).map((mission, index) => <span className={index < stage ? "done" : index === stage ? "active" : ""} key={mission.short}><i>{index < stage ? "✓" : index + 1}</i><b>{mission.short}</b></span>)}
-    </div>
-
-    <div className={`arcade-feedback ${feedbackTone}`} aria-live="polite"><i>{feedbackTone === "warn" ? "!" : feedbackTone === "good" ? "✓" : "i"}</i><div><b>{missions[stage].detail}</b><p>{feedback}</p></div></div>
-
-    <footer className="arcade-footer"><div><span>DECISION SCORE</span><b>{Math.max(0, stage * 100 - mistakes * 15)}</b><small>{mistakes ? `${mistakes} early challenge${mistakes === 1 ? "" : "s"}` : "Clean read so far"}</small></div><button type="button" onClick={reset}>{stage === 3 ? "PLAY AGAIN" : "RESET RUN"}<i>↻</i></button></footer>
+    <footer className="lens-footer"><span><i>01</i> WATCH THE SETUP</span><span><i>02</i> MAKE THE READ</span><span><i>03</i> LOCK ONE CUE</span><b>Outcome ≠ decision</b></footer>
   </div>;
 }
