@@ -33,6 +33,7 @@ export const analysisRequests = sqliteTable("analysis_requests", {
   publicId: text("public_id").notNull(),
   email: text("email").notNull(),
   game: text("game").notNull(),
+  platform: text("platform").notNull().default("pc"),
   currentRank: text("current_rank").notNull(),
   targetRank: text("target_rank"),
   playerContext: text("player_context"),

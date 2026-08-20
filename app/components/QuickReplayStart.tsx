@@ -203,10 +203,10 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     </div>}
 
     </> : <div className="console-path">
-      <div className="console-path-top"><i>{platform === "ps5" ? "△○×□" : platform === "xbox" ? "X" : "◫"}</i><div><span>{consolePaths[platform].label.toUpperCase()} PATH</span><b>Video lane—not a fake PC upload.</b></div><em>COMING NEXT</em></div>
-      <ol><li><i>1</i><div><b>Save the whole match</b><span>{consolePaths[platform].capture}</span></div></li><li><i>2</i><div><b>Keep the original clip</b><span>Do not crop the scoreboard, clock or player view.</span></div></li><li><i>3</i><div><b>Join console priority</b><span>We will invite this platform when the video evidence adapter is honest enough to ship.</span></div></li></ol>
+      <div className="console-path-top"><i>{platform === "ps5" ? "△○×□" : platform === "xbox" ? "X" : "◫"}</i><div><span>{consolePaths[platform].label.toUpperCase()} PATH</span><b>Video evidence—not a fake PC upload.</b></div><em>VIDEO BETA</em></div>
+      <ol><li><i>1</i><div><b>Save the clearest clip or match</b><span>{consolePaths[platform].capture}</span></div></li><li><i>2</i><div><b>Keep the HUD visible</b><span>Do not crop the scoreboard, clock, boost meter or player view.</span></div></li><li><i>3</i><div><b>Upload or paste a VOD</b><span>Video findings stay separate from frame-exact PC telemetry.</span></div></li></ol>
       <p>{consolePaths[platform].limitation}</p>
-      <div><a className="console-primary" href="#join-beta" onClick={() => track("cta_click", `${placement}_console_beta`)}>JOIN CONSOLE VIDEO BETA <span>→</span></a><a className="console-guide" href={consolePaths[platform].guide} target="_blank" rel="noreferrer">Official capture guide ↗</a></div>
+      <div><Link className="console-primary" href={`/analyze?game=rocket-league&platform=${platform}`} onClick={() => track("cta_click", `${placement}_console_beta`)}>START CONSOLE VIDEO BETA <span>→</span></Link><a className="console-guide" href={consolePaths[platform].guide} target="_blank" rel="noreferrer">Official capture guide ↗</a></div>
     </div>}
 
     {message && platform === "pc" && <p className={`quick-message ${status}`} role="alert">{message}</p>}

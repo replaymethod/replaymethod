@@ -44,7 +44,7 @@ async function loadAndClaim(publicId: string, db: D1Database): Promise<JobRow | 
 
   const row = await db.prepare(`SELECT
       j.id AS job_id, j.public_id AS job_public_id, j.player_id, j.attempts, j.max_attempts,
-      r.id AS request_id, r.public_id, r.email, r.game, r.current_rank, r.target_rank,
+      r.id AS request_id, r.public_id, r.email, r.game, r.platform, r.current_rank, r.target_rank,
       r.player_context, r.evidence_type, r.evidence_url, r.file_key, r.goal, r.notes,
       ga.external_id AS provider_account_id, ga.region AS provider_region,
       ga.connection_status AS provider_connection_status
@@ -61,6 +61,7 @@ async function loadAndClaim(publicId: string, db: D1Database): Promise<JobRow | 
     playerId: row.player_id == null ? null : Number(row.player_id),
     email: String(row.email),
     game: String(row.game) as GameId,
+    platform: row.platform == null ? "pc" : String(row.platform),
     currentRank: String(row.current_rank),
     targetRank: row.target_rank == null ? null : String(row.target_rank),
     playerContext: row.player_context == null ? null : String(row.player_context),

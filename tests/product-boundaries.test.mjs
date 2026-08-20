@@ -62,3 +62,18 @@ test("admin exports and replay downloads neutralize active content", async () =>
   assert.match(override, /analysisUsage/);
   assert.match(override, /status: "consumed"/);
 });
+
+test("console intake keeps video evidence separate from frame-exact replay telemetry", async () => {
+  const [intake, adapter, flow] = await Promise.all([
+    source("../app/api/analyses/route.ts"),
+    source("../lib/adapters/index.ts"),
+    source("../app/analyze/AnalyzeFlow.tsx"),
+  ]);
+  assert.match(intake, /RL_PLATFORMS = new Set\(\["pc", "ps5", "xbox", "switch"\]\)/);
+  assert.match(intake, /evidenceType = hasReplay \? "replay_file" : "gameplay_video"/);
+  assert.match(intake, /evidenceType = "vod_link"/);
+  assert.match(intake, /Console submissions use gameplay video or a VOD link/);
+  assert.match(adapter, /\["gameplay_video", "vod_link"\]\.includes\(input\.evidenceType\)/);
+  assert.match(adapter, /no hidden telemetry will be invented/i);
+  assert.match(flow, /It cannot claim hidden player coordinates or frame-exact telemetry/);
+});

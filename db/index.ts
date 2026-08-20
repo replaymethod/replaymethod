@@ -18,6 +18,7 @@ export async function ensureProductSchema(database: D1Database) {
         public_id text NOT NULL,
         email text NOT NULL,
         game text NOT NULL,
+        platform text DEFAULT 'pc' NOT NULL,
         current_rank text NOT NULL,
         target_rank text,
         player_context text,
@@ -452,6 +453,7 @@ export async function ensureProductSchema(database: D1Database) {
       // Existing beta D1 databases predate the longitudinal focus columns.
       // Checked migrations remain canonical; these guarded additions keep
       // local/preview databases compatible when they are opened directly.
+      await ensureColumn(database, "analysis_requests", "platform", "text DEFAULT 'pc' NOT NULL");
       await ensureColumn(database, "analysis_findings", "detector_id", "text DEFAULT 'legacy.unknown' NOT NULL");
       await ensureColumn(database, "player_focuses", "detector_id", "text DEFAULT 'legacy.unknown' NOT NULL");
       await ensureColumn(database, "player_focuses", "baseline_analysis_request_id", "integer");

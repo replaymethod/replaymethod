@@ -19,7 +19,7 @@ flowchart TD
 
 The system preserves four separate layers:
 
-1. **Raw input** — original replay or external match identifier. Binary uploads are private R2 objects.
+1. **Raw input** — original replay, gameplay video/VOD or external match identifier. Binary uploads are private R2 objects, and every request records the source platform and evidence type.
 2. **Normalized match** — `game-data.v1`, stored as JSON under `normalized/{game}/{request}/`.
 3. **Structured findings** — `finding.v1`, stored relationally with confidence, evidence, metrics, limitations and detector version.
 4. **Coaching report** — `coaching.v1`, a concise prioritization of supplied findings. It cannot introduce gameplay facts.
