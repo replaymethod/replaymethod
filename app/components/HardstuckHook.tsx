@@ -29,11 +29,18 @@ const patterns = [
   },
 ] as const;
 
+const pressureContexts = [
+  { key: "close", label: "Score is close", detail: "Pressure rises", phrase: "when the score is close" },
+  { key: "mistake", label: "After one mistake", detail: "Decisions speed up", phrase: "after one mistake" },
+  { key: "late", label: "Late in the session", detail: "Focus drops", phrase: "late in the session" },
+] as const;
+
 type HardstuckHookProps = {
   analysisHref?: string;
   onAnalysisStart?: () => void;
   onPatternSelect?: (pattern: number) => void;
   requestOnly?: boolean;
+  intakeClosed?: boolean;
 };
 
 export default function HardstuckHook({
@@ -41,11 +48,17 @@ export default function HardstuckHook({
   onAnalysisStart,
   onPatternSelect,
   requestOnly = false,
+  intakeClosed = false,
 }: HardstuckHookProps) {
   const [selected, setSelected] = useState<number | null>(null);
+  const [context, setContext] = useState<number | null>(null);
   const selectedPattern = selected === null ? null : patterns[selected];
-  const selectedAnalysisHref = selectedPattern
-    ? `${analysisHref}${analysisHref.includes("?") ? "&" : "?"}hypothesis=${encodeURIComponent(selectedPattern.title)}`
+  const selectedContext = context === null ? null : pressureContexts[context];
+  const hypothesis = selectedPattern
+    ? `${selectedPattern.title}${selectedContext ? ` · ${selectedContext.label}` : ""}`
+    : "";
+  const selectedAnalysisHref = selectedPattern && !analysisHref.startsWith("#")
+    ? `${analysisHref}${analysisHref.includes("?") ? "&" : "?"}hypothesis=${encodeURIComponent(hypothesis)}`
     : analysisHref;
 
   return (
@@ -68,8 +81,9 @@ export default function HardstuckHook({
                   type="button"
                   key={pattern.title}
                   className={isSelected ? "active" : ""}
-                  onClick={() => { setSelected(index); onPatternSelect?.(index + 1); }}
+                  onClick={() => { setSelected(index); setContext(null); onPatternSelect?.(index + 1); }}
                   aria-pressed={isSelected}
+                  aria-controls="hardstuck-result"
                 >
                   <span className="hardstuck-option-number">0{index + 1}</span>
                   <span className="hardstuck-option-copy">
@@ -78,7 +92,7 @@ export default function HardstuckHook({
                     <span>{pattern.description}</span>
                   </span>
                   <span className="hardstuck-option-state" aria-hidden="true">
-                    {isSelected ? "✓" : "→"}
+                    {isSelected ? "LOCK" : "→"}
                   </span>
                 </button>
               );
@@ -90,8 +104,15 @@ export default function HardstuckHook({
               <span>HYPOTHESIS CONSOLE</span>
               <span className="hardstuck-console-status">
                 <i aria-hidden="true" />
-                {selected === null ? "WAITING FOR INPUT" : `PATTERN 0${selected + 1} LOCKED`}
+                {selected === null ? "WAITING FOR INPUT" : selectedContext ? "HYPOTHESIS ARMED" : `PATTERN 0${selected + 1} LOCKED`}
               </span>
+            </div>
+
+            <div className={`hypothesis-calibrator ${selectedPattern ? "ready" : ""}`}>
+              <div><span>CALIBRATE THE HYPOTHESIS</span><b>{selectedPattern ? "When does it usually break?" : "Choose a pattern to unlock"}</b></div>
+              <div role="group" aria-label="Choose when the pattern usually happens">
+                {pressureContexts.map((item, index) => <button type="button" disabled={!selectedPattern} className={context === index ? "active" : ""} aria-pressed={context === index} onClick={() => setContext(index)} key={item.key}><span>0{index + 1}</span><b>{item.label}</b><small>{item.detail}</small></button>)}
+              </div>
             </div>
 
             <div className="hardstuck-signal-map" aria-hidden="true">
@@ -110,31 +131,34 @@ export default function HardstuckHook({
             </div>
 
             <div
+              id="hardstuck-result"
               className={`hardstuck-result ${selectedPattern ? "revealed" : ""}`}
               role="status"
               aria-live="polite"
               aria-atomic="true"
             >
-              <span>{selectedPattern ? "POSSIBLE SIGNAL" : "SELECT A RECURRING PATTERN"}</span>
+              <span>{selectedContext ? "HYPOTHESIS READY TO TEST" : selectedPattern ? "POSSIBLE SIGNAL" : "SELECT A RECURRING PATTERN"}</span>
               <strong>
                 {selectedPattern
-                  ? selectedPattern.hypothesis
+                  ? `${selectedPattern.hypothesis}${selectedContext ? ` You notice it most ${selectedContext.phrase}.` : ""}`
                   : "The match may contain a repeated decision your final score never shows."}
               </strong>
               <p>
                 {selectedPattern
-                  ? "Hypothesis only. Match evidence decides whether it is real, frequent, and worth fixing."
+                  ? selectedContext ? "Locked as a test—not a diagnosis. The replay still has to support frequency, impact and counter-evidence." : "Add the pressure context, then let match evidence decide whether the pattern is real and worth fixing."
                   : "Choose the closest match. We will treat it as a hypothesis until the replay supports it."}
               </p>
             </div>
 
             <a className="hardstuck-cta" href={selectedAnalysisHref} onClick={onAnalysisStart}>
-              {requestOnly
+              {intakeClosed
+                ? selectedPattern ? "Save this for replay beta access" : "Join the replay beta list"
+                : requestOnly
                 ? selectedPattern ? "Carry this into my Riot request" : "Save a Riot beta request"
                 : selectedPattern ? "Test this in the replay beta" : "Start a replay evidence check"}
               <span aria-hidden="true">→</span>
             </a>
-            <small className="hardstuck-trust">{requestOnly ? "Official access pending · private request · no card" : "One real match · private status · no card"}</small>
+            <small className="hardstuck-trust">{intakeClosed ? "Quality gate in progress · no file · no card" : requestOnly ? "Official access pending · private request · no card" : "One real match · private status · no card"}</small>
           </div>
         </div>
       </div>

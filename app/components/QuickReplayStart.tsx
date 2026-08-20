@@ -6,6 +6,28 @@ import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 const DEFAULT_GOAL = "Find the highest-impact recurring mistake in this match.";
+type Platform = "pc" | "ps5" | "xbox" | "switch";
+
+const consolePaths: Record<Exclude<Platform, "pc">, { label: string; capture: string; limitation: string; guide: string }> = {
+  ps5: {
+    label: "PlayStation 5",
+    capture: "Press Create → Save Recent Gameplay. PS5 can preserve up to one hour.",
+    limitation: "PlayStation stores Rocket League replays inside console save data, so the parser cannot receive the original .replay file.",
+    guide: "https://www.playstation.com/en-us/support/games/capture-ps5-gameplay-screenshots/",
+  },
+  xbox: {
+    label: "Xbox",
+    capture: "Use Capture & share to record the match or keep a full-session stream.",
+    limitation: "Xbox does not expose the original Rocket League .replay file to this web upload.",
+    guide: "https://support.xbox.com/en-US/help/games-apps/troubleshooting/troubleshoot-recording-game-clips",
+  },
+  switch: {
+    label: "Nintendo Switch",
+    capture: "Hold Capture to save a supported gameplay clip.",
+    limitation: "Switch clips are currently limited to 30 seconds—too short for the deep full-match evidence engine.",
+    guide: "https://en-americas-support.nintendo.com/app/answers/detail/a_id/27540/",
+  },
+};
 
 function getAttribution() {
   const params = new URLSearchParams(location.search);
@@ -43,6 +65,7 @@ function fileSizeLabel(bytes: number) {
 export default function QuickReplayStart({ placement }: { placement: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const rankRef = useRef<HTMLInputElement>(null);
+  const [platform, setPlatform] = useState<Platform>("pc");
   const [replay, setReplay] = useState<File | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -72,6 +95,16 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     setStatus("idle");
     track("replay_selected", placement);
     track("analysis_start", `${placement}_details`);
+  }
+
+  function choosePlatform(next: Platform) {
+    setPlatform(next);
+    setReplay(null);
+    setDetailsOpen(false);
+    setMessage("");
+    setStatus("idle");
+    if (inputRef.current) inputRef.current.value = "";
+    track("cta_click", `${placement}_platform_${next}`);
   }
 
   function continueToDetails() {
@@ -130,8 +163,11 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
   }
 
   return <form id="replay-upload" className={`quick-replay ${replay ? "has-file" : ""}`} aria-busy={status === "loading"} onSubmit={submit}>
-    <div className="quick-replay-head"><div><span>ROCKET LEAGUE · QUALITY BETA</span><b>Drop one replay. Test the evidence pipeline.</b></div><i>$0</i></div>
-    <label
+    <div className="quick-replay-head"><div><span>ROCKET LEAGUE · QUALITY BETA</span><b>Choose your platform. Start with real evidence.</b></div><i>$0</i></div>
+    <div className="platform-picker" role="group" aria-label="Choose Rocket League platform">
+      {([["pc", "PC"], ["ps5", "PS5"], ["xbox", "XBOX"], ["switch", "SWITCH"]] as const).map(item => <button type="button" className={platform === item[0] ? "active" : ""} aria-pressed={platform === item[0]} onClick={() => choosePlatform(item[0])} key={item[0]}><i>{item[0] === "pc" ? "⌨" : item[0] === "ps5" ? "△" : item[0] === "xbox" ? "X" : "◫"}</i><span>{item[1]}</span></button>)}
+    </div>
+    {platform === "pc" ? <><label
       className={`quick-drop ${dragging ? "dragging" : ""}`}
       onDragEnter={() => setDragging(true)}
       onDragLeave={() => setDragging(false)}
@@ -143,7 +179,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       <div><b>{replay ? replay.name : "DROP YOUR .REPLAY HERE"}</b><span>{replay ? `${Math.ceil(replay.size / 1024)} KB · Ready` : "or click to choose · original PC replay · max 16 MB"}</span></div>
       <strong>{replay ? "Change" : "Choose file"}</strong>
     </label>
-    {!replay && <div className="quick-upload-help"><p className="quick-promise">Upload first, email last. No account or card.</p><Link href="/replay-upload">Can’t find the file? <span>3 quick steps →</span></Link></div>}
+    {!replay && <div className="quick-upload-help"><p className="quick-promise">Upload first, email last. No account or card.</p><details><summary>Where is my .replay file? <span>30-second guide</span></summary><ol><li><b>1</b><span>Press <strong>Windows + R</strong></span></li><li><b>2</b><span>Paste <code>%USERPROFILE%\Documents\My Games\Rocket League\TAGame\Demos</code></span></li><li><b>3</b><span>Choose your latest <strong>.replay</strong> file above</span></li></ol><Link href="/replay-upload">Open the full visual guide →</Link></details></div>}
 
     {replay && <div className="replay-value quick-replay-value" role="status" aria-live="polite">
       <div className="replay-value-head"><span>REPLAY VALIDATED</span><strong>Supported match file recognized.</strong><p>No gameplay claim has been made. This confirms the file is ready for secure parser checks.</p></div>
@@ -166,6 +202,13 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       <small>No card · Private status link appears immediately · The engine stops instead of guessing</small>
     </div>}
 
-    {message && <p className={`quick-message ${status}`} role="alert">{message}</p>}
+    </> : <div className="console-path">
+      <div className="console-path-top"><i>{platform === "ps5" ? "△○×□" : platform === "xbox" ? "X" : "◫"}</i><div><span>{consolePaths[platform].label.toUpperCase()} PATH</span><b>Video evidence—not a fake PC upload.</b></div><em>VIDEO BETA</em></div>
+      <ol><li><i>1</i><div><b>Save the clearest clip or match</b><span>{consolePaths[platform].capture}</span></div></li><li><i>2</i><div><b>Keep the HUD visible</b><span>Do not crop the scoreboard, clock, boost meter or player view.</span></div></li><li><i>3</i><div><b>Upload or paste a VOD</b><span>Video findings stay separate from frame-exact PC telemetry.</span></div></li></ol>
+      <p>{consolePaths[platform].limitation}</p>
+      <div><Link className="console-primary" href={`/analyze?game=rocket-league&platform=${platform}`} onClick={() => track("cta_click", `${placement}_console_beta`)}>START CONSOLE VIDEO BETA <span>→</span></Link><a className="console-guide" href={consolePaths[platform].guide} target="_blank" rel="noreferrer">Official capture guide ↗</a></div>
+    </div>}
+
+    {message && platform === "pc" && <p className={`quick-message ${status}`} role="alert">{message}</p>}
   </form>;
 }

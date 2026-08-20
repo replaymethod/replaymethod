@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AnalyzeFlow from "./AnalyzeFlow";
 import { isAnalysisGame } from "../../lib/analysis";
+import { subsystemEnabled } from "../../lib/subsystem-controls.mjs";
 
 export const metadata: Metadata = {
   title: "Match evidence & access beta — Replay Method",
@@ -8,9 +9,15 @@ export const metadata: Metadata = {
   alternates: { canonical: "/analyze" }
 };
 
-export default async function AnalyzePage({ searchParams }: { searchParams: Promise<{ game?: string; hypothesis?: string }> }) {
+export default async function AnalyzePage({ searchParams }: { searchParams: Promise<{ game?: string; hypothesis?: string; platform?: string }> }) {
   const query = await searchParams;
   const initialGame = query.game && isAnalysisGame(query.game) ? query.game : null;
   const initialHypothesis = query.hypothesis?.trim().slice(0, 120) || "";
-  return <AnalyzeFlow initialGame={initialGame} initialHypothesis={initialHypothesis} />;
+  const initialPlatform = ["pc", "ps5", "xbox", "switch"].includes(query.platform || "") ? query.platform as "pc" | "ps5" | "xbox" | "switch" : null;
+  let engineOpen = false;
+  try {
+    const { env } = await import("cloudflare:workers");
+    engineOpen = subsystemEnabled((env as unknown as { RL_ENGINE_ENABLED?: string }).RL_ENGINE_ENABLED);
+  } catch { /* Local and static previews keep replay intake safely closed. */ }
+  return <AnalyzeFlow initialGame={initialGame} initialHypothesis={initialHypothesis} initialPlatform={initialPlatform} engineOpen={engineOpen} />;
 }

@@ -9,6 +9,7 @@ export type AnalysisInput = {
   jobPublicId: string;
   playerId: number | null;
   game: GameId;
+  platform: string;
   currentRank: string;
   targetRank: string | null;
   playerContext: string | null;
@@ -42,6 +43,13 @@ function blocked(code: string, publicMessage: string, internalMessage: string, r
 }
 
 async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promise<AdapterResult> {
+  if (["gameplay_video", "vod_link"].includes(input.evidenceType)) {
+    return blocked(
+      "rl_video_evidence_queued",
+      "Your console video evidence is preserved for the video-analysis beta. Visible moments may be reviewed, but no hidden telemetry will be invented.",
+      `Rocket League ${input.platform} video evidence requires the separately calibrated video adapter.`,
+    );
+  }
   if (!subsystemEnabled(env.RL_ENGINE_ENABLED)) {
     return blocked("rl_engine_disabled", "Your replay is safely stored. Automated replay processing is temporarily paused.", "RL_ENGINE_ENABLED is not true.");
   }

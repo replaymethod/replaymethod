@@ -16,7 +16,7 @@ type ReportSummary = {
 };
 
 type BillingSnapshot = {
-  planKey: "quarterly" | "monthly" | null;
+  planKey: "monthly" | "quarterly" | "semiannual" | null;
   status: string;
   hasBillingAccount: boolean;
   cancelAtPeriodEnd: boolean;
@@ -33,6 +33,8 @@ export default function ReportsClient() {
   const [billing, setBilling] = useState<BillingSnapshot | null>(null);
   const [portalState, setPortalState] = useState<"idle" | "loading">("idle");
   const [portalError, setPortalError] = useState("");
+  const [privacyState, setPrivacyState] = useState<"idle" | "deleting" | "error">("idle");
+  const [privacyError, setPrivacyError] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -81,13 +83,34 @@ export default function ReportsClient() {
     }
   }
 
+  async function deleteAccountData() {
+    const confirmation = window.prompt("This permanently deletes your verified account, reports and stored replay files. Type DELETE MY DATA to continue.");
+    if (confirmation !== "DELETE MY DATA") return;
+    setPrivacyState("deleting");
+    setPrivacyError("");
+    try {
+      const response = await fetch("/api/player/data", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation }),
+      });
+      const result = await response.json() as { deleted?: boolean; error?: string };
+      if (!response.ok || !result.deleted) throw new Error(result.error || "Account deletion could not be completed.");
+      localStorage.removeItem("replaymethod-report-ids");
+      window.location.assign("/?account=deleted");
+    } catch (error) {
+      setPrivacyState("error");
+      setPrivacyError(error instanceof Error ? error.message : "Account deletion could not be completed.");
+    }
+  }
+
   const statusTitle = (report: ReportSummary) => report.highestImpactMistake || ({
     analyzing: "Analysis in progress",
     received: "Evidence received",
     blocked: "Analysis paused — evidence preserved",
     failed: "Analysis needs attention",
   }[report.status] ?? "Report pending");
-  const planName = billing?.planKey === "quarterly" ? "3-month cycle" : billing?.planKey === "monthly" ? "Monthly" : billing?.hasBillingAccount ? "No active plan" : "Free proof";
+  const planName = billing?.planKey === "semiannual" ? "6-month climb block" : billing?.planKey === "quarterly" ? "3-month cycle" : billing?.planKey === "monthly" ? "Monthly" : billing?.hasBillingAccount ? "No active plan" : "Free proof";
   const trackNewAnalysis = () => trackProductEvent(reports?.length ? "followup_started" : "analysis_start", "general", reports?.length ? "history_followup" : "history_empty");
 
   return (
@@ -140,6 +163,11 @@ export default function ReportsClient() {
             ))}
           </div>
         )}
+        {historyMode === "verified" && <aside className="privacy-controls" aria-label="Account data controls">
+          <div><span>YOUR DATA</span><strong>Export or permanently delete your verified account.</strong><p>The export omits security secrets and provider identifiers. Deletion removes stored replay files, reports and waitlist records; an active paid period must end first.</p></div>
+          <div><a href="/api/player/data" download>Download my data</a><button type="button" onClick={deleteAccountData} disabled={privacyState === "deleting"}>{privacyState === "deleting" ? "Deleting…" : "Delete my data"}</button></div>
+          {privacyError && <p className="privacy-error" role="alert">{privacyError}</p>}
+        </aside>}
       </section>
     </main>
   );

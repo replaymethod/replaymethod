@@ -42,10 +42,10 @@ function stopCopy(data: PublicReportData) {
     title: "We could not verify enough evidence to coach this match safely.",
     body: "Nothing was invented. Try a fresh replay from a completed match, or contact us if the file should be supported."
   };
-  if (code === "detectors_not_calibrated") return {
-    kicker: "PARSER VERIFIED · COACHING GATED",
-    title: "We read the replay, but the coaching evidence has not passed the beta precision gate.",
-    body: "The player and match data were identified successfully. We stopped before turning uncalibrated heuristics into advice. This submission can be reprocessed when the validated detector set is enabled."
+  if (code === "detectors_not_calibrated" || code === "public_output_disabled") return {
+    kicker: "REAL REPLAY VERIFIED · COACHING GATED",
+    title: "The replay engine worked. It stopped before inventing advice.",
+    body: `${data.processing?.stageLabel || "The player and match data were identified successfully."} This submission can be reprocessed when a validated detector set is enabled.`
   };
   if (code === "subject_player_not_found" || code === "subject_player_ambiguous" || code === "replay_players_missing") return {
     kicker: "PLAYER IDENTITY NEEDED",
@@ -145,7 +145,7 @@ export default function ReportClient({ initial, delivery }: { initial: PublicRep
 
         <section className="practice-plan"><header><span>03 · PRACTICE</span><h2>Your focused plan.</h2></header><div>{data.report.practicePlan.map((item, index) => <article key={`${item}-${index}`}><i>{String(index + 1).padStart(2, "0")}</i><div><small>{index === 0 ? "START HERE" : `STEP ${index + 1}`}</small><b>{item}</b></div></article>)}</div>{data.report.coachNote && <aside><span>COACH NOTE</span><p>{data.report.coachNote}</p></aside>}</section>
 
-        <section className="verify-next"><div><span>04 · VERIFY</span><h2>Check the same decision again—not your rank overnight.</h2><p>Later analyses can add evidence to this focus only when the same supported detector observes it again. If that signal is absent or evidence is insufficient, Replay Method stays inconclusive.</p><ol><li><b>QUEUE</b><span>Carry only the next-queue rule into a representative match.</span></li><li><b>SUBMIT</b><span>Send the next supported match without cherry-picking a highlight.</span></li><li><b>COMPARE</b><span>Use another real observation of this same focus before calling it progress.</span></li></ol></div><aside><span>RECOMMENDED · 3-MONTH CYCLE</span><b>$27<small>/3 months</small></b><ul><li>$9/month effective</li><li>4 analyses every 30 days</li><li>History remains readable</li></ul><Link href="/#pricing" onClick={trackUpgradeInterest}>Compare paid plans →</Link><small>Cadence changes with payment. Evidence standards do not.</small></aside></section>
+        <section className="verify-next"><div><span>04 · VERIFY</span><h2>Check the same decision again—not your rank overnight.</h2><p>Later analyses can add evidence to this focus only when the same supported detector observes it again. If that signal is absent or evidence is insufficient, Replay Method stays inconclusive.</p><ol><li><b>QUEUE</b><span>Carry only the next-queue rule into a representative match.</span></li><li><b>SUBMIT</b><span>Send the next supported match without cherry-picking a highlight.</span></li><li><b>COMPARE</b><span>Use another real observation of this same focus before calling it progress.</span></li></ol></div><aside><span>RECOMMENDED · 3-MONTH CYCLE</span><b>$17.99<small>/3 months</small></b><ul><li>$6.00/month effective</li><li>4 analyses every 30 days</li><li>History remains readable</li></ul><Link href="/#pricing" onClick={trackUpgradeInterest}>Compare paid plans →</Link><small>Cadence changes with payment. Evidence standards do not.</small></aside></section>
 
         <section className="report-method"><div><span>CONFIDENCE + LIMITATIONS</span><h2>Traceable coaching, not a black box.</h2><p>{data.report.analysisSource === "automated" ? "This report was generated from versioned structured findings. The language layer can explain and prioritize them, but it cannot create new gameplay facts." : "This beta report was quality-reviewed. Automated engine metadata will appear here for reports produced by the structured pipeline."}</p></div><aside><b>{data.processing?.versions.detector || "Quality-reviewed beta"}</b><span>Detector</span><b>{data.processing?.versions.schema || "Legacy report schema"}</b><span>Schema</span></aside><div className="report-limitations"><b>KNOWN LIMITATIONS</b>{data.report.limitations.length > 0 ? <ul>{data.report.limitations.map(item => <li key={item}>{item}</li>)}</ul> : <p>No additional detector-specific limitations were recorded for this finding.</p>}</div></section>
 
