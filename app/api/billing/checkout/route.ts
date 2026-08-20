@@ -43,6 +43,8 @@ export async function POST(request: Request) {
     }
 
     const config = await billingConfiguration();
+    const priceId = config.prices[payload.plan];
+    if (!priceId) throw new BillingConfigurationError("That paid plan is not configured yet.");
     const mapped = await db.prepare("SELECT stripe_customer_id AS stripeCustomerId FROM billing_customers WHERE player_id = ?")
       .bind(player.id).first<{ stripeCustomerId: string }>();
     let customerId = mapped?.stripeCustomerId;
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
       mode: "subscription",
       customer: customerId,
       client_reference_id: player.publicId,
-      line_items: [{ price: config.prices[payload.plan], quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${config.siteUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.siteUrl}/?checkout=canceled#pricing`,
       metadata: { player_public_id: player.publicId, plan_key: payload.plan },

@@ -30,7 +30,7 @@ and consistent with the evidence-first product promise.
 
 - Preserve a useful limited free entry point and measure conversion after a
   successful analysis.
-- Compare the approved $5.99 monthly and $15.99 three-month beta offers against
+- Compare the approved $6.99 monthly, $17.99 three-month and $28.99 six-month beta offers against
   real conversion, retention, refund, utilization, support and contribution data.
 - Reconsider six- or twelve-month commitments only after retention supports the
   promise; show total charge, effective monthly price, renewal and cancellation

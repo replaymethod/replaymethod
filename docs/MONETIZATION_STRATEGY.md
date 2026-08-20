@@ -8,7 +8,8 @@ commercial sensitivity analysis are private.
 
 The earlier $9/month Founding 100 scarcity proposal and the later four-duration
 $89/$49/$27/$12 ladder are superseded. The 2026-08-20 launch review selected a
-smaller beta choice: free proof, $5.99 monthly, or $15.99 every three months.
+four-step beta ladder: free proof, $6.99 monthly, $17.99 every three months, or
+$28.99 every six months.
 The evidence and reversible experiment design are recorded in
 `docs/PRICING_RESEARCH_2026-08-20.md`.
 
@@ -17,10 +18,12 @@ The evidence and reversible experiment design are recorded in
 | Offer | Customer charge | Included use | Renewal |
 | --- | ---: | --- | --- |
 | First diagnosis | $0; no card | One successfully completed, full-quality evidence-backed analysis per verified player during beta | None |
-| Monthly — lowest commitment | $5.99 USD per month | Four successfully completed analyses in each 30-day entitlement window | $5.99 monthly until canceled |
-| 3-month cycle | $15.99 USD every three months; $5.33/month effective | Four successfully completed analyses in each 30-day entitlement window | $15.99 every three months until canceled |
+| Monthly — lowest commitment | $6.99 USD per month | Four successfully completed analyses in each 30-day entitlement window | $6.99 monthly until canceled |
+| 3-month cycle | $17.99 USD every three months; $6.00/month effective | Four successfully completed analyses in each 30-day entitlement window | $17.99 every three months until canceled |
+| 6-month climb block | $28.99 USD every six months; $4.83/month effective | Four successfully completed analyses in each 30-day entitlement window | $28.99 every six months until canceled |
 
-The three-month plan saves $1.98 (11%) versus three monthly payments. Public UI
+The three-month plan saves $2.98 (14%) and the six-month plan saves $12.95 (31%)
+versus equivalent monthly payments. Public UI
 must show the total charged today and at renewal at least as prominently as the
 effective monthly equivalent. Plan mix, conversion, retention, refunds, support,
 utilization and contribution margin must be measured closely. This launch price
@@ -54,8 +57,9 @@ delivered report does.
 
 ## Renewal and cancellation
 
-- Monthly access renews at $5.99 each month until canceled.
-- The three-month cycle renews at $15.99 every three months until canceled.
+- Monthly access renews at $6.99 each month until canceled.
+- The three-month cycle renews at $17.99 every three months until canceled.
+- The six-month block renews at $28.99 every six months until canceled.
 - Cancellation is self-service through Stripe Customer Portal.
 - Cancellation stops the next renewal and preserves paid access through the
   current paid period.
@@ -71,6 +75,7 @@ Recommended order:
 1. free first diagnosis;
 2. flexible monthly plan;
 3. three-month improvement cycle.
+4. six-month climb block.
 
 The recommendation is a transparent label, not a hidden default. Each plan must
 show:
@@ -105,7 +110,7 @@ The primary message remains:
 ## Measurement before changing the offer
 
 Measure successful free completion, report usefulness, free-to-paid conversion,
-plan mix, analysis use, monthly retention, three-month renewal,
+plan mix, analysis use, monthly retention, three- and six-month renewal,
 refunds/disputes, support confusion and cost per completed report. Do not use a
 longer commitment to disguise weak retention, and do not weaken the free detector
 to force conversion.

@@ -20,7 +20,7 @@ The live Stripe account initially contained one Replay Method Membership product
 and four legacy recurring USD prices: $12 monthly, $27 every three months, $49
 every six months, and $89 every twelve months. They are no longer accepted by the
 application after the 2026-08-20 pricing review. The approved public beta prices
-are $5.99 monthly and $15.99 every three months. The live webhook endpoint is
+are $6.99 monthly, $17.99 every three months and $28.99 every six months. The live webhook endpoint is
 configured for checkout completion, subscription lifecycle, paid invoices and
 failed invoices. The signing secret is stored as a Sites secret. Checkout remains
 closed until restricted-key, tax, platform and cost gates pass.

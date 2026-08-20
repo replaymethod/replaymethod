@@ -125,9 +125,9 @@ generic advice, single-match overreaction and unsupported completeness claims.
 
 ### Paid beta
 
-- **$5.99 USD monthly** or **$15.99 USD every three months** ($5.33/month
-  effective);
-- present the free proof first, then monthly and the three-month cycle; show the
+- **$6.99 USD monthly**, **$17.99 USD every three months** ($6.00/month
+  effective), or **$28.99 every six months** ($4.83/month effective);
+- present the free proof first, then monthly, three-month and six-month cycles; show the
   full amount charged and renewal cadence at least as prominently as every
   effective monthly rate;
 - four successfully completed analyses per 30-day entitlement window;
@@ -188,7 +188,7 @@ redesign for its own sake. Strengthen the conversion journey in this order:
 5. **Comparison:** contrast stat trackers, generic AI and Replay Method without
    dishonest claims about named competitors.
 6. **Free versus paid:** show exactly what the free diagnosis includes and what
-   the $5.99 monthly/$15.99 three-month improvement loop adds. Do not ask for a card
+   the $6.99 monthly/$17.99 three-month/$28.99 six-month improvement loop adds. Do not ask for a card
    before the report.
 7. **Post-report offer:** only after the useful diagnosis, offer continued
    tracking, pattern memory and verification. Waitlist signup does not charge.

@@ -28,24 +28,27 @@ test("closed or Riot request-only pricing cannot enter paid Checkout", async () 
 
 test("all displayed paid durations map only to server-owned Stripe Price IDs", async () => {
   const source = await readFile(stripePath, "utf8");
-  for (const plan of ["quarterly", "monthly"]) {
+  for (const plan of ["monthly", "quarterly", "semiannual"]) {
     assert.match(source, new RegExp(`value === "${plan}"`));
     assert.match(source, new RegExp(`prices\\.${plan}`));
   }
-  assert.match(source, /Record<PaidPlan, string>/);
+  assert.match(source, /satisfies PriceMap/);
+  const checkout = await readFile(checkoutPath, "utf8");
+  assert.match(checkout, /const priceId = config\.prices\[payload\.plan\]/);
+  assert.match(checkout, /if \(!priceId\) throw new BillingConfigurationError/);
 });
 
-test("pricing keeps the beta choice small while leading with proof and a low-risk paid start", async () => {
+test("pricing leads with free proof and offers one, three, and six month paid cadences", async () => {
   const source = await readFile(pricingPath, "utf8");
-  const orderedPlans = ["monthly", "quarterly"];
+  const orderedPlans = ["monthly", "quarterly", "semiannual"];
   const positions = orderedPlans.map(plan => source.indexOf(`key: "${plan}"`));
   assert.ok(positions.every(position => position >= 0));
   assert.deepEqual([...positions].sort((a, b) => a - b), positions);
-  for (const price of ["$5.99", "$15.99", "$0"]) assert.match(source, new RegExp(`\\${price}`));
-  for (const retiredPlan of ["annual", "semiannual"]) assert.doesNotMatch(source, new RegExp(`key: "${retiredPlan}"`));
+  for (const price of ["$6.99", "$17.99", "$28.99", "$0"]) assert.match(source, new RegExp(`\\${price}`));
+  assert.doesNotMatch(source, /key: "annual"/);
   assert.match(source, /useState<PlanKey>\("free"\)/);
-  assert.match(source, /LOWEST-RISK PAID START/);
-  assert.match(source, /ONE IMPROVEMENT CYCLE/);
+  assert.match(source, /LOWEST COMMITMENT/);
+  assert.match(source, /LOWEST MONTHLY · SAVE 31%/);
   assert.doesNotMatch(source, /MOST POPULAR/i);
 });
 

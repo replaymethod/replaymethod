@@ -16,7 +16,7 @@ type ReportSummary = {
 };
 
 type BillingSnapshot = {
-  planKey: "quarterly" | "monthly" | null;
+  planKey: "monthly" | "quarterly" | "semiannual" | null;
   status: string;
   hasBillingAccount: boolean;
   cancelAtPeriodEnd: boolean;
@@ -110,7 +110,7 @@ export default function ReportsClient() {
     blocked: "Analysis paused — evidence preserved",
     failed: "Analysis needs attention",
   }[report.status] ?? "Report pending");
-  const planName = billing?.planKey === "quarterly" ? "3-month cycle" : billing?.planKey === "monthly" ? "Monthly" : billing?.hasBillingAccount ? "No active plan" : "Free proof";
+  const planName = billing?.planKey === "semiannual" ? "6-month climb block" : billing?.planKey === "quarterly" ? "3-month cycle" : billing?.planKey === "monthly" ? "Monthly" : billing?.hasBillingAccount ? "No active plan" : "Free proof";
   const trackNewAnalysis = () => trackProductEvent(reports?.length ? "followup_started" : "analysis_start", "general", reports?.length ? "history_followup" : "history_empty");
 
   return (

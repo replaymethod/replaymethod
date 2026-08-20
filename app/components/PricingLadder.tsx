@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { trackProductEvent, type AnalyticsGame } from "../../lib/client-analytics";
 
-type PaidPlan = "quarterly" | "monthly";
+type PaidPlan = "monthly" | "quarterly" | "semiannual";
 type PlanKey = PaidPlan | "free";
 
 const plans: Array<{
@@ -16,30 +16,45 @@ const plans: Array<{
   saving: string;
   fit: string;
   cta: string;
+  badge: string;
   featured?: boolean;
 }> = [
   {
     key: "monthly",
     number: "02",
     eyebrow: "MONTH TO MONTH",
-    price: "$5.99",
+    price: "$6.99",
     period: "per month",
-    equivalent: "$5.99 charged today and monthly",
+    equivalent: "$6.99 charged today and monthly",
     saving: "Lowest commitment",
     fit: "For proving the improvement loop without a large upfront charge.",
     cta: "Choose monthly →",
-    featured: true,
+    badge: "LOWEST COMMITMENT",
   },
   {
     key: "quarterly",
     number: "03",
     eyebrow: "3-MONTH CYCLE",
-    price: "$15.99",
+    price: "$17.99",
     period: "every 3 months",
-    equivalent: "$5.33/month effective · $15.99 charged today and at renewal",
-    saving: "Save $1.98 vs three monthly payments (11%)",
+    equivalent: "$6.00/month effective · $17.99 charged today and at renewal",
+    saving: "Save $2.98 vs three monthly payments (14%)",
     fit: "For giving one focused change enough matches to become measurable.",
     cta: "Choose the 3-month cycle →",
+    badge: "SAVE 14%",
+    featured: true,
+  },
+  {
+    key: "semiannual",
+    number: "04",
+    eyebrow: "6-MONTH CLIMB BLOCK",
+    price: "$28.99",
+    period: "every 6 months",
+    equivalent: "$4.83/month effective · $28.99 charged today and at renewal",
+    saving: "Save $12.95 vs six monthly payments (31%)",
+    fit: "For players ready to compound one evidence-led improvement loop across a full climb block.",
+    cta: "Choose the 6-month block →",
+    badge: "LOWEST MONTHLY · SAVE 31%",
   },
 ];
 
@@ -53,8 +68,9 @@ const paidFeatures = [
 
 const mobileChoices: Array<{ key: PlanKey; label: string; price: string }> = [
   { key: "free", label: "Start free", price: "$0" },
-  { key: "monthly", label: "Monthly", price: "$5.99" },
-  { key: "quarterly", label: "3 months", price: "$15.99" },
+  { key: "monthly", label: "Monthly", price: "$6.99" },
+  { key: "quarterly", label: "3 months", price: "$17.99" },
+  { key: "semiannual", label: "6 months", price: "$28.99" },
 ];
 
 export default function PricingLadder({ analysisHref, game, requestOnly = false, checkoutOpen = false, replayReady = true }: { analysisHref: string; game: AnalyticsGame; requestOnly?: boolean; checkoutOpen?: boolean; replayReady?: boolean }) {
@@ -113,7 +129,7 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false,
       <div className="pricing-heading">
         <span className="kicker">PROVE VALUE FIRST. THEN CHOOSE CADENCE.</span>
         <h2 id="pricing-title">{requestOnly ? "Official access first. Payment comes later." : "Start free. Commit only after the product earns it."}</h2>
-        <p>{requestOnly ? "League and VALORANT paid access cannot begin until official opt-in ingestion is active. You can preserve a free beta request without a card today." : replayReady ? "The first supported analysis is free. Continue month to month for $5.99, or choose one three-month improvement cycle only after the evidence earns it." : "Prices are shown for transparency, but checkout and replay intake remain closed until the production quality, tax and platform gates are complete. Joining the beta list is free."}</p>
+        <p>{requestOnly ? "League and VALORANT paid access cannot begin until official opt-in ingestion is active. You can preserve a free beta request without a card today." : replayReady ? "The playable lab and first supported analysis are free. If the evidence earns it, continue for one, three or six months—with a real discount for the longer climb block." : "Prices are shown for transparency, but checkout and replay intake remain closed until the production quality, tax and platform gates are complete. Joining the beta list is free."}</p>
       </div>
       <div className="pricing-mobile-tabs" role="tablist" aria-label="Choose a plan to compare">
         {mobileChoices.map(choice => <button type="button" role="tab" aria-selected={activePlan === choice.key} className={activePlan === choice.key ? "active" : ""} onClick={() => setActivePlan(choice.key)} key={choice.key}><span>{choice.label}</span><b>{choice.price}</b></button>)}
@@ -122,9 +138,7 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false,
       <div className="pricing-grid">
         {plans.map(plan => (
           <article className={`pricing-card ${plan.featured ? "featured" : ""} ${activePlan === plan.key ? "mobile-active" : ""}`} data-plan={plan.key} key={plan.key} aria-busy={loading === plan.key}>
-            <div className="pricing-rank"><span>{plan.number}</span>{plan.eyebrow}</div>
-            {plan.featured && <strong className="pricing-badge">LOWEST-RISK PAID START</strong>}
-            {plan.key === "quarterly" && <strong className="pricing-badge">ONE IMPROVEMENT CYCLE · SAVE 11%</strong>}
+            <div className="pricing-card-top"><div className="pricing-rank"><span>{plan.number}</span>{plan.eyebrow}</div><strong className="pricing-badge">{plan.badge}</strong></div>
             <div className="pricing-price"><b>{plan.price}</b><span>{plan.period}</span></div>
             <p className="pricing-equivalent">{plan.equivalent}</p>
             <strong className="pricing-saving">{plan.saving}</strong>
@@ -143,7 +157,7 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false,
           <strong className="pricing-saving">{requestOnly ? "Official ingestion remains pending" : replayReady ? "Experience the quality standard first" : "Production quality validation remains in progress"}</strong>
           <p className="pricing-fit">{requestOnly ? "Preserve your opt-in interest without pretending a public profile is authorized match evidence." : replayReady ? "Receive a report only when one real match supports a reliable finding; otherwise see the honest blocked state." : "Join the list now. Replay Method will invite you only after the real-replay engine is ready for public intake."}</p>
           <ul className="pricing-capabilities">
-            {requestOnly ? <><li><i>REQ</i><span>Private beta request</span></li><li><i>CTX</i><span>Game and goal context</span></li><li><i>API</i><span>Official-access boundary</span></li><li><i>LINK</i><span>Recoverable status link</span></li></> : <><li><i>EV</i><span>Evidence-gated outcome</span></li><li><i>01</i><span>One supported primary finding</span></li><li><i>RULE</i><span>One next-queue rule</span></li><li><i>LINK</i><span>Private report history</span></li></>}
+            {requestOnly ? <><li><i>REQ</i><span>Private beta request</span></li><li><i>CTX</i><span>Game and goal context</span></li><li><i>API</i><span>Official-access boundary</span></li><li><i>LINK</i><span>Recoverable status link</span></li></> : <><li><i>PLAY</i><span>Unlimited playable 2v2 decision lab</span></li><li><i>60S</i><span>Interactive Climb Check</span></li><li><i>01</i><span>One full evidence-gated diagnosis</span></li><li><i>LINK</i><span>Private report history</span></li></>}
           </ul>
           <strong className="pricing-free-cta">{requestOnly ? "Save my beta request →" : replayReady ? "Start my evidence check →" : "Join the replay beta →"}</strong>
         </a>
@@ -153,7 +167,7 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false,
       {!requestOnly && checkoutOpen && <label className="pricing-adult"><input type="checkbox" checked={adultPurchaser} onChange={event => setAdultPurchaser(event.target.checked)} /><span><strong>18+ purchaser.</strong> I confirm that I am at least 18 and can enter this renewing subscription.</span></label>}
 
       <div className="pricing-trust">
-        <p><strong>Clear renewal.</strong> Plans renew at the displayed total: $5.99 monthly or $15.99 every three months.</p>
+        <p><strong>Clear renewal.</strong> Plans renew at the displayed total: $6.99 monthly, $17.99 every three months or $28.99 every six months.</p>
         <p><strong>Simple cancellation.</strong> Cancel through the customer portal before renewal; paid access continues to period end and completed reports remain readable.</p>
         <p><strong>No rank guarantee.</strong> Coaching can improve decision quality, not promise a competitive result. Paid beta access is available only to purchasers aged 18 or over.</p>
       </div>

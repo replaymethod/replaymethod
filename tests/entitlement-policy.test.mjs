@@ -29,7 +29,7 @@ test("creates a four-analysis window anchored to the paid subscription period", 
 });
 
 test("every offered paid duration receives the same evidence entitlement cadence", () => {
-  for (const planKey of ["quarterly", "monthly"]) {
+  for (const planKey of ["monthly", "quarterly", "semiannual"]) {
     const window = paidEntitlementWindow(subscription({ planKey }), new Date("2026-09-15T00:00:00.000Z"));
     assert.equal(window?.planKey, planKey);
     assert.equal(window?.limit, ANALYSES_PER_WINDOW);
@@ -37,7 +37,7 @@ test("every offered paid duration receives the same evidence entitlement cadence
 });
 
 test("retired long commitments cannot grant new paid entitlement", () => {
-  for (const planKey of ["annual", "semiannual"]) {
+  for (const planKey of ["annual"]) {
     assert.equal(paidEntitlementWindow(subscription({ planKey }), new Date("2026-09-15T00:00:00.000Z")), null);
   }
 });
