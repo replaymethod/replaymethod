@@ -2,12 +2,13 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
 import { FormEvent, useEffect, useState } from "react";
-import HardstuckHook from "./HardstuckHook";
-import PricingLadder from "./PricingLadder";
-import GameHeroExperience from "./GameHeroExperience";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
+import PricingLadder from "./PricingLadder";
+import QuickReplayStart from "./QuickReplayStart";
+import ReplayContribution from "../rocket-league-beta/ReplayContribution";
 
 export type GameKey = "general" | "league" | "valorant" | "rocket-league";
+
 type Config = {
   label: string;
   eyebrow: string;
@@ -15,86 +16,67 @@ type Config = {
   accent: string;
   lead: string;
   cta: string;
-  diagnosis: string;
-  plan: string;
-  evidence: string;
-  rule: string;
-  verify: string;
+  sampleContext: string;
+  sampleFinding: string;
+  sampleEvidence: string;
+  sampleRule: string;
+  sampleVerification: string;
 };
 
 const configs: Record<GameKey, Config> = {
   general: {
     label: "Competitive gaming",
-    eyebrow: "ONE MATCH · ONE MISTAKE · ONE NEXT STEP",
-    title: "Stop losing for the same reason.",
-    accent: "See what to change next.",
-    lead: "Replay Method finds the decision behind the result, turns it into one clear cue, then checks whether it changes. Try the method free while match analysis completes validation.",
+    eyebrow: "EVIDENCE BEFORE ADVICE",
+    title: "Stop guessing why you’re stuck.",
+    accent: "Fix the decision that keeps repeating.",
+    lead: "Replay Method turns match evidence into one clear focus, one cue for your next match and a way to check whether the behavior changed.",
     cta: "Join beta updates",
-    diagnosis: "Your decision-making drops when the match gets close.",
-    plan: "Slow the game down after a lost fight. Reset before forcing the next play.",
-    evidence: "The same high-risk decision appears in 4 of your last 6 losses.",
-    rule: "After a lost fight, reset before you force the next play.",
-    verify: "Risky decisions are trending down across the next sessions."
+    sampleContext: "Illustrative Rocket League 2v2 scenario",
+    sampleFinding: "Your spacing removes the safe option after a teammate commits.",
+    sampleEvidence: "The second player follows the same channel while the goal is uncovered. The important decision happens before the shot.",
+    sampleRule: "When your teammate crosses the ball line, protect the next safe layer until possession is clear.",
+    sampleVerification: "Recheck the same spacing decision across later comparable matches."
   },
   league: {
     label: "League of Legends",
-    eyebrow: "STOP DONATING LP",
-    title: "Stop guessing why you lose.",
-    accent: "Find the decision costing your LP.",
-    lead: "See how Replay Method turns a League decision into one playable cue. Automated match analysis opens after official Riot access; the free walkthrough works now.",
-    cta: "Join the League beta list",
-    diagnosis: "You give away your lead during the 14–20 minute transition.",
-    plan: "Convert priority into vision before the second objective. Stop taking isolated river fights.",
-    evidence: "Five of your last seven deaths happened without an objective trade available.",
-    rule: "When you have lane priority, spend it on vision before you contest river.",
-    verify: "Untraded deaths fall while objective participation rises."
+    eyebrow: "STOP GUESSING WHY THE LEAD DISAPPEARS",
+    title: "Find the decision costing your LP.",
+    accent: "Carry one correction into the next game.",
+    lead: "Replay Method is designed to connect match evidence, one recurring decision and one playable rule. Official Riot ingestion is still awaiting production approval.",
+    cta: "Join the League beta",
+    sampleContext: "Illustrative objective-setup scenario",
+    sampleFinding: "Your objective plan begins after the map has already closed.",
+    sampleEvidence: "The example shows an unprepared wave and late vision before the contest—not a claim about a real player.",
+    sampleRule: "One minute before the objective: wave, recall, route, vision, then position.",
+    sampleVerification: "Compare later objective setups only after official, authorized match evidence is available."
   },
   valorant: {
     label: "VALORANT",
-    eyebrow: "STOP BLEEDING RR",
-    title: "Your aim isn’t the whole problem.",
-    accent: "Find the rounds costing your RR.",
-    lead: "See how Replay Method turns a round decision into one playable cue. Automated match analysis opens after official Riot access; the free walkthrough works now.",
-    cta: "Join the VALORANT beta list",
-    diagnosis: "Your first-death rate spikes after your team loses two rounds in a row.",
-    plan: "Change your opening position after a loss streak. Preserve utility for the retake instead of forcing contact.",
-    evidence: "You take first contact without trade support in 38% of lost defense rounds.",
-    rule: "After two lost rounds, change your opener and keep one piece of retake utility.",
-    verify: "First deaths fall and your tradeable fights increase."
+    eyebrow: "AIM IS NOT THE WHOLE ROUND",
+    title: "Find the decision costing your RR.",
+    accent: "Take one better rule into the next round.",
+    lead: "Replay Method is designed to connect round evidence, one recurring decision and one playable cue. Official Riot ingestion is still awaiting production approval.",
+    cta: "Join the VALORANT beta",
+    sampleContext: "Illustrative opening-duel scenario",
+    sampleFinding: "Your first contact begins before a trade is available.",
+    sampleEvidence: "The example shows the entry moving beyond teammate support. It is a product-format demonstration, not a player diagnosis.",
+    sampleRule: "Start contact only when the second player can trade or your utility creates a safe exit.",
+    sampleVerification: "Compare first-contact quality across later authorized match evidence."
   },
   "rocket-league": {
     label: "Rocket League",
-    eyebrow: "BREAK THE HARDSTUCK LOOP",
+    eyebrow: "ONE REPLAY · ONE FOCUS · ONE NEXT-MATCH RULE",
     title: "Stop grinding blind.",
-    accent: "Turn one replay into your next clear focus.",
-    lead: "See the decision before the goal and leave with one cue for your next match. PC replay analysis is in final validation; console video analysis is on the waitlist.",
-    cta: "Join the replay beta list",
-    diagnosis: "You follow the play too closely after your teammate commits.",
-    plan: "Hold one layer deeper and enter through back post. Stop turning a 1v1 into a double commit.",
-    evidence: "You enter the same lane as your teammate in 6 of 9 conceded goals.",
-    rule: "When your teammate crosses the ball line, hold back post until the play resets.",
-    verify: "Double commits fall while controlled defensive touches rise."
+    accent: "See the decision before the goal.",
+    lead: "Replay Method reads the match before it explains the loss. PC replay analysis is in final evidence validation; console video analysis remains a waitlist.",
+    cta: "Join the replay beta",
+    sampleContext: "Illustrative Rocket League 2v2 scenario",
+    sampleFinding: "Your spacing removes the safe option after a teammate commits.",
+    sampleEvidence: "The second player follows the same channel while the goal is uncovered. The important decision happens before the shot.",
+    sampleRule: "When your teammate crosses the ball line, protect the next safe layer until possession is clear.",
+    sampleVerification: "Recheck the same spacing decision across later comparable replays."
   }
 };
-
-function ProductStory() {
-  return <div className="simple-method" id="how">
-    <article><i>01</i><span>SHOW THE MATCH</span><h3>Start with one real problem.</h3><p>Add a replay when your game is supported—or use the free Climb Check today.</p></article>
-    <article><i>02</i><span>SEE THE DECISION</span><h3>Find what happened before the loss.</h3><p>The useful moment is usually earlier than the goal, death or lost round.</p></article>
-    <article><i>03</i><span>PLAY ONE CUE</span><h3>Take one rule into the next match.</h3><p>No wall of advice. One trigger, one action and a clear way to check it.</p></article>
-  </div>;
-}
-
-function Availability({ engineOpen }: { engineOpen: boolean }) {
-  return <section className="availability shell" id="status">
-    <div className="section-intro"><span className="kicker">WHAT WORKS TODAY</span><h2>No fake “live” labels.</h2><p>Try what is ready. Join the waitlist for what is not.</p></div>
-    <div className="availability-grid">
-      <article className="ready"><span>AVAILABLE NOW</span><h3>Free Climb Check</h3><p>Choose the pattern you keep seeing and leave with a focused hypothesis.</p><a href="/climb-check">Try it free →</a></article>
-      <article className={engineOpen ? "ready" : "testing"}><span>{engineOpen ? "OPEN BETA" : "FINAL VALIDATION"}</span><h3>Rocket League · PC</h3><p>{engineOpen ? "Upload an original .replay file for an evidence check." : "The parser is online. Public coaching stays closed until detector quality is proven."}</p><a href={engineOpen ? "/analyze?game=rocket-league&platform=pc" : "#join-beta"}>{engineOpen ? "Start free check" : "Join first access"} →</a></article>
-      <article className="wait"><span>WAITLIST</span><h3>Console · League · VALORANT</h3><p>Console video analysis and official Riot match analysis are not live yet.</p><a href="#join-beta">Join the waitlist →</a></article>
-    </div>
-  </section>;
-}
 
 const sentViews = new Set<string>();
 
@@ -117,10 +99,9 @@ function WaitlistForm({ game, config, placement, id }: { game: GameKey; config: 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const website = String(new FormData(form).get("company") || "");
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const website = String(new FormData(event.currentTarget).get("company") || "");
     setStatus("loading");
     setMessage("");
     trackEvent(game, "cta_click", placement);
@@ -151,83 +132,92 @@ function WaitlistForm({ game, config, placement, id }: { game: GameKey; config: 
   return <div className="form-wrap" id={id}>
     <form className="waitlist-form" onSubmit={submit}>
       <div className="waitlist">
-        <label className="sr-only" htmlFor={`email-${placement}-${game}`}>Email address</label>
-        <input id={`email-${placement}-${game}`} name="email" type="email" required autoComplete="email" inputMode="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+        <label className="sr-only" htmlFor={"email-" + placement + "-" + game}>Email address</label>
+        <input id={"email-" + placement + "-" + game} name="email" type="email" required autoComplete="email" inputMode="email" placeholder="you@email.com" value={email} onChange={event => setEmail(event.target.value)} />
         <input className="hp-field" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" />
         <button disabled={status === "loading"}>{status === "loading" ? "Joining…" : config.cta}<b>→</b></button>
       </div>
-      <label className="consent"><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)} /><span>Email me private beta access and launch updates. I can unsubscribe anytime. <a href="/privacy">Privacy</a> · <a href="/terms">Waitlist terms</a></span></label>
+      <label className="consent"><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)} /><span>Email me private beta access and launch updates. I can unsubscribe anytime. <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></label>
     </form>
-    <p className={`note ${status}`} aria-live="polite">{message || "One email · No card · No charge today"}</p>
+    <p className={"note " + status} aria-live="polite">{message || "One email · No card · No charge today"}</p>
   </div>;
 }
 
-function GameLinks({ current, placement }: { current: GameKey; placement: string }) {
-  const games: { key: GameKey; label: string; path: string; mark: string }[] = [
-    { key: "league", label: "League", path: "/league", mark: "L" },
-    { key: "valorant", label: "VALORANT", path: "/valorant", mark: "V" },
-    { key: "rocket-league", label: "Rocket League", path: "/rocket-league", mark: "RL" }
-  ];
-  return <div className="game-picker" aria-label="Choose your game"><span>I PLAY</span>{games.map(item => <a key={item.key} className={current === item.key ? "active" : ""} href={item.path} onClick={() => trackEvent(item.key, "game_select", placement)}><i>{item.mark}</i>{item.label}</a>)}</div>;
+function ProductPreview({ config }: { config: Config }) {
+  return <article className="commercial-report-preview" aria-label="Illustrative Replay Method report format">
+    <header><div><span>ILLUSTRATIVE REPORT FORMAT</span><b>Not a player result</b></div><i>EXAMPLE</i></header>
+    <div className="commercial-preview-context"><span>SCENARIO</span><b>{config.sampleContext}</b></div>
+    <section><span>01 · ONE FOCUS</span><h2>{config.sampleFinding}</h2></section>
+    <section><span>02 · EVIDENCE LOGIC</span><p>{config.sampleEvidence}</p></section>
+    <section className="commercial-preview-rule"><span>03 · NEXT-MATCH RULE</span><b>{config.sampleRule}</b></section>
+    <footer><span>04 · PROOF</span><p>{config.sampleVerification}</p></footer>
+  </article>;
 }
 
-export default function Landing({ game = "general", checkoutOpen = false, engineOpen = false }: { game?: GameKey; checkoutOpen?: boolean; engineOpen?: boolean }) {
+function GameLinks({ current }: { current: GameKey }) {
+  const games: Array<{ key: Exclude<GameKey, "general">; label: string; path: string }> = [
+    { key: "rocket-league", label: "Rocket League", path: "/rocket-league" },
+    { key: "league", label: "League of Legends", path: "/league" },
+    { key: "valorant", label: "VALORANT", path: "/valorant" }
+  ];
+  return <div className="commercial-game-links" aria-label="Game-specific paths">{games.map(item => <a className={current === item.key ? "active" : ""} href={item.path} key={item.key}><span>{item.key === "rocket-league" ? "RL" : item.key === "league" ? "L" : "V"}</span><b>{item.label}</b><i>→</i></a>)}</div>;
+}
+
+function MethodSection() {
+  const steps = [
+    ["01", "Replay", "Start with one real match, not a questionnaire."],
+    ["02", "Focus", "See the evidence behind one recurring decision."],
+    ["03", "Improve", "Take one rule into the next match, then check it again."]
+  ];
+  return <section className="commercial-method shell" id="method"><div className="commercial-section-copy"><span className="kicker">THREE STEPS · ONE RED THREAD</span><h2>From replay to the next better decision.</h2><p>Everything that does not help the player understand or act is secondary.</p></div><div className="commercial-method-grid">{steps.map(step => <article key={step[0]}><i>{step[0]}</i><b>{step[1]}</b><p>{step[2]}</p></article>)}</div></section>;
+}
+
+function Faq({ engineOpen }: { engineOpen: boolean }) {
+  return <section className="commercial-faq shell" id="faq"><div className="commercial-section-copy"><span className="kicker">STRAIGHT ANSWERS</span><h2>Trust starts with knowing the limits.</h2></div><div className="faq-list"><details><summary>What can I use today?<b>+</b></summary><p>The free Climb Check and guides work now. {engineOpen ? "Rocket League PC replay intake is open for evidence-gated analysis." : "Rocket League PC replay coaching remains closed while detector quality is validated."} Console video and Riot match analysis are not live.</p></details><details><summary>Is the sample report a real player result?<b>+</b></summary><p>No. It is clearly labeled as an illustrative report format. Replay Method will not manufacture testimonials, performance results or detector evidence.</p></details><details><summary>Does Replay Method guarantee rank improvement?<b>+</b></summary><p>No. It identifies supported behaviors, focuses practice and checks later evidence. Competitive outcomes still depend on the player, teammates, opponents and the game.</p></details><details><summary>Why not just use a stat tracker or AI chat?<b>+</b></summary><p>Stats describe outcomes and chat can explain ideas. Replay Method is being built to connect verified match evidence to one prioritized behavior, one action and later verification.</p></details><details><summary>What happens to my replay?<b>+</b></summary><p>Supported uploads are private, stored separately from public report identifiers and used to produce or reprocess the requested analysis. You can export or delete verified account data from report history.</p></details></div></section>;
+}
+
+export default function Landing({ game = "general", checkoutOpen = false, engineOpen = false, calibrationOpen = false }: { game?: GameKey; checkoutOpen?: boolean; engineOpen?: boolean; calibrationOpen?: boolean }) {
   const config = configs[game];
-  const analysisHref = game === "general" ? "/analyze" : `/analyze?game=${game}`;
   const riotRequest = game === "league" || game === "valorant";
-  const replayClosed = !riotRequest && !engineOpen;
-  const intakeHref = replayClosed ? "#join-beta" : analysisHref;
-  const intakeLabel = riotRequest ? "Save beta request" : replayClosed ? "Join replay beta" : "Start evidence check";
-  const lead = config.lead;
+  const replayReady = engineOpen && (game === "general" || game === "rocket-league");
+  const calibrationReady = calibrationOpen && game === "rocket-league";
+  const analysisHref = riotRequest ? "/analyze?game=" + game : replayReady ? "/analyze?game=rocket-league&platform=pc" : "#join-beta";
+  const primaryHref = replayReady ? "#replay-upload" : calibrationReady ? "#beta-intake" : game === "general" ? "#choose-game" : "/climb-check";
+  const primaryLabel = replayReady ? "Upload my replay" : calibrationReady ? "Contribute one replay" : game === "general" ? "Choose my game" : "Try the free Climb Check";
 
   useEffect(() => {
-    const key = `replaymethod-view-${location.pathname}`;
+    const key = "replaymethod-view-" + location.pathname;
     if (!sentViews.has(key)) {
       sentViews.add(key);
       trackEvent(game, "page_view", "landing");
     }
   }, [game]);
 
-  const previewProduct = () => {
-    trackEvent(game, "cta_click", "hero_product_preview");
-    document.getElementById("product")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  return <main className="commercial-home">
+    <nav className="nav shell"><a className="brand" href="/" aria-label="Replay Method home"><span className="logo">↻</span><span>replay<span>method</span></span></a><div className="nav-links"><a href="#method">How it works</a><a href="#proof">Example</a><a href="/reports">My reports</a></div><a className="nav-cta" href={primaryHref} onClick={() => trackEvent(game, calibrationReady ? "calibration_start" : replayReady ? "analysis_start" : "tool_start", "nav_primary")}>{calibrationReady ? "Send replay" : replayReady ? "Analyze" : "Start"}</a></nav>
 
-  return <main>
-    <div className="launch-bar"><strong>FREE TO TRY NOW</strong><span>Find the problem you keep repeating in 60 seconds.</span><a href="/climb-check" onClick={() => trackEvent(game, "tool_start", "launch_bar")}>Start free →</a></div>
-    <nav className="nav shell"><a className="brand" href="/" aria-label="Replay Method home"><span className="logo">↻</span><span>replay<span>method</span></span></a><div className="nav-links"><a href="#problem">The problem</a><a href="#how">How it works</a><a href="#status">Availability</a><a href="#pricing">Pricing</a></div><a className="nav-cta" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "nav_free_check")}>Try free</a></nav>
-
-    <section className="hero shell">
-      <div className="hero-copy"><div className="eyebrow"><i /> {config.eyebrow}</div><h1>{config.title}<br /><em>{config.accent}</em></h1><p className="lead">{lead}</p><GameLinks current={game} placement="hero_picker" /><div className="hero-actions clear-actions"><a className="hero-primary" href="/climb-check" onClick={() => trackEvent(game, "tool_start", "hero_climb_check")}><span>60 SECONDS · NO CARD</span><b>Try the free Climb Check <i>→</i></b></a><button className="hero-secondary" onClick={previewProduct}>See how it works <span>↓</span></button></div><div className="hero-proof"><span><i>01</i> Pick one problem</span><span><i>02</i> Get one cue</span><span><i>03</i> Test it next match</span></div><div className="hero-route-links"><a className="hero-plan-summary" href="#status"><span>LIVE STATUS</span><b>{engineOpen ? "Rocket League PC beta is open" : "Free tool live · match analysis validating"}</b><i>↓</i></a></div>
+    <section className="commercial-hero shell">
+      <div className="commercial-hero-copy">
+        <div className="commercial-live-state"><i /> {replayReady ? "ROCKET LEAGUE PC BETA OPEN" : calibrationReady ? "PRIVATE REPLAY COLLECTION OPEN" : game === "general" ? "START HERE" : "FREE CLIMB CHECK LIVE · ANALYSIS VALIDATING"}</div>
+        <div className="eyebrow">{config.eyebrow}</div>
+        <h1>{config.title}<br /><em>{config.accent}</em></h1>
+        <p className="lead">{config.lead}</p>
+        <div className="commercial-hero-actions"><a className="commercial-primary" href={primaryHref} onClick={() => trackEvent(game, calibrationReady ? "calibration_start" : replayReady ? "analysis_start" : "tool_start", "hero_primary")}>{primaryLabel} <b>→</b></a></div>
+        <div className="commercial-trust-row"><span>Start free</span><span>Private by default</span><span>No result without evidence</span></div>
       </div>
-      <div className="visual-wrap"><div className="orb orb-a" /><div className="orb orb-b" /><div className="example-tag">PLAY THE PRODUCT</div><GameHeroExperience game={game} /></div>
+      <div className="commercial-hero-product" id={game === "general" ? "choose-game" : undefined}>{replayReady ? <QuickReplayStart placement="commercial_hero" /> : calibrationReady ? <ReplayContribution intakeOpen compact /> : game === "general" ? <div className="commercial-game-start"><header><span>01 · CHOOSE YOUR GAME</span><b>Where are you stuck?</b><p>One choice. Then Replay Method shows the shortest honest path available for that game.</p></header><GameLinks current={game} /></div> : <ProductPreview config={config} />}</div>
     </section>
 
-    <section className="proof-ribbon"><div className="shell"><span><b>01</b> REPLAY</span><i>→</i><span><b>02</b> REVEAL</span><i>→</i><span><b>03</b> PRACTICE</span><i>→</i><span><b>04</b> PROVE</span></div></section>
-        <div id="problem"><HardstuckHook
-          analysisHref={intakeHref}
-          requestOnly={riotRequest}
-          intakeClosed={replayClosed}
-          onPatternSelect={(pattern) => trackEvent(game, "hardstuck_select", `pattern_${pattern}`)}
-          onAnalysisStart={() =>
-            trackEvent(game, "analysis_start", "hardstuck_hook")
-          }
-        /></div>
+    <MethodSection />
 
-    <section className="product-section shell" id="product"><div className="section-intro"><span className="kicker">THE WHOLE PRODUCT IN THREE STEPS</span><h2>Problem. Decision. Next move.</h2><p>Understand the method before you give us a file or email.</p></div><ProductStory /><div className="demo-conversion simple-conversion"><div><span>WORKS NOW · FREE</span><b>Start with the problem you recognize.</b><p>The Climb Check takes about one minute.</p></div><a href="/climb-check" onClick={() => trackEvent(game, "tool_start", "method_climb_check")}>Try it free →</a></div></section>
+    <section className="commercial-proof shell" id="proof"><div className="commercial-section-copy"><span className="kicker">PRODUCT PROOF, WITHOUT FAKE PROOF</span><h2>Evidence first. One focus next.</h2><p>This is the report structure Replay Method is built to earn from real match evidence. The example is illustrative; actual reports must include detector versions, confidence and limitations.</p></div><ProductPreview config={config} /><div className="commercial-proof-principles"><article><b>When evidence is strong</b><p>Show the moment, confidence, limitation and next action.</p></article><article><b>When evidence is weak</b><p>Stop, preserve the submission and explain what is missing.</p></article><article><b>When the player returns</b><p>Check the same behavior before claiming progress.</p></article></div></section>
 
-    <Availability engineOpen={engineOpen} />
+    <PricingLadder analysisHref={analysisHref} game={game} requestOnly={riotRequest} checkoutOpen={checkoutOpen} replayReady={replayReady} />
+    <Faq engineOpen={engineOpen} />
 
-    <PricingLadder analysisHref={intakeHref} game={game} requestOnly={riotRequest} checkoutOpen={checkoutOpen} replayReady={!replayClosed} />
+    <section className="commercial-final" id="join-beta"><div className="shell"><span className="kicker">REPLAY. FOCUS. IMPROVE.</span><h2>{replayReady ? "Start with one real match." : calibrationReady ? "One replay can help make the promise real." : "Get first access when the evidence gate passes."}</h2><p>{replayReady ? "A supported replay can become one clear focus. No card is required for the first evidence check." : calibrationReady ? "Contribute privately to calibration. This is research intake, not a promised player report." : "Join the private beta list. No file, payment details or unsupported coaching today."}</p>{(replayReady || calibrationReady) && <a className="commercial-primary" href={replayReady ? "/analyze?game=rocket-league&platform=pc" : "#beta-intake"} onClick={() => trackEvent(game, replayReady ? "analysis_start" : "calibration_start", "final_replay")}>{replayReady ? "Analyze my replay" : "Contribute one replay"} →</a>}{!calibrationReady && <WaitlistForm game={game} config={config} placement="commercial_final" />}</div></section>
 
-    <section className="compare"><div className="shell"><div className="section-intro"><span className="kicker">THE DIFFERENCE</span><h2>Stats describe.<br />Replay Method changes the next decision.</h2><p>Evidence → one cue → recheck.</p></div><div className="compare-table"><div className="compare-head"><span>WHAT YOU GET</span><b>STAT TRACKER</b><b>AI CHAT</b><b className="climb-col">REPLAY METHOD</b></div>{[["Uses your real match", "✓", "Sometimes", "✓"], ["Finds the repeated decision", "—", "Sometimes", "✓"], ["Gives one playable cue", "—", "Sometimes", "✓"], ["Remembers it next match", "—", "—", "✓"], ["Checks if it changed", "—", "—", "✓"]].map(row => <div className="compare-row" key={row[0]}>{row.map((cell, index) => index === 0 ? <span key={cell}>{cell}</span> : <b className={index === 3 ? "climb-col" : ""} key={`${cell}-${index}`}>{cell}</b>)}</div>)}</div><div className="difference-line"><span>THE PROMISE</span><b>Stop losing for the same reason.</b></div></div></section>
-
-    <section className="guide-preview shell"><div className="section-intro"><span className="kicker">FREE FIELD NOTES</span><h2>Stuck? Open the exact checklist.</h2><p>No filler. One useful review session.</p></div><div className="guide-preview-grid"><a href="/guides/league-replay-review-checklist"><span>LEAGUE OF LEGENDS</span><h3>Review the loss before the final fight</h3><p>Lane → vision → objective.</p><b>Open guide →</b></a><a href="/guides/valorant-vod-review-checklist"><span>VALORANT</span><h3>Review a VOD in 15 minutes</h3><p>Contact → trade → utility.</p><b>Open guide →</b></a><a href="/guides/rocket-league-replay-review-checklist"><span>ROCKET LEAGUE</span><h3>Find the decision behind the goal</h3><p>Spacing → boost → recovery.</p><b>Open guide →</b></a></div></section>
-
-    <section className="faq shell"><div className="section-intro"><span className="kicker">NO BULLSHIT FAQ</span><h2>Know exactly what you’re submitting.</h2></div><div className="faq-list"><details><summary>Is Replay Method live today?<b>+</b></summary><p>{replayClosed ? "The public beta site and waitlist are live. Rocket League file intake remains closed until the production evidence engine passes its real-replay quality gate; League and VALORANT ingestion awaits official Riot production approval." : "The production-quality beta foundation is live. Rocket League uses original .replay files; official League and VALORANT account ingestion is awaiting Riot production approval. A report is only produced when the available evidence supports it."}</p></details><details><summary>Does Replay Method guarantee I rank up?<b>+</b></summary><p>No honest coach can guarantee a rank. Replay Method exposes patterns, focuses practice and tracks behavior. You still have to play and apply the feedback.</p></details><details><summary>Which games are supported?<b>+</b></summary><p>Rocket League is the first deep replay adapter. League of Legends and VALORANT share the same product foundation and will activate through official opt-in Riot connections after approval.</p></details><details><summary>What can I submit?<b>+</b></summary><p>{replayClosed ? "No replay file is accepted while the production engine is closed. Join the beta list instead. League and VALORANT requests may preserve a representative match link, but unverified public profiles are never used to invent private-match coaching." : "Rocket League automation requires the original PC .replay file. League and VALORANT beta requests can preserve a representative match link, but unverified public profiles are never used to invent private-match coaching."}</p></details><details><summary>What happens after submission?<b>+</b></summary><p>{replayClosed ? "A beta-list signup stores your email and selected game so we can invite you when the quality gate passes. No replay or payment details are collected today." : "You immediately receive a private status link. It shows the real pipeline stage, report evidence and engine versions—or an honest blocked state when access or evidence is insufficient."}</p></details><details><summary>Why not just use a stat tracker?<b>+</b></summary><p>Trackers are excellent at showing rank, history and performance. Replay Method turns repeated patterns into one prioritized correction you can apply in the next match.</p></details></div></section>
-
-    <section className="final"><div className="shell"><span className="kicker">REPLAY. REVEAL. PRACTICE. PROVE.</span><h2>Stop hoping the rank changes.<br />Change what creates the rank.</h2><p className="final-lead">{riotRequest ? "Save an opt-in beta request while official Riot access is pending." : replayClosed ? "Join for first access when the real-replay quality gate passes." : "Submit one real replay and see the evidence-gated outcome free."}</p>{!replayClosed && <a className="final-analysis-cta" href={analysisHref} onClick={() => trackEvent(game, "analysis_start", "final_analysis")}>{intakeLabel} →</a>}<p className="final-alt">{replayClosed ? "Beta access is free to request. No file or payment today." : "Not ready to submit? Join beta updates below."}</p><WaitlistForm game={game} config={config} placement="final_form" id="join-beta" /><small>Private beta · No card · No unsupported coaching</small></div></section>
-    <footer className="shell"><div className="brand"><span className="logo">↻</span><span>replay<span>method</span></span></div><p>A better way to get better.</p><div className="footer-links"><a href={replayClosed ? "/#join-beta" : "/analyze"}>Beta access</a><a href="/reports">My reports</a><a href="/guides">Guides</a><a href="mailto:contact@replaymethod.xyz">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Service terms</a><a href="/beta-terms">Beta terms</a></div><small>Independent service. Not affiliated with, endorsed by or sponsored by Riot Games, Psyonix or Epic Games.</small></footer>
-    <div className="mobile-join"><div><span>{riotRequest ? "RIOT ACCESS BETA" : "REPLAY QUALITY BETA"}</span><b>{riotRequest ? "Save a private request" : replayClosed ? "Join first access" : "Start an evidence check"}</b></div><a href={intakeHref} onClick={() => trackEvent(game, replayClosed ? "cta_click" : "analysis_start", "mobile_analysis")}>{riotRequest ? "Save" : replayClosed ? "Join" : "Start"} →</a></div>
+    <footer className="shell"><div className="brand"><span className="logo">↻</span><span>replay<span>method</span></span></div><p>A trusted improvement system for competitive players.</p><div className="footer-links"><a href="/reports">My reports</a><a href="/guides">Guides</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="mailto:contact@replaymethod.xyz">Contact</a></div><small>Independent service. Not affiliated with or endorsed by Riot Games, Psyonix or Epic Games.</small></footer>
+    <div className="commercial-mobile-cta"><div><span>{replayReady ? "REPLAY BETA OPEN" : calibrationReady ? "PRIVATE COLLECTION OPEN" : "START FREE"}</span><b>{replayReady ? "Analyze one replay" : calibrationReady ? "Contribute one replay" : game === "general" ? "Choose your game" : "Find a starting focus"}</b></div><a href={primaryHref}>{replayReady ? "Upload" : calibrationReady ? "Send" : "Start"} →</a></div>
   </main>;
 }

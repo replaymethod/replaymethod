@@ -25,7 +25,9 @@ test("makes verification conservative and independent from payment", async () =>
   const client = await readFile(clientPath, "utf8");
   assert.match(client, /04 · VERIFY/);
   assert.match(client, /evidence is insufficient, Replay Method stays inconclusive/);
-  assert.match(client, /Cadence changes with payment\. Evidence standards do not\./);
+  assert.match(client, /checkoutOpen \? <aside>/);
+  assert.match(client, /Payment changes cadence—not the quality gate\./);
+  assert.match(client, /BETA FOLLOW-UP · NO PAYMENT/);
 });
 
 test("keeps confidence, limitations and feedback controls accessible", async () => {

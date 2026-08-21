@@ -16,9 +16,17 @@ test("checkout trusts server Price IDs and enforces authenticated same-origin wr
   assert.match(source, /payload\.adultPurchaser !== true/);
   assert.match(source, /config\.prices\[payload\.plan\]/);
   assert.match(source, /managedPaymentsEnabled \? \{ managed_payments: \{ enabled: true \} \} : \{\}/);
+  assert.match(source, /automaticTaxEnabled \? \{ automatic_tax: \{ enabled: true \} \} : \{\}/);
   assert.doesNotMatch(source, /customer_update/);
   assert.doesNotMatch(source, /payment_method_types/);
-  assert.doesNotMatch(source, /automatic_tax/);
+});
+
+test("automatic tax fails closed until both tax switches are explicit", async () => {
+  const source = await readFile(stripePath, "utf8");
+  assert.match(source, /STRIPE_AUTOMATIC_TAX_ENABLED/);
+  assert.match(source, /STRIPE_TAX_REGISTRATION_CONFIRMED/);
+  assert.match(source, /STRIPE_AUTOMATIC_TAX_ENABLED\?\.trim\(\) === "true"/);
+  assert.match(source, /STRIPE_TAX_REGISTRATION_CONFIRMED\?\.trim\(\) === "true"/);
 });
 
 test("closed or Riot request-only pricing cannot enter paid Checkout", async () => {

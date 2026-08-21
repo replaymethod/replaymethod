@@ -15,6 +15,7 @@ const lifecycleTransitions = Object.freeze({
 
 const registryOverrides = Object.freeze({
   "boost.supersonic_waste": {
+    version: "0.2.0",
     dependencies: ["boost.zero_duration"],
     conflicts: ["boost.zero_duration"],
     duplicateGroup: "boost-reserve",

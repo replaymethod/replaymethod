@@ -1,6 +1,23 @@
 # Rocket League master engine status
 
-Last verified: 2026-08-19
+Last verified: 2026-08-20
+
+## Current calibration revision
+
+The checked-in shadow-runtime revision groups adjacent 10 Hz
+`boost.supersonic_waste` samples into one continuous reviewable decision. This
+prevents a single boost press from creating several near-identical expert-review
+candidates. The detector is versioned as `0.2.0`; the runtime and aggregate
+detector bundle are also versioned `0.2.0`.
+
+The six-replay baseline, 515-candidate review queue and 515 private review
+moments were regenerated from the authorized local corpus on 2026-08-20. Two
+independent runs produced the same reproducibility fingerprint:
+`8ca92b978c6296bd4d7be63a64dd4ca36042e7842e3e0fc8d3698445f36c5e3a`.
+The grouping reduced raw supersonic-waste observations from 816 to 257 without
+changing the bounded review-queue size. No candidate has an expert label or
+verified timestamp yet. The revision does not make the detector public and
+does not reduce any quality gate.
 
 ## What works now
 
@@ -36,12 +53,13 @@ The checked-in baseline was produced from six distinct real replays:
 | Measure | Result |
 | --- | ---: |
 | Parsed replays | 6 / 6 |
-| Environments | 3 Ranked Doubles, 3 LAN |
+| Environments | 3 modern 2v2, 3 legacy compatibility fixtures |
 | Sampled frame-states | 22,992 |
 | Raw parser events | 52,971 |
 | Decision events | 9,722 |
 | Shadow detector executions | 48 |
 | Detector execution errors | 0 |
+| Raw shadow candidates | 739 |
 | Review candidates exported | 515 |
 | Replay moments generated | 515 / 515 |
 | Publicly enabled detectors | 0 |

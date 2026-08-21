@@ -11,6 +11,8 @@ type StripeEnvironment = {
   STRIPE_PRICE_QUARTERLY?: string;
   STRIPE_PRICE_MONTHLY?: string;
   STRIPE_PRICE_SEMIANNUAL?: string;
+  STRIPE_AUTOMATIC_TAX_ENABLED?: string;
+  STRIPE_TAX_REGISTRATION_CONFIRMED?: string;
   STRIPE_MANAGED_PAYMENTS_ENABLED?: string;
   PUBLIC_SITE_URL?: string;
 };
@@ -51,6 +53,8 @@ export async function billingConfiguration() {
   return {
     stripe: await stripeClient(),
     prices: { monthly, quarterly, ...(semiannual ? { semiannual } : {}) } satisfies PriceMap,
+    automaticTaxEnabled: env.STRIPE_AUTOMATIC_TAX_ENABLED?.trim() === "true"
+      && env.STRIPE_TAX_REGISTRATION_CONFIRMED?.trim() === "true",
     managedPaymentsEnabled: env.STRIPE_MANAGED_PAYMENTS_ENABLED?.trim() === "true",
     siteUrl: safeSiteUrl(env.PUBLIC_SITE_URL),
     webhookSecret: env.STRIPE_WEBHOOK_SECRET?.trim() || "",

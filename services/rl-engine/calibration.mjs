@@ -3,7 +3,7 @@ import { wilsonLowerBound } from "./quality-gates.mjs";
 import { createHash } from "node:crypto";
 
 export const CALIBRATION_REPORT_VERSION = "rocket-league-calibration-report.v1";
-export const REVIEW_QUEUE_VERSION = "rocket-league-review-queue.v1";
+export const REVIEW_QUEUE_VERSION = "rocket-league-review-queue.v2";
 
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
@@ -157,7 +157,7 @@ export function buildReviewQueue(calibrationReport) {
     for (const run of replay.shadowRuns ?? []) {
       for (const [index, evidence] of (run.evidence ?? []).entries()) {
         candidates.push({
-          id: `${replay.replayFingerprint}:${run.detectorId}:${index + 1}`,
+          id: `${replay.replayFingerprint}:${run.detectorId}@${run.detectorVersion}:${index + 1}`,
           replayFingerprint: replay.replayFingerprint,
           evidenceSource: replay.evidenceSource ?? "unknown",
           mode: replay.mode ?? null,

@@ -124,6 +124,41 @@ export default function PricingLadder({ analysisHref, game, requestOnly = false,
     }
   }
 
+  if (!checkoutOpen) {
+    const freeTitle = requestOnly
+      ? "Save a free official-access request"
+      : replayReady
+        ? "Run the first supported evidence check free"
+        : "Join the replay beta free";
+    const freeBody = requestOnly
+      ? "No card. No automated coaching claim before approved opt-in match access exists."
+      : replayReady
+        ? "One complete evidence-gated outcome. A blocked or insufficient-evidence attempt does not consume the useful diagnosis."
+        : "No file or card today. We will invite players only after a public detector has passed the quality gate.";
+    return <section ref={sectionRef} className="pricing-compact shell" id="pricing" aria-labelledby="pricing-title">
+      <div className="commercial-section-copy">
+        <span className="kicker">PRICING WITHOUT PRESSURE</span>
+        <h2 id="pricing-title">Prove value first. Payment comes later.</h2>
+        <p>Checkout is intentionally closed. These planned beta prices are shown for transparency, not as an invitation to buy an unavailable product.</p>
+      </div>
+      <div className="pricing-compact-grid">
+        <a className="pricing-compact-free" href={analysisHref} onClick={() => trackProductEvent(requestOnly ? "cta_click" : replayReady ? "analysis_start" : "cta_click", game, "pricing_free")}>
+          <span>START WITH PROOF</span><b>$0</b><h3>{freeTitle}</h3><p>{freeBody}</p><strong>{requestOnly ? "Save request" : replayReady ? "Start evidence check" : "Join first access"} →</strong>
+        </a>
+        <article className="pricing-compact-plans">
+          <header><span>PLANNED PAID BETA</span><b>Only after the product earns it</b></header>
+          <div>{plans.map(plan => <section key={plan.key}><b>{plan.price}</b><span>{plan.period}</span><small>{plan.key === "monthly" ? "Lowest commitment" : plan.key === "quarterly" ? "$6.00/month effective" : "$4.83/month effective"}</small></section>)}</div>
+          <p>Every paid plan is intended to include four completed analyses per 30 days, history and follow-up verification. Evidence quality never changes with payment.</p>
+        </article>
+        <article className="pricing-compact-gate">
+          <span>WHY CHECKOUT IS CLOSED</span>
+          <ul><li>Public detector validation</li><li>Engine capacity and cost proof</li><li>Tax, consumer and platform clearance</li><li>End-to-end payment verification</li></ul>
+          <b>No rank guarantee. No hidden activation.</b>
+        </article>
+      </div>
+    </section>;
+  }
+
   return (
     <section ref={sectionRef} className="pricing-ladder shell" id="pricing" aria-labelledby="pricing-title">
       <div className="pricing-heading">

@@ -38,10 +38,34 @@ test("distinguishes Riot access requests from evidence-gated replay outcomes", a
     source("../app/analyze/page.tsx"),
   ]);
   assert.match(landing, /const riotRequest = game === "league" \|\| game === "valorant"/);
-  assert.match(landing, /Automated match analysis opens after official Riot access/);
+  assert.match(landing, /Official Riot ingestion is still awaiting production approval/);
+  assert.match(landing, /const calibrationReady = calibrationOpen && game === "rocket-league"/);
   assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
   assert.match(intake, /START REPLAY EVIDENCE CHECK/);
   assert.match(intake, /Automated League and VALORANT analysis is not live/);
   assert.doesNotMatch(quickReplay, /Get one priority|START FREE ANALYSIS/);
   assert.doesNotMatch(metadata, /get one focused Replay Method diagnosis/i);
+});
+
+test("puts the product action before explanatory browsing", async () => {
+  const [landing, contribution] = await Promise.all([
+    source("../app/components/Landing.tsx"),
+    source("../app/rocket-league-beta/ReplayContribution.tsx"),
+  ]);
+  assert.match(landing, /01 · CHOOSE YOUR GAME/);
+  assert.match(landing, /calibrationReady \? <ReplayContribution intakeOpen compact/);
+  assert.doesNotMatch(landing, /hero_proof/);
+  assert.match(landing, /THREE STEPS · ONE RED THREAD/);
+  assert.match(contribution, /replay && <section className="rl-intake-context"/);
+  assert.match(contribution, /Nothing else appears until the file is accepted/);
+});
+
+test("puts match evidence before player context without changing the intake contract", async () => {
+  const intake = await source("../app/analyze/AnalyzeFlow.tsx");
+  assert.match(intake, /step === 1 && game && <section>.*MATCH EVIDENCE/s);
+  assert.match(intake, /step === 2 && game && <section>.*PLAYER CONTEXT/s);
+  assert.match(intake, /step === 1 && game === "rocket-league" && platform === "pc" && !engineOpen/);
+  for (const field of ["currentRank", "targetRank", "playerContext", "goal", "notes", "evidenceUrl", "email", "dataConsent"]) {
+    assert.match(intake, new RegExp(`data\\.set\\("${field}"`));
+  }
 });

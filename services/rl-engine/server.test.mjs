@@ -13,6 +13,13 @@ async function withServer(run, options = { token }) {
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
+  if ((options.token ?? token).length >= 24 && !options.processReplay) {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const response = await fetch(`http://127.0.0.1:${address.port}/healthz`);
+      if (response.ok) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
   try {
     await run(`http://127.0.0.1:${address.port}`);
   } finally {

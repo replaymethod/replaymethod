@@ -1,13 +1,19 @@
 import { getChatGPTUser, type ChatGPTUser } from "../app/chatgpt-auth";
 import { isSameOriginRequest } from "./request-security.mjs";
 
+function configuredValues(...values: Array<string | undefined>) {
+  return new Set(values.flatMap(value => (value ?? "").split(/[\n,]/)).map(value => value.trim().toLowerCase()).filter(Boolean));
+}
+
 export async function isConfiguredSiteAdmin(user: ChatGPTUser) {
   const { env } = await import("cloudflare:workers");
-  const configured = env as unknown as { ADMIN_EMAIL?: string; ADMIN_USER_ID?: string };
-  const adminUserId = configured.ADMIN_USER_ID?.trim();
-  if (adminUserId) return Boolean(user.id && user.id === adminUserId);
-  const adminEmail = configured.ADMIN_EMAIL?.trim().toLowerCase();
-  return Boolean(adminEmail && user.email.toLowerCase() === adminEmail);
+  const configured = env as unknown as { ADMIN_EMAIL?: string; ADMIN_EMAILS?: string; ADMIN_USER_ID?: string; ADMIN_USER_IDS?: string };
+  const allowedUserIds = configuredValues(configured.ADMIN_USER_ID, configured.ADMIN_USER_IDS);
+  const allowedEmails = configuredValues(configured.ADMIN_EMAIL, configured.ADMIN_EMAILS);
+  return Boolean(
+    (user.id && allowedUserIds.has(user.id.toLowerCase()))
+    || allowedEmails.has(user.email.toLowerCase())
+  );
 }
 
 export async function isSiteAdmin() {

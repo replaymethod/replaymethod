@@ -74,3 +74,36 @@ test("contains detector failures instead of failing the whole replay", () => {
   assert.equal(result.runs[0].status, "error");
   assert.equal(result.runs[0].error, "broken probe");
 });
+
+test("groups adjacent supersonic boost samples into one reviewable decision", () => {
+  const subject = { id: "epic:subject", name: "Subject", team: 0 };
+  const boosts = [100, 95, 90, 85, 80, 80];
+  const frames = boosts.map((boost, index) => ({
+    index,
+    timeSeconds: index / 10,
+    ball: { position: { x: 0, y: 0, z: 0 } },
+    players: [{
+      ...subject,
+      boost,
+      distanceToBall: 1200,
+      position: { x: 1000, y: 0, z: 0 },
+      linearVelocity: { x: 2200, y: 0, z: 0 },
+    }],
+  }));
+  const result = runShadowDetectors({
+    normalized: { subjectPlayerId: subject.id },
+    frameState: { frames },
+    episodeTimeline: {
+      phases: [{ livePlay: true, startTimeSeconds: 0, endTimeSeconds: 1 }],
+      events: [],
+    },
+  });
+  const boost = result.runs.find((run) => run.detectorId === "boost.supersonic_waste");
+
+  assert.equal(boost.detectorVersion, "0.2.0");
+  assert.equal(boost.candidateCount, 1);
+  assert.equal(boost.evidence[0].sampledFrames, 4);
+  assert.equal(boost.evidence[0].boostSpent, 20);
+  assert.equal(boost.evidence[0].startFrame, 1);
+  assert.equal(boost.evidence[0].endFrame, 4);
+});

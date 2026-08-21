@@ -26,7 +26,7 @@ export class ReplayInputError extends Error {
   }
 }
 
-function initializeParser() {
+export function initializeParser() {
   if (initialized) return;
   const wasmUrl = new URL(
     "rl_replay_subtr_actor_bg.wasm",

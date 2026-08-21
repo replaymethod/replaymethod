@@ -15,6 +15,7 @@ test("registry is internally valid and public-false by default", () => {
   assert.deepEqual(validateRegistry(), { valid: true, errors: [] });
   assert.ok(DETECTOR_REGISTRY.every((entry) => entry.public === false));
   assert.deepEqual(detectorDefinition("teamplay.double_commit").supportedModes, ["2v2", "3v3"]);
+  assert.equal(detectorDefinition("boost.supersonic_waste").version, "0.2.0");
 });
 
 test("activation requires exact version, gate, scope, provenance and kill switch", () => {

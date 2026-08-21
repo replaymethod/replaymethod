@@ -38,6 +38,8 @@ test("aggregates replay coverage while keeping public quality gates closed", () 
 
   const queue = buildReviewQueue(report);
   assert.equal(queue.candidates.length, 1);
+  assert.equal(queue.schemaVersion, "rocket-league-review-queue.v2");
+  assert.equal(queue.candidates[0].id, "replay-a:boost.zero_duration@0.1.0:1");
   assert.equal(queue.candidates[0].timestampSeconds, 12);
   assert.equal(queue.candidates[0].rankCohort, "diamond-champion");
   assert.equal(queue.candidates[0].label, null);
@@ -86,7 +88,7 @@ test("reports independent reviewer agreement without counting repeat edits twice
 
 test("checked-in review queue is unique, private and ready for expert labeling", async () => {
   const queue = JSON.parse(await readFile(new URL("../../docs/RL_REVIEW_QUEUE.json", import.meta.url), "utf8"));
-  assert.equal(queue.schemaVersion, "rocket-league-review-queue.v1");
+  assert.equal(queue.schemaVersion, "rocket-league-review-queue.v2");
   assert.equal(queue.candidates.length, 515);
   assert.equal(new Set(queue.candidates.map(candidate => candidate.id)).size, queue.candidates.length);
   assert.deepEqual(new Set(queue.candidates.map(candidate => candidate.detectorId)), new Set([
@@ -101,12 +103,13 @@ test("checked-in review queue is unique, private and ready for expert labeling",
   ]));
   assert.ok(queue.candidates.every(candidate => candidate.label === null));
   assert.ok(queue.candidates.every(candidate => candidate.replayFingerprint && candidate.reviewQuestion));
+  assert.ok(queue.candidates.every(candidate => candidate.id.includes(`@${candidate.detectorVersion}:`)));
 });
 
 test("checked-in replay moments cover every candidate without player identifiers", async () => {
   const queue = JSON.parse(await readFile(new URL("../../docs/RL_REVIEW_QUEUE.json", import.meta.url), "utf8"));
   const artifact = JSON.parse(await readFile(new URL("../../docs/RL_REVIEW_MOMENTS.json", import.meta.url), "utf8"));
-  assert.equal(artifact.schemaVersion, "rocket-league-review-moments.v1");
+  assert.equal(artifact.schemaVersion, "rocket-league-review-moments.v2");
   assert.equal(artifact.replayCount, 6);
   assert.equal(artifact.candidateCount, queue.candidates.length);
   assert.equal(artifact.missingCandidateCount, 0);

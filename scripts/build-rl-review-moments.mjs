@@ -118,7 +118,7 @@ if (!targets.length) {
   }
 
   const artifact = {
-    schemaVersion: "rocket-league-review-moments.v1",
+    schemaVersion: "rocket-league-review-moments.v2",
     sourceQueueVersion: queue.schemaVersion ?? null,
     generatedAt: new Date().toISOString(),
     privacy: "Player names and platform identifiers removed; coordinates rounded; owner-only review use.",

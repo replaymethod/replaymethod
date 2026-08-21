@@ -19,10 +19,37 @@ test("closed production landing sends players to a working free tool or waitlist
   const home = await read("../app/page.tsx");
   assert.match(home, /RL_ENGINE_ENABLED/);
   assert.match(home, /RL_PUBLIC_DETECTORS_ENABLED/);
-  assert.match(landing, /const intakeHref = replayClosed \? "#join-beta" : analysisHref/);
+  assert.match(landing, /const replayReady = engineOpen/);
+  assert.match(landing, /const calibrationReady = calibrationOpen && game === "rocket-league"/);
+  assert.match(landing, /game === "general" \? "#choose-game" : "\/climb-check"/);
   assert.match(landing, /Try the free Climb Check/);
-  assert.match(landing, /Console video analysis and official Riot match analysis are not live yet/);
-  assert.doesNotMatch(landing, /QuickReplayStart/);
+  assert.match(landing, /Console video and Riot match analysis are not live/);
+  assert.match(landing, /replayReady \? <QuickReplayStart/);
+});
+
+test("calibration collection is independently gated before private storage", async () => {
+  const [route, page, controls] = await Promise.all([
+    read("../app/api/rl-beta-submissions/route.ts"),
+    read("../app/rocket-league-beta/page.tsx"),
+    read("../lib/subsystem-controls.mjs"),
+  ]);
+  const gate = route.indexOf("RL_CALIBRATION_INTAKE_ENABLED");
+  const storage = route.indexOf("BUCKET.put");
+  assert.ok(gate > -1 && storage > gate);
+  assert.match(route, /calibrationConsent/);
+  assert.match(route, /rightsConfirmed/);
+  assert.match(route, /crypto\.subtle\.digest\("SHA-256"/);
+  assert.match(route, /rl-calibration\/\$\{publicId\}/);
+  assert.doesNotMatch(route, /rl-calibration\/\$\{email\}/);
+  assert.match(page, /subsystemEnabled/);
+  assert.match(controls, /rocketLeagueCalibrationIntake/);
+});
+
+test("paid checkout is coupled to the complete product-readiness gate", async () => {
+  const home = await read("../app/page.tsx");
+  const game = await read("../app/[game]/page.tsx");
+  const checkout = await read("../app/api/billing/checkout/route.ts");
+  for (const source of [home, game, checkout]) assert.match(source, /paidCheckoutReadiness/);
 });
 
 test("verified player data controls require auth, origin and explicit deletion confirmation", async () => {

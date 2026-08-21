@@ -47,11 +47,19 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
     try {
       console.error(`Calibrating ${basename(file)}…`);
       const roster = inspectReplayRoster(bytes);
-      const subject = roster.players[0];
+      const declared = metadata.replays?.[hash] ?? metadata.replays?.[hash.slice(0, 16)] ?? {};
+      const declaredPlayerName = String(declared.playerName ?? "").trim().toLowerCase();
+      const subject = declaredPlayerName
+        ? roster.players.find((player) => player.name.trim().toLowerCase() === declaredPlayerName)
+        : roster.players[0];
+      if (declaredPlayerName && !subject) {
+        const error = new Error("Declared calibration player was not found in the replay roster.");
+        error.code = "subject_player_not_found";
+        throw error;
+      }
       if (!subject) throw new Error("Replay contained no attributable player.");
       const evidence = buildReplayEvidence(bytes, subject.name, "");
       const shadow = runShadowDetectors(evidence);
-      const declared = metadata.replays?.[hash] ?? metadata.replays?.[hash.slice(0, 16)] ?? {};
       const mode = normalizeMode(declared.mode ?? evidence.normalized.mode);
       const rankCohort = normalizeRankCohort(declared.rank ?? declared.rankCohort);
       entries.push({
@@ -61,7 +69,7 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
         mode,
         rankCohort,
         cohortKey: cohortKey({ mode, rankCohort }),
-        metadataProvenance: declared.rank || declared.rankCohort || declared.mode ? "corpus-manifest" : "replay-only",
+        metadataProvenance: declared.playerName || declared.rank || declared.rankCohort || declared.mode ? "corpus-manifest" : "replay-only",
         gameVersion: evidence.normalized.gameVersion ?? null,
         playerCount: evidence.frameState.summary.playerCount,
         sampledFrames: evidence.frameState.summary.frameCount,

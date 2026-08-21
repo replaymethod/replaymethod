@@ -12,6 +12,31 @@ export const waitlist = sqliteTable("waitlist", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
 }, table => [uniqueIndex("waitlist_email_game_unique").on(table.email, table.game)]);
 
+export const rlBetaSubmissions = sqliteTable("rl_beta_submissions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  email: text("email").notNull(),
+  playerName: text("player_name").notNull(),
+  rankCohort: text("rank_cohort").notNull(),
+  mode: text("mode").notNull().default("2v2"),
+  replayFingerprint: text("replay_fingerprint").notNull(),
+  fileKey: text("file_key").notNull(),
+  originalFileName: text("original_file_name").notNull(),
+  fileSize: integer("file_size").notNull(),
+  status: text("status").notNull().default("received"),
+  source: text("source").notNull().default("direct"),
+  campaign: text("campaign"),
+  consentVersion: text("consent_version").notNull(),
+  consentAt: text("consent_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("rl_beta_submissions_public_id_unique").on(table.publicId),
+  uniqueIndex("rl_beta_submissions_replay_email_unique").on(table.replayFingerprint, table.email),
+  index("rl_beta_submissions_email_created_idx").on(table.email, table.createdAt),
+  index("rl_beta_submissions_status_created_idx").on(table.status, table.createdAt)
+]);
+
 export const funnelEvents = sqliteTable("funnel_events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   visitorId: text("visitor_id").notNull(),

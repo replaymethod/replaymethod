@@ -9,6 +9,8 @@ const adminApiPaths = [
   new URL("../app/api/admin/analyses/[id]/retry/route.ts", import.meta.url),
   new URL("../app/api/admin/analyses/[id]/evidence/route.ts", import.meta.url),
   new URL("../app/api/admin/rl-review/[id]/route.ts", import.meta.url),
+  new URL("../app/api/admin/rl-beta-submissions/[id]/replay/route.ts", import.meta.url),
+  new URL("../app/api/admin/rl-beta-submissions/manifest/route.ts", import.meta.url),
 ];
 const adminMutationPaths = [adminApiPaths[0], adminApiPaths[1], adminApiPaths[3]];
 
@@ -22,7 +24,10 @@ test("keeps mission control behind the configured owner identity", async () => {
   const admin = await readFile(new URL("../lib/admin.ts", import.meta.url), "utf8");
   assert.match(admin, /ADMIN_USER_ID/);
   assert.match(admin, /ADMIN_EMAIL/);
-  assert.ok(admin.indexOf("if (adminUserId)") < admin.indexOf("const adminEmail"));
+  assert.match(admin, /ADMIN_USER_IDS/);
+  assert.match(admin, /ADMIN_EMAILS/);
+  assert.match(admin, /allowedUserIds\.has/);
+  assert.match(admin, /allowedEmails\.has/);
 });
 
 test("keeps every operational admin API authorization guard", async () => {
@@ -39,7 +44,7 @@ test("keeps every operational admin API authorization guard", async () => {
 
 test("summarizes only persisted operational systems", async () => {
   const source = await readFile(dashboardPath, "utf8");
-  for (const table of ["billingSubscriptions", "analysisUsage", "emailDeliveries", "playerFocuses", "billingEvents", "rlReviewCandidates"]) {
+  for (const table of ["billingSubscriptions", "analysisUsage", "emailDeliveries", "playerFocuses", "billingEvents", "rlReviewCandidates", "rlBetaSubmissions"]) {
     assert.match(source, new RegExp(`from\\(${table}\\)`));
   }
   assert.match(source, /Persisted records only/);

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Landing, { GameKey } from "../components/Landing";
-import { subsystemEnabled } from "../../lib/subsystem-controls.mjs";
+import { paidCheckoutReadiness, subsystemEnabled } from "../../lib/subsystem-controls.mjs";
 
 const allowed: GameKey[] = ["league", "valorant", "rocket-league"];
 const meta: Record<string, { title: string; description: string }> = {
@@ -20,11 +20,13 @@ export default async function GamePage({ params }: { params: Promise<{ game: str
   if (!allowed.includes(game as GameKey)) notFound();
   let checkoutOpen = false;
   let engineOpen = false;
+  let calibrationOpen = false;
   try {
     const { env } = await import("cloudflare:workers");
-    const runtime = env as unknown as { BILLING_CHECKOUT_ENABLED?: string; RL_ENGINE_ENABLED?: string; RL_PUBLIC_DETECTORS_ENABLED?: string };
-    checkoutOpen = subsystemEnabled(runtime.BILLING_CHECKOUT_ENABLED);
+    const runtime = env as unknown as Record<string, unknown> & { RL_ENGINE_ENABLED?: string; RL_PUBLIC_DETECTORS_ENABLED?: string; RL_CALIBRATION_INTAKE_ENABLED?: string };
+    checkoutOpen = paidCheckoutReadiness(runtime).ready;
     engineOpen = subsystemEnabled(runtime.RL_ENGINE_ENABLED) && subsystemEnabled(runtime.RL_PUBLIC_DETECTORS_ENABLED);
+    calibrationOpen = subsystemEnabled(runtime.RL_CALIBRATION_INTAKE_ENABLED);
   } catch { /* Local and static previews keep checkout safely closed. */ }
-  return <Landing game={game as GameKey} checkoutOpen={checkoutOpen} engineOpen={engineOpen} />;
+  return <Landing game={game as GameKey} checkoutOpen={checkoutOpen} engineOpen={engineOpen} calibrationOpen={calibrationOpen} />;
 }

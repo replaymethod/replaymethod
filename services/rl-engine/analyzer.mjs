@@ -3,7 +3,7 @@ import { detectorCatalogSummary } from "./detector-catalog.mjs";
 import { runShadowDetectors, SHADOW_RUNTIME_VERSION } from "./shadow-runtime.mjs";
 
 export const ANALYZER_VERSION = "rocket-league-analyzer@0.1.0";
-export const DETECTOR_VERSION = "rocket-league-detectors@0.1.0-shadow";
+export const DETECTOR_VERSION = "rocket-league-detectors@0.2.0-shadow";
 export const COACHING_VERSION = "coaching.v1";
 
 export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnabled = false } = {}) {
