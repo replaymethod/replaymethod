@@ -3,6 +3,7 @@ CREATE TABLE `analysis_requests` (
 	`public_id` text NOT NULL,
 	`email` text NOT NULL,
 	`game` text NOT NULL,
+	`platform` text DEFAULT 'pc' NOT NULL,
 	`current_rank` text NOT NULL,
 	`target_rank` text,
 	`player_context` text,
