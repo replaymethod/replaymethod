@@ -60,10 +60,11 @@ test("covers the requested funnel without sending product payloads", async () =>
   assert.match(client, /\.catch\(\(\) => \{\}\)/);
   assert.doesNotMatch(client, /email|playerContext|publicId|feedbackText|replay(?:Name|File|Bytes|Payload)|notes|goal/);
   assert.match(route, /normalizeProductEvent/);
-  assert.match(landing, /tool_start/);
+  assert.match(landing, /marcel_landing/);
   assert.match(intake, /replay_selected/);
   assert.match(intake, /second_match_submitted/);
   assert.match(contribution, /calibration_start/);
+  assert.match(contribution, /replay_selected/);
   assert.match(contribution, /calibration_submit/);
   assert.match(quick, /validation_failed/);
   assert.match(report, /analysis_completed/);

@@ -31,10 +31,9 @@ test("renders production social metadata and the fail-closed product-first path"
   );
   const html = await response.text();
   assert.match(html, socialImageMeta);
-  assert.match(html, /Stop guessing why you(?:’|&#x27;)re stuck/i);
-  assert.match(html, /START HERE/i);
-  assert.match(html, /Join the replay beta/i);
-  assert.doesNotMatch(html, /Drop your \.replay here/i);
-  assert.match(html, /Choose my game/i);
-  assert.match(html, /THREE STEPS · ONE RED THREAD/i);
+  assert.match(html, /Stop grinding blind/i);
+  assert.match(html, /Replay uploads are closed right now/i);
+  assert.doesNotMatch(html, /type="file"/i);
+  assert.doesNotMatch(html, /Choose my game|Contribute one replay/i);
+  assert.match(html, /Drop the replay/i);
 });

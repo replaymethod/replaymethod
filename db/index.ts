@@ -25,10 +25,21 @@ export async function ensureProductSchema(database: D1Database) {
         original_file_name text NOT NULL,
         file_size integer NOT NULL,
         status text DEFAULT 'received' NOT NULL,
+        parser_status text DEFAULT 'pending' NOT NULL,
+        parser_version text,
+        parsed_mode text,
+        attribution_status text DEFAULT 'pending' NOT NULL,
+        usability_status text DEFAULT 'pending' NOT NULL,
+        processing_error_code text,
+        processing_metadata_json text,
+        review_state text DEFAULT 'not_started' NOT NULL,
+        detector_set_version text,
         source text DEFAULT 'direct' NOT NULL,
         campaign text,
         consent_version text NOT NULL,
         consent_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        rights_confirmed_at text,
+        updates_consent_at text,
         created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
         updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
       )`),
@@ -410,9 +421,28 @@ export async function ensureProductSchema(database: D1Database) {
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_candidates_detector_verdict_idx ON rl_review_candidates (detector_id, verdict)"),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_candidates_replay_idx ON rl_review_candidates (replay_fingerprint)"),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_candidates_reviewed_at_idx ON rl_review_candidates (reviewed_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS rl_reviewers (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        public_id text NOT NULL,
+        user_id text NOT NULL,
+        email text NOT NULL,
+        display_name text,
+        qualification text NOT NULL,
+        status text DEFAULT 'pending' NOT NULL,
+        approved_by text,
+        approved_at text,
+        revoked_at text,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS rl_reviewers_public_id_unique ON rl_reviewers (public_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS rl_reviewers_user_id_unique ON rl_reviewers (user_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS rl_reviewers_email_unique ON rl_reviewers (email)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS rl_reviewers_status_idx ON rl_reviewers (status)"),
       database.prepare(`CREATE TABLE IF NOT EXISTS rl_review_labels (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         candidate_id integer NOT NULL,
+        reviewer_id integer,
         reviewer_email text NOT NULL,
         reviewer_qualification text DEFAULT 'unverified' NOT NULL,
         verdict text NOT NULL,
@@ -420,7 +450,8 @@ export async function ensureProductSchema(database: D1Database) {
         notes text,
         label_set_version text NOT NULL,
         created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-        FOREIGN KEY (candidate_id) REFERENCES rl_review_candidates(id)
+        FOREIGN KEY (candidate_id) REFERENCES rl_review_candidates(id),
+        FOREIGN KEY (reviewer_id) REFERENCES rl_reviewers(id)
       )`),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_candidate_idx ON rl_review_labels (candidate_id)"),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_created_at_idx ON rl_review_labels (created_at)"),
@@ -489,7 +520,20 @@ export async function ensureProductSchema(database: D1Database) {
       await ensureColumn(database, "rl_review_candidates", "rank_cohort", "text");
       await ensureColumn(database, "rl_review_candidates", "context_key", "text");
       await ensureColumn(database, "rl_review_candidates", "metadata_provenance", "text");
+      await ensureColumn(database, "rl_beta_submissions", "parser_status", "text DEFAULT 'pending' NOT NULL");
+      await ensureColumn(database, "rl_beta_submissions", "parser_version", "text");
+      await ensureColumn(database, "rl_beta_submissions", "parsed_mode", "text");
+      await ensureColumn(database, "rl_beta_submissions", "attribution_status", "text DEFAULT 'pending' NOT NULL");
+      await ensureColumn(database, "rl_beta_submissions", "usability_status", "text DEFAULT 'pending' NOT NULL");
+      await ensureColumn(database, "rl_beta_submissions", "processing_error_code", "text");
+      await ensureColumn(database, "rl_beta_submissions", "processing_metadata_json", "text");
+      await ensureColumn(database, "rl_beta_submissions", "review_state", "text DEFAULT 'not_started' NOT NULL");
+      await ensureColumn(database, "rl_beta_submissions", "detector_set_version", "text");
+      await ensureColumn(database, "rl_beta_submissions", "rights_confirmed_at", "text");
+      await ensureColumn(database, "rl_beta_submissions", "updates_consent_at", "text");
       await ensureColumn(database, "rl_review_labels", "reviewer_qualification", "text DEFAULT 'unverified' NOT NULL");
+      await ensureColumn(database, "rl_review_labels", "reviewer_id", "integer");
+      await database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_reviewer_candidate_idx ON rl_review_labels (reviewer_id, candidate_id)").run();
     }).catch((error) => {
       productSchemaReady = null;
       throw error;

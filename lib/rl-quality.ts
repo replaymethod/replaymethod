@@ -18,7 +18,9 @@ type ReviewRow = {
 };
 
 type ReviewLabelRow = {
+  id?: number;
   candidateId: number;
+  reviewerId?: number | null;
   reviewerEmail: string;
   reviewerQualification: string;
   verdict: string;
@@ -52,19 +54,38 @@ const gateLabels: Record<string, string> = {
 };
 
 export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLabelRow[] = []) {
-  const decided = rows.filter((row) => row.verdict === "confirmed" || row.verdict === "rejected");
-  const confirmed = decided.filter((row) => row.verdict === "confirmed").length;
-  const rejected = decided.filter((row) => row.verdict === "rejected").length;
-  const timestampReviewed = decided.filter((row) => row.timestampVerified != null);
   const candidateById = new Map(rows.map(row => [row.id, row]));
-  const qualifiedHistory = labelHistory.filter(label => {
+  const qualifiedHistoryAll = labelHistory.filter(label => {
     const candidate = candidateById.get(label.candidateId);
-    return candidate && qualifiedReviewerContexts.has(label.reviewerQualification) && label.labelSetVersion === RL_LABEL_SET_VERSION;
+    return candidate && label.reviewerId != null && qualifiedReviewerContexts.has(label.reviewerQualification) && label.labelSetVersion === RL_LABEL_SET_VERSION;
   }).map(label => ({
     ...label,
     candidateKey: candidateById.get(label.candidateId)!.candidateKey,
     detectorId: candidateById.get(label.candidateId)!.detectorId
   }));
+  const latestByReviewerCandidate = new Map<string, typeof qualifiedHistoryAll[number]>();
+  for (const label of qualifiedHistoryAll) {
+    const key = `${label.candidateId}:${label.reviewerId}`;
+    const previous = latestByReviewerCandidate.get(key);
+    if (!previous || label.createdAt >= previous.createdAt) latestByReviewerCandidate.set(key, label);
+  }
+  const qualifiedHistory = [...latestByReviewerCandidate.values()];
+  const labelsByCandidate = qualifiedHistory.reduce<Map<number, typeof qualifiedHistory>>((map, label) => {
+    const labels = map.get(label.candidateId) ?? [];
+    labels.push(label);
+    map.set(label.candidateId, labels);
+    return map;
+  }, new Map());
+  const consensus = rows.map(row => {
+    const labels = labelsByCandidate.get(row.id) ?? [];
+    const decisions = labels.filter(label => label.verdict === "confirmed" || label.verdict === "rejected");
+    const verdict = decisions.length >= 2 && decisions.every(label => label.verdict === decisions[0].verdict) ? decisions[0].verdict : null;
+    return { row, labels, decisions, verdict };
+  });
+  const decided = consensus.filter(item => item.verdict != null);
+  const confirmed = decided.filter(item => item.verdict === "confirmed").length;
+  const rejected = decided.filter(item => item.verdict === "rejected").length;
+  const timestampReviewed = decided.filter(item => item.decisions.every(label => label.timestampVerified != null));
   const agreement = reviewerAgreementMetrics(qualifiedHistory);
   const cohortCounts = rows.reduce<Record<string, number>>((counts, row) => {
     const key = row.mode && row.rankCohort ? `${row.mode}:${row.rankCohort}` : "unknown:unranked-unknown";
@@ -82,7 +103,7 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
     precisionLowerBound: wilsonLowerBound(confirmed, decided.length),
     falsePositiveRate: decided.length ? rejected / decided.length : null,
     timestampVerifiedRate: timestampReviewed.length
-      ? timestampReviewed.filter((row) => row.timestampVerified).length / timestampReviewed.length
+      ? timestampReviewed.filter((item) => item.decisions.every(label => label.timestampVerified === true)).length / timestampReviewed.length
       : null,
     rankModeCohorts: coveredCohortCounts.length,
     minimumCohortSamples: coveredCohortCounts.length ? Math.min(...coveredCohortCounts) : 0,
@@ -90,9 +111,7 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
     reviewerAgreement: agreement.kappa,
     reviewerRawAgreement: agreement.rawAgreement,
     doubleReviewedCandidates: agreement.doubleReviewedCandidates,
-    labelProvenanceComplete: decided.length > 0 && decided.every(row => qualifiedHistory.some(label => (
-      label.candidateId === row.id && (label.verdict === "confirmed" || label.verdict === "rejected")
-    ))),
+    labelProvenanceComplete: decided.length > 0 && decided.every(item => item.decisions.length >= 2 && new Set(item.decisions.map(label => label.reviewerId)).size >= 2),
     patchRegressionPassed: false,
     versionDriftPassed: false,
     confidenceCalibrationPassed: false,
@@ -105,8 +124,8 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
   const gate = assessPublicDetectorGate(metrics);
   return {
     total: rows.length,
-    reviewed: rows.filter((row) => row.verdict !== "unreviewed").length,
-    uncertain: rows.filter((row) => row.verdict === "uncertain").length,
+    reviewed: consensus.filter((item) => item.labels.length > 0).length,
+    uncertain: consensus.filter((item) => item.labels.some(label => label.verdict === "uncertain") || (item.decisions.length >= 2 && item.verdict == null)).length,
     ...metrics,
     gate: {
       eligible: gate.eligible,

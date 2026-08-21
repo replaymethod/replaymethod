@@ -45,25 +45,39 @@ test.describe("first-time visitor funnel", () => {
     });
   }
 
-  test("the landing page explains one problem, one method and one free next step", async ({ page }) => {
+  test("the landing page explains one problem and exposes one immediate replay action", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Stop losing for the same reason");
-    await expect(page.getByRole("link", { name: /Try the free Climb Check/i })).toBeVisible();
-    await expect(page.getByText("Problem. Decision. Next move.")).toBeVisible();
-    await expect(page.getByText("No fake “live” labels.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Stop grinding blind/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Drop your replay." })).toBeVisible();
+    await expect(page.locator('input[type="file"]')).toHaveCount(1);
+    await expect(page.getByLabel("Exact in-game name")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /League of Legends|VALORANT/i })).toHaveCount(0);
+    await expect(page.getByText("Drop the replay", { exact: true })).toBeVisible();
+    await expect(page.getByText("Reveal one pattern", { exact: true })).toBeVisible();
+    await expect(page.getByText("Play with one rule", { exact: true })).toBeVisible();
   });
 
-  test("all three games have distinct copy and a usable decision preview", async ({ page }) => {
-    const cases = [
-      ["/rocket-league", "Your teammate commits", "Rotate through back post"],
-      ["/valorant", "You have one flash", "Flash, wait for spacing, then swing"],
-      ["/league", "Dragon in 38 seconds", "Reset, then place river vision"],
-    ] as const;
-    for (const [route, question, answer] of cases) {
+  test("context appears only after an original replay is selected", async ({ page }) => {
+    await page.goto("/", { waitUntil: "networkidle" });
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "representative-match.replay",
+      mimeType: "application/octet-stream",
+      buffer: Buffer.from("playwright-calibration-fixture"),
+    });
+    await expect(page.getByLabel("Exact in-game name")).toBeVisible();
+    await expect(page.getByLabel("Current 2v2 rank")).toBeVisible();
+    await expect(page.getByLabel("Email for your receipt")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Secure my replay" })).toBeVisible();
+  });
+
+  test("Rocket League is active while League and VALORANT are explicitly deferred", async ({ page }) => {
+    await page.goto("/rocket-league");
+    await expect(page.locator('input[type="file"]')).toHaveCount(1);
+    for (const [route, game] of [["/league", "League of Legends"], ["/valorant", "VALORANT"]] as const) {
       await page.goto(route);
-      await expect(page.getByRole("heading", { name: new RegExp(question, "i") })).toBeVisible();
-      await page.getByRole("button", { name: answer }).click();
-      await expect(page.getByText("THAT'S THE CUE")).toBeVisible();
+      await expect(page.getByText(`${game.toUpperCase()} · COMING LATER`, { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: /Evidence before expansion/i })).toBeVisible();
+      await expect(page.locator('input[type="file"]')).toHaveCount(0);
     }
   });
 
@@ -84,12 +98,9 @@ test.describe("truthful product boundaries", () => {
     await expect(page.getByText(/PC parser is online, but public coaching is still in quality validation/i)).toBeVisible();
     await page.getByRole("button", { name: /PS5/ }).click();
     await expect(page.getByText(/Console video analysis is not live yet/i)).toBeVisible();
-    await page.getByLabel("Current rank *").fill("Gold 3");
-    await page.getByLabel("Exact in-game player name *").fill("kuxir97");
-    await page.getByLabel("What do you want to stop repeating? *").fill("I keep double committing after my teammate challenges.");
-    await page.getByRole("button", { name: /CONTINUE/ }).click();
-    await expect(page.getByRole("heading", { name: "This lane is not open yet." })).toBeVisible();
+    await expect(page.getByText("This evidence lane is not open yet.", { exact: true })).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(0);
+    await expect(page.getByLabel("Current rank *")).toHaveCount(0);
   });
 
   test("League and VALORANT are described as official-access requests, not live analysis", async ({ page }) => {
@@ -100,12 +111,11 @@ test.describe("truthful product boundaries", () => {
     }
   });
 
-  test("pricing shows totals, renewal cadence and closed checkout", async ({ page }) => {
-    await page.goto("/#pricing");
-    await expect(page.locator('[data-plan="monthly"]')).toContainText("$6.99 charged today and monthly");
-    await expect(page.locator('[data-plan="quarterly"]')).toContainText("$17.99 charged today and at renewal");
-    await expect(page.locator('[data-plan="semiannual"]')).toContainText("$28.99 charged today and at renewal");
-    await expect(page.getByText("Plan comparison ready. Checkout intentionally closed.")).toBeVisible();
+  test("the commercial landing does not distract with pricing or checkout", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("#pricing")).toHaveCount(0);
+    await expect(page.locator('[data-plan="monthly"]')).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /buy|subscribe|checkout/i })).toHaveCount(0);
   });
 
   test("closed analysis API rejects before storing a replay", async ({ request }) => {
@@ -144,8 +154,7 @@ test.describe("required responsive matrix", () => {
   ];
 
   for (const viewport of viewports) {
-    test(`${viewport.width}x${viewport.height} keeps critical journeys inside the viewport`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== "desktop-chromium", "The matrix runs once in Chromium.");
+    test(`${viewport.width}x${viewport.height} keeps critical journeys inside the viewport`, async ({ page }) => {
       await page.setViewportSize(viewport);
       for (const route of ["/", "/rocket-league", "/analyze", "/climb-check"]) {
         await page.goto(route, { waitUntil: "networkidle" });

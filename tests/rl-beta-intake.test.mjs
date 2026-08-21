@@ -16,8 +16,8 @@ test("collects consented replays without promising analysis", async () => {
   assert.match(route, /five-replay beta limit/);
   assert.match(route, /replayFingerprint/);
   assert.match(route, /updates opt-in failed/);
-  assert.match(contribution, /No questionnaire/);
-  assert.match(contribution, /This contribution does not promise a player report/);
+  assert.match(contribution, /Three details keep the replay attributable and useful/);
+  assert.match(contribution, /this is not a generated analysis/i);
   assert.match(contribution, /calibrationConsent/);
   assert.match(contribution, /rightsConfirmed/);
   assert.match(schema, /rl_beta_submissions/);
@@ -36,7 +36,11 @@ test("quality gate counts only current qualified independent review history", as
   assert.match(quality, /labelProvenanceComplete/);
   assert.match(reviewPage, /RL_REVIEW_CANDIDATE_KEYS/);
   assert.match(reviewPage, /rlReviewLabels/);
-  assert.match(reviewPage, /2 qualified reviewers/);
+  assert.match(reviewPage, /Other reviewers’ decisions and aggregate verdicts remain hidden/);
+  assert.match(reviewPage, /eq\(rlReviewLabels\.reviewerId, reviewer\.id\)/);
+  assert.doesNotMatch(reviewPage, /detectorQualitySummary/);
+  assert.match(reviewRoute, /requireRlReviewerMutation/);
+  assert.match(reviewRoute, /access\.reviewer\.id/);
   assert.match(reviewRoute, /rl_review_labels/);
 });
 

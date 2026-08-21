@@ -72,4 +72,4 @@ Before any separately authorized live-mode activation:
 6. Confirm four completed analyses are allowed per 30-day window, while failures and abstentions release their reservation.
 7. Confirm an unverified browser cannot buy for or use another player's paid entitlement by entering their email.
 
-Tax collection is intentionally not enabled. Seller identity and tax registrations must be resolved before enabling Stripe Tax or live billing.
+Tax collection is intentionally not enabled. Production seller disclosure, Stripe tax configuration, launch-market review and a separate live-billing approval remain required before enabling Stripe Tax or live billing.

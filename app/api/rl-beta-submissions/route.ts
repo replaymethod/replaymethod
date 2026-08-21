@@ -75,7 +75,12 @@ export async function POST(request: Request) {
       eq(rlBetaSubmissions.email, email),
       eq(rlBetaSubmissions.replayFingerprint, replayFingerprint)
     )).get();
-    if (duplicate) return Response.json({ received: true, duplicate: true, publicId: duplicate.publicId }, { status: 200, headers: { "Cache-Control": "no-store" } });
+    if (duplicate) return Response.json({
+      received: true,
+      duplicate: true,
+      publicId: duplicate.publicId,
+      state: { file: "secured", parser: "pending", playerAttribution: "pending", modeVerification: "pending", coaching: "gated" }
+    }, { status: 200, headers: { "Cache-Control": "no-store" } });
 
     const publicId = crypto.randomUUID().replaceAll("-", "");
     const originalFileName = safeFileName(replay.name);
@@ -95,9 +100,15 @@ export async function POST(request: Request) {
       originalFileName,
       fileSize: replay.size,
       status: "received",
+      parserStatus: "pending",
+      attributionStatus: "pending",
+      usabilityStatus: "pending",
+      reviewState: "not_started",
       source,
       campaign,
-      consentVersion: CONSENT_VERSION
+      consentVersion: CONSENT_VERSION,
+      rightsConfirmedAt: new Date().toISOString(),
+      updatesConsentAt: updatesConsent ? new Date().toISOString() : null
     });
     uploadedKey = null;
 
@@ -111,7 +122,17 @@ export async function POST(request: Request) {
       }
     }
 
-    return Response.json({ received: true, publicId }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    return Response.json({
+      received: true,
+      publicId,
+      state: {
+        file: "secured",
+        parser: "pending",
+        playerAttribution: "pending",
+        modeVerification: "pending",
+        coaching: "gated"
+      }
+    }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (uploadedKey) {
       try {

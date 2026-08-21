@@ -37,9 +37,9 @@ test("distinguishes Riot access requests from evidence-gated replay outcomes", a
     source("../app/components/QuickReplayStart.tsx"),
     source("../app/analyze/page.tsx"),
   ]);
-  assert.match(landing, /const riotRequest = game === "league" \|\| game === "valorant"/);
-  assert.match(landing, /Official Riot ingestion is still awaiting production approval/);
-  assert.match(landing, /const calibrationReady = calibrationOpen && game === "rocket-league"/);
+  assert.match(landing, /if \(game === "league" \|\| game === "valorant"\) return <FutureGame/);
+  assert.match(landing, /authorized match evidence can support the same standard/);
+  assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
   assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
   assert.match(intake, /START REPLAY EVIDENCE CHECK/);
   assert.match(intake, /Automated League and VALORANT analysis is not live/);
@@ -52,12 +52,12 @@ test("puts the product action before explanatory browsing", async () => {
     source("../app/components/Landing.tsx"),
     source("../app/rocket-league-beta/ReplayContribution.tsx"),
   ]);
-  assert.match(landing, /01 · CHOOSE YOUR GAME/);
-  assert.match(landing, /calibrationReady \? <ReplayContribution intakeOpen compact/);
-  assert.doesNotMatch(landing, /hero_proof/);
-  assert.match(landing, /THREE STEPS · ONE RED THREAD/);
+  assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
+  assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
+  assert.match(landing, /Stop grinding blind/);
+  assert.match(landing, /Drop the replay/);
   assert.match(contribution, /replay && <section className="rl-intake-context"/);
-  assert.match(contribution, /Nothing else appears until the file is accepted/);
+  assert.match(contribution, /Choose the original PC file\. The next step appears instantly/);
 });
 
 test("puts match evidence before player context without changing the intake contract", async () => {

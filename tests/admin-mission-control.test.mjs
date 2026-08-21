@@ -11,8 +11,10 @@ const adminApiPaths = [
   new URL("../app/api/admin/rl-review/[id]/route.ts", import.meta.url),
   new URL("../app/api/admin/rl-beta-submissions/[id]/replay/route.ts", import.meta.url),
   new URL("../app/api/admin/rl-beta-submissions/manifest/route.ts", import.meta.url),
+  new URL("../app/api/admin/rl-reviewers/route.ts", import.meta.url),
+  new URL("../app/api/admin/rl-beta-submissions/[id]/status/route.ts", import.meta.url),
 ];
-const adminMutationPaths = [adminApiPaths[0], adminApiPaths[1], adminApiPaths[3]];
+const adminMutationPaths = [adminApiPaths[0], adminApiPaths[1], adminApiPaths[6], adminApiPaths[7]];
 
 test("keeps mission control behind the configured owner identity", async () => {
   const [dashboard, detail] = await Promise.all([readFile(dashboardPath, "utf8"), readFile(detailPath, "utf8")]);
@@ -33,8 +35,13 @@ test("keeps mission control behind the configured owner identity", async () => {
 test("keeps every operational admin API authorization guard", async () => {
   for (const path of adminApiPaths) {
     const source = await readFile(path, "utf8");
-    assert.match(source, /requireSiteAdmin(?:Api|Mutation)\(/);
-    assert.match(source, /if \(unauthorized\) return unauthorized/);
+    if (path.pathname.includes("/rl-review/")) {
+      assert.match(source, /requireRlReviewerMutation\(/);
+      assert.match(source, /if \(access\.response/);
+    } else {
+      assert.match(source, /requireSiteAdmin(?:Api|Mutation)\(/);
+      assert.match(source, /if \(unauthorized\) return unauthorized/);
+    }
   }
   for (const path of adminMutationPaths) {
     const source = await readFile(path, "utf8");
@@ -44,7 +51,7 @@ test("keeps every operational admin API authorization guard", async () => {
 
 test("summarizes only persisted operational systems", async () => {
   const source = await readFile(dashboardPath, "utf8");
-  for (const table of ["billingSubscriptions", "analysisUsage", "emailDeliveries", "playerFocuses", "billingEvents", "rlReviewCandidates", "rlBetaSubmissions"]) {
+  for (const table of ["billingSubscriptions", "analysisUsage", "emailDeliveries", "playerFocuses", "billingEvents", "rlReviewLabels", "rlReviewers", "rlBetaSubmissions"]) {
     assert.match(source, new RegExp(`from\\(${table}\\)`));
   }
   assert.match(source, /Persisted records only/);

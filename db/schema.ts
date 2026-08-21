@@ -24,10 +24,21 @@ export const rlBetaSubmissions = sqliteTable("rl_beta_submissions", {
   originalFileName: text("original_file_name").notNull(),
   fileSize: integer("file_size").notNull(),
   status: text("status").notNull().default("received"),
+  parserStatus: text("parser_status").notNull().default("pending"),
+  parserVersion: text("parser_version"),
+  parsedMode: text("parsed_mode"),
+  attributionStatus: text("attribution_status").notNull().default("pending"),
+  usabilityStatus: text("usability_status").notNull().default("pending"),
+  processingErrorCode: text("processing_error_code"),
+  processingMetadataJson: text("processing_metadata_json"),
+  reviewState: text("review_state").notNull().default("not_started"),
+  detectorSetVersion: text("detector_set_version"),
   source: text("source").notNull().default("direct"),
   campaign: text("campaign"),
   consentVersion: text("consent_version").notNull(),
   consentAt: text("consent_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  rightsConfirmedAt: text("rights_confirmed_at"),
+  updatesConsentAt: text("updates_consent_at"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
 }, table => [
@@ -442,9 +453,30 @@ export const rlReviewCandidates = sqliteTable("rl_review_candidates", {
   index("rl_review_candidates_reviewed_at_idx").on(table.reviewedAt)
 ]);
 
+export const rlReviewers = sqliteTable("rl_reviewers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  userId: text("user_id").notNull(),
+  email: text("email").notNull(),
+  displayName: text("display_name"),
+  qualification: text("qualification").notNull(),
+  status: text("status").notNull().default("pending"),
+  approvedBy: text("approved_by"),
+  approvedAt: text("approved_at"),
+  revokedAt: text("revoked_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("rl_reviewers_public_id_unique").on(table.publicId),
+  uniqueIndex("rl_reviewers_user_id_unique").on(table.userId),
+  uniqueIndex("rl_reviewers_email_unique").on(table.email),
+  index("rl_reviewers_status_idx").on(table.status)
+]);
+
 export const rlReviewLabels = sqliteTable("rl_review_labels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   candidateId: integer("candidate_id").notNull().references(() => rlReviewCandidates.id),
+  reviewerId: integer("reviewer_id").references(() => rlReviewers.id),
   reviewerEmail: text("reviewer_email").notNull(),
   reviewerQualification: text("reviewer_qualification").notNull().default("unverified"),
   verdict: text("verdict").notNull(),
@@ -454,6 +486,7 @@ export const rlReviewLabels = sqliteTable("rl_review_labels", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
 }, table => [
   index("rl_review_labels_candidate_idx").on(table.candidateId),
+  index("rl_review_labels_reviewer_candidate_idx").on(table.reviewerId, table.candidateId),
   index("rl_review_labels_created_at_idx").on(table.createdAt)
 ]);
 

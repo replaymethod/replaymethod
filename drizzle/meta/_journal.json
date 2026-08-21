@@ -92,6 +92,13 @@
       "when": 1787265764681,
       "tag": "0012_legal_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1787282346386,
+      "tag": "0013_simple_warbird",
+      "breakpoints": true
     }
   ]
 }

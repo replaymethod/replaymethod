@@ -1,5 +1,7 @@
 # Replay Method takeover execution status — 20 August 2026
 
+> Historical checkpoint. For the current 21 August Marcel transformation and calibration release truth, see `docs/MARCEL_RELEASE_STATUS_2026-08-21.md`.
+
 This checkpoint records operational truth for the takeover roadmap. The founder-grade strategic operating manual supplied on 20 August 2026 is the primary commercial authority. `AGENTS.md`, the repository architecture, and the evidence-first safeguards remain the technical boundary.
 
 ## Source and release truth
