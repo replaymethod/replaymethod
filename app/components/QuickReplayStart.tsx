@@ -58,12 +58,6 @@ function fileProblem(file: File) {
   return "";
 }
 
-function fileSizeLabel(bytes: number) {
-  if (bytes < 1024) return `${bytes} bytes`;
-  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 export default function QuickReplayStart({ placement }: { placement: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -191,8 +185,8 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     }
   }
 
-  return <form ref={formRef} id="replay-upload" data-hydrated="false" className={`quick-replay ${replay ? "has-file" : ""}`} aria-busy={status === "loading"} onSubmit={submit}>
-    <div className="quick-replay-head"><div><span>ROCKET LEAGUE · FREE BETA</span><b>Drop a replay. Let the match fill in the rest.</b></div><i>FREE</i></div>
+  return <form ref={formRef} id="replay-upload" tabIndex={-1} data-hydrated="false" className={`quick-replay ${replay ? "has-file" : ""}`} aria-label="Rocket League replay uploader" aria-busy={status === "loading"} onSubmit={submit}>
+    <div className="quick-replay-head"><div><span>ROCKET LEAGUE · PC REPLAY</span><b>Drop a replay. Let the match fill in the rest.</b></div><i>PRIVATE</i></div>
     {platform === "pc" ? <><label
       className={`quick-drop ${dragging ? "dragging" : ""}`}
       onDragEnter={() => setDragging(true)}
@@ -207,17 +201,15 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     </label>
     {!replay && <div className="quick-upload-help"><p className="quick-promise">Upload first. Email only when your private result has somewhere to go.</p><details><summary>Where is my .replay file? <span>30-second guide</span></summary><ol><li><b>1</b><span>Press <strong>Windows + R</strong></span></li><li><b>2</b><span>Paste <code>%USERPROFILE%\Documents\My Games\Rocket League\TAGame\Demos</code></span></li><li><b>3</b><span>Choose your latest <strong>.replay</strong> file above</span></li></ol><Link href="/replay-upload">Open the full visual guide →</Link></details><details className="quick-other-device"><summary>On console—or browsing on your phone?</summary><div><button type="button" onClick={copyPcLink}>{handoffCopied ? "PC link copied ✓" : "Copy this page for your PC"}</button>{([["ps5", "PS5"], ["xbox", "Xbox"], ["switch", "Switch"]] as const).map(item => <button type="button" onClick={() => choosePlatform(item[0])} key={item[0]}>{item[1]} video path →</button>)}</div></details></div>}
 
-    {replay && <div className="replay-value quick-replay-value" role="status" aria-live="polite">
-      <div className="replay-value-head"><span>REPLAY VALIDATED</span><strong>Supported match file recognized.</strong><p>No gameplay claim has been made. This confirms the file is ready for secure parser checks.</p></div>
-      <div className="replay-value-facts"><div><span>FORMAT</span><b>.replay</b><small>recognized</small></div><div><span>FILE SIZE</span><b>{fileSizeLabel(replay.size)}</b><small>non-empty</small></div><div><span>UPLOAD LIMIT</span><b>PASS</b><small>16 MB maximum</small></div></div>
-      <div className="replay-value-plan"><span>NEXT: MATCH READ</span><p>The replay identifies the playlist and players. You choose yourself with one tap after parsing; Replay Method asks for the relevant rank only because the file does not contain it.</p></div>
+    {replay && <div className="quick-replay-ready" role="status" aria-live="polite">
+      <i>✓</i><div><strong>REPLAY READY ✓</strong><span>Match read is next: playlist and players, then one tap to choose yourself.</span></div>
     </div>}
 
     {replay && detailsOpen && <div className="quick-details" id="quick-replay-details">
       <label className="quick-email"><span>Where should we send your result?</span><input id="quick-replay-email" type="email" autoComplete="email" inputMode="email" value={email} onChange={event => { setEmail(event.target.value); stagedReplayRef.current = null; }} placeholder="you@email.com" required /></label>
       <p className="quick-email-note">Private delivery and recovery only. Marketing stays off unless you choose it below.</p>
       <label className="quick-check"><input type="checkbox" checked={dataConsent} onChange={event => setDataConsent(event.target.checked)} required /><span>Process this replay and email to deliver my private beta analysis. <a href="/privacy" target="_blank">Privacy</a></span></label>
-      <button className="quick-submit" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "ANALYZE THIS REPLAY — FREE →"}</span></button>
+      <button className="quick-submit" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "ANALYZE THIS REPLAY →"}</span></button>
       <small>No card · 1v1, 2v2 and 3v3 · The engine stops instead of guessing</small>
     </div>}
 
