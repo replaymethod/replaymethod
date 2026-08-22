@@ -25,6 +25,8 @@ const localBindingConfig = {
   compatibility_flags: ["nodejs_compat"],
   vars: {
     REPLAYMETHOD_E2E_FIXTURES: process.env.REPLAYMETHOD_E2E_FIXTURES === "true" ? "true" : "false",
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? "",
+    ADMIN_USER_ID: process.env.ADMIN_USER_ID ?? "",
     ...Object.fromEntries(localBooleanBindings.map(key => [key, process.env[key] === "true" ? "true" : "false"])),
   },
   d1_databases: d1

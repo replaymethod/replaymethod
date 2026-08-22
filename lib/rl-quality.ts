@@ -26,10 +26,29 @@ type ReviewLabelRow = {
   reviewerScopeJson?: string | null;
   verdict: string;
   labelSetVersion: string;
+  timestampVerified?: boolean | null;
+  gameplayTruth?: string | null;
+  contextCorrect?: boolean | null;
+  coachingRelevance?: string | null;
   createdAt: string;
 };
 
 const qualifiedReviewerContexts = new Set(["competitive_player", "rocket_league_coach", "replay_analyst"]);
+
+function playlistScopeQualifies(value: string | null | undefined, mode: string | null | undefined) {
+  if (!mode) return false;
+  try {
+    const scopes = JSON.parse(value || "{}") as Record<string, unknown>;
+    const scope = scopes[mode];
+    if (typeof scope === "string") return scope !== "unverified";
+    if (!scope || typeof scope !== "object") return false;
+    const ranks = scope as Record<string, unknown>;
+    return typeof ranks.currentRank === "string" && ranks.currentRank !== "unverified"
+      && typeof ranks.highestRank === "string" && ranks.highestRank !== "unverified";
+  } catch {
+    return false;
+  }
+}
 
 const gateLabels: Record<string, string> = {
   replay_coverage: "50 representative replays",
@@ -58,9 +77,7 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
   const candidateById = new Map(rows.map(row => [row.id, row]));
   const qualifiedHistoryAll = labelHistory.filter(label => {
     const candidate = candidateById.get(label.candidateId);
-    let scopes: Record<string, unknown> = {};
-    try { scopes = JSON.parse(label.reviewerScopeJson || "{}"); } catch { /* invalid scope never qualifies */ }
-    const playlistQualified = Boolean(candidate?.mode && typeof scopes[candidate.mode] === "string" && scopes[candidate.mode] !== "unverified");
+    const playlistQualified = playlistScopeQualifies(label.reviewerScopeJson, candidate?.mode);
     return candidate && playlistQualified && label.reviewerId != null && qualifiedReviewerContexts.has(label.reviewerQualification) && label.labelSetVersion === RL_LABEL_SET_VERSION;
   }).map(label => ({
     ...label,
@@ -139,6 +156,69 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
         label: gateLabels[String(check.id)] ?? String(check.id),
       })),
       blockedBy: gate.blockedBy,
+    },
+  };
+}
+
+export function reviewerOperationsSummary(rows: ReviewRow[], labelHistory: ReviewLabelRow[] = []) {
+  const candidateById = new Map(rows.map(row => [row.id, row]));
+  const eligible = labelHistory.filter(label => {
+    const candidate = candidateById.get(label.candidateId);
+    return Boolean(candidate)
+      && label.reviewerId != null
+      && qualifiedReviewerContexts.has(label.reviewerQualification)
+      && label.labelSetVersion === RL_LABEL_SET_VERSION
+      && playlistScopeQualifies(label.reviewerScopeJson, candidate?.mode);
+  });
+  const latest = new Map<string, ReviewLabelRow>();
+  for (const label of eligible) {
+    const key = `${label.candidateId}:${label.reviewerId}`;
+    const prior = latest.get(key);
+    if (!prior || label.createdAt >= prior.createdAt) latest.set(key, label);
+  }
+  const labels = [...latest.values()];
+  const byCandidate = Map.groupBy(labels, label => label.candidateId);
+  const states = rows.map(row => {
+    const candidateLabels = byCandidate.get(row.id) ?? [];
+    const decided = candidateLabels.filter(label => label.verdict === "confirmed" || label.verdict === "rejected");
+    const uncertain = candidateLabels.some(label => label.verdict === "uncertain");
+    const disagreement = decided.length >= 2 && new Set(decided.map(label => label.verdict)).size > 1;
+    const consensus = decided.length >= 2 && !uncertain && !disagreement && decided.every(label => label.verdict === decided[0].verdict)
+      ? decided[0].verdict
+      : null;
+    return { row, labels: candidateLabels, decided, uncertain, disagreement, consensus };
+  });
+  const agreement = reviewerAgreementMetrics(labels.map(label => ({ ...label, candidateKey: candidateById.get(label.candidateId)?.candidateKey })));
+  const cohorts = Object.values(Object.groupBy(states, item => `${item.row.mode ?? "unknown"}:${item.row.rankCohort ?? "unranked-unknown"}`)).map(items => {
+    const group = items ?? [];
+    const key = group.length ? `${group[0].row.mode ?? "unknown"}:${group[0].row.rankCohort ?? "unranked-unknown"}` : "unknown:unranked-unknown";
+    return {
+      cohort: key,
+      candidates: group.length,
+      doubleReviewed: group.filter(item => item.labels.length >= 2).length,
+      confirmed: group.filter(item => item.consensus === "confirmed").length,
+      rejected: group.filter(item => item.consensus === "rejected").length,
+      unresolved: group.filter(item => item.labels.length >= 2 && item.consensus == null).length,
+    };
+  }).sort((left, right) => left.cohort.localeCompare(right.cohort));
+  return {
+    candidates: rows.length,
+    qualifiedLabels: labels.length,
+    independentReviewers: agreement.independentReviewers,
+    doubleReviewed: states.filter(item => item.labels.length >= 2).length,
+    agreement: agreement.rawAgreement,
+    confirmed: states.filter(item => item.consensus === "confirmed").length,
+    rejected: states.filter(item => item.consensus === "rejected").length,
+    falsePositives: states.filter(item => item.consensus === "rejected").length,
+    unresolved: states.filter(item => item.labels.length >= 2 && item.consensus == null).length,
+    timestampVerifiedLabels: labels.filter(label => label.timestampVerified === true).length,
+    timestampDenominator: labels.length,
+    cohorts,
+    exclusions: {
+      insufficientIndependentLabels: states.filter(item => item.labels.length < 2).length,
+      uncertain: states.filter(item => item.uncertain).length,
+      oneToOneDisagreement: states.filter(item => item.disagreement && item.decided.length === 2).length,
+      unqualifiedOrWrongVersionLabels: labelHistory.length - eligible.length,
     },
   };
 }

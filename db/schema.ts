@@ -513,6 +513,8 @@ export const rlReviewCandidates = sqliteTable("rl_review_candidates", {
   frame: integer("frame"),
   observationJson: text("observation_json").notNull(),
   momentObjectKey: text("moment_object_key"),
+  reviewSetId: text("review_set_id"),
+  active: integer("active", { mode: "boolean" }).notNull().default(false),
   verdict: text("verdict").notNull().default("unreviewed"),
   timestampVerified: integer("timestamp_verified", { mode: "boolean" }),
   notes: text("notes"),
@@ -526,6 +528,7 @@ export const rlReviewCandidates = sqliteTable("rl_review_candidates", {
   index("rl_review_candidates_detector_verdict_idx").on(table.detectorId, table.verdict),
   index("rl_review_candidates_replay_idx").on(table.replayFingerprint),
   index("rl_review_candidates_moment_key_idx").on(table.momentObjectKey),
+  index("rl_review_candidates_set_active_idx").on(table.reviewSetId, table.active),
   index("rl_review_candidates_reviewed_at_idx").on(table.reviewedAt)
 ]);
 
@@ -537,6 +540,9 @@ export const rlReviewers = sqliteTable("rl_reviewers", {
   displayName: text("display_name"),
   qualification: text("qualification").notNull(),
   playlistQualificationsJson: text("playlist_qualifications_json").notNull().default("{}"),
+  platform: text("platform"),
+  qualificationNotes: text("qualification_notes"),
+  identityVerifiedAt: text("identity_verified_at"),
   status: text("status").notNull().default("pending"),
   approvedBy: text("approved_by"),
   approvedAt: text("approved_at"),
@@ -559,6 +565,9 @@ export const rlReviewLabels = sqliteTable("rl_review_labels", {
   reviewerScopeJson: text("reviewer_scope_json").notNull().default("{}"),
   verdict: text("verdict").notNull(),
   timestampVerified: integer("timestamp_verified", { mode: "boolean" }),
+  gameplayTruth: text("gameplay_truth"),
+  contextCorrect: integer("context_correct", { mode: "boolean" }),
+  coachingRelevance: text("coaching_relevance"),
   notes: text("notes"),
   labelSetVersion: text("label_set_version").notNull(),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
@@ -566,6 +575,28 @@ export const rlReviewLabels = sqliteTable("rl_review_labels", {
   index("rl_review_labels_candidate_idx").on(table.candidateId),
   index("rl_review_labels_reviewer_candidate_idx").on(table.reviewerId, table.candidateId),
   index("rl_review_labels_created_at_idx").on(table.createdAt)
+]);
+
+export const rlReviewImports = sqliteTable("rl_review_imports", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  importId: text("import_id").notNull(),
+  reviewSetId: text("review_set_id").notNull(),
+  queueSha256: text("queue_sha256").notNull(),
+  momentsSha256: text("moments_sha256").notNull(),
+  corpusManifestSha256: text("corpus_manifest_sha256").notNull(),
+  holdoutReportSha256: text("holdout_report_sha256").notNull(),
+  holdoutReproducibilityFingerprint: text("holdout_reproducibility_fingerprint").notNull(),
+  candidateCount: integer("candidate_count").notNull(),
+  replayCount: integer("replay_count").notNull(),
+  holdoutOverlapCount: integer("holdout_overlap_count").notNull().default(0),
+  objectPrefix: text("object_prefix").notNull(),
+  importedBy: text("imported_by").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("rl_review_imports_import_id_unique").on(table.importId),
+  uniqueIndex("rl_review_imports_set_id_unique").on(table.reviewSetId),
+  index("rl_review_imports_created_at_idx").on(table.createdAt)
 ]);
 
 export const detectorQualitySnapshots = sqliteTable("detector_quality_snapshots", {

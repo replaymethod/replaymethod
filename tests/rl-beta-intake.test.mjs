@@ -41,12 +41,18 @@ test("quality gate counts only current qualified independent review history", as
   assert.match(reviewPage, /qualifiedModes\.has\(candidate\.mode\)/);
   assert.match(reviewPage, /privateMomentKeys/);
   assert.match(reviewPage, /rlReviewLabels/);
-  assert.match(reviewPage, /Other reviewers’ decisions and aggregate verdicts remain hidden/);
+  assert.match(reviewPage, /detector output and every other reviewer remain hidden/);
+  assert.match(reviewPage, /eq\(rlReviewCandidates\.active, true\)/);
+  assert.doesNotMatch(reviewPage, /RL_REVIEW_MOMENTS\.json/);
+  assert.doesNotMatch(reviewPage, /ensureRlReviewQueueSeeded/);
   assert.match(reviewPage, /eq\(rlReviewLabels\.reviewerId, reviewer\.id\)/);
   assert.doesNotMatch(reviewPage, /detectorQualitySummary/);
   assert.match(reviewRoute, /requireRlReviewerMutation/);
   assert.match(reviewRoute, /access\.reviewer\.id/);
   assert.match(reviewRoute, /rl_review_labels/);
+  assert.match(reviewRoute, /already locked/);
+  assert.match(reviewRoute, /reviewerPlaylistScopes/);
+  assert.match(reviewRoute, /gameplay_truth/);
 });
 
 test("offline calibration follows the consented player identity", async () => {
@@ -70,4 +76,10 @@ test("owner review-queue import keeps the holdout split out of tuning", async ()
   assert.match(route, /Only the locked calibration split may enter the tuning review queue/);
   assert.match(route, /runtime\.BUCKET\.put/);
   assert.match(route, /moment_object_key/);
+  assert.match(route, /RL_PRIVATE_REVIEW_SET\.queueSha256/);
+  assert.match(route, /RL_PRIVATE_REVIEW_SET\.momentsSha256/);
+  assert.match(route, /candidateKeys\.size !== RL_PRIVATE_REVIEW_SET\.candidateCount/);
+  assert.match(route, /replayKeys\.size !== RL_PRIVATE_REVIEW_SET\.replayCount/);
+  assert.match(route, /holdout_overlap_count/);
+  assert.match(route, /UPDATE rl_review_candidates SET active = 0/);
 });
