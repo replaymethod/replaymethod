@@ -40,15 +40,19 @@ test("accepts only coarse allowlisted product measurement fields", () => {
 test("covers the requested funnel without sending product payloads", async () => {
   for (const event of [
     "hardstuck_select", "replay_selected", "validation_failed", "upload_started",
+    "upload_complete", "parse_complete", "mode_detected", "player_pick", "identity_captured",
+    "processing_started", "abstention", "evidence_viewed",
+    "calibration_start", "calibration_submit",
     "analysis_start", "analysis_submit", "analysis_completed", "feedback",
     "followup_started", "upgrade_intent", "checkout_started", "paid_activation",
   ]) assert.equal(productEvents.has(event), true, event);
 
-  const [client, route, landing, intake, quick, report, pricing, billing, history] = await Promise.all([
+  const [client, route, landing, intake, contribution, quick, report, pricing, billing, history] = await Promise.all([
     readFile(new URL("../lib/client-analytics.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/events/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/components/Landing.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/analyze/AnalyzeFlow.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/rocket-league-beta/ReplayContribution.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/components/QuickReplayStart.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/report/[publicId]/ReportClient.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/components/PricingLadder.tsx", import.meta.url), "utf8"),
@@ -58,9 +62,12 @@ test("covers the requested funnel without sending product payloads", async () =>
   assert.match(client, /\.catch\(\(\) => \{\}\)/);
   assert.doesNotMatch(client, /email|playerContext|publicId|feedbackText|replay(?:Name|File|Bytes|Payload)|notes|goal/);
   assert.match(route, /normalizeProductEvent/);
-  assert.match(landing, /hardstuck_select/);
+  assert.match(landing, /marcel_landing/);
   assert.match(intake, /replay_selected/);
   assert.match(intake, /second_match_submitted/);
+  assert.match(contribution, /calibration_start/);
+  assert.match(contribution, /replay_selected/);
+  assert.match(contribution, /calibration_submit/);
   assert.match(quick, /validation_failed/);
   assert.match(report, /analysis_completed/);
   assert.match(report, /upgrade_intent/);

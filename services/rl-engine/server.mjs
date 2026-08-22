@@ -9,11 +9,21 @@ export { PARSER_VERSION };
 export const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 export const ENGINE_VERSION = "rl-engine.v1";
 export const MINIMUM_TOKEN_LENGTH = 24;
+export const DEFAULT_JOB_TIMEOUT_MS = 80_000;
 
 class RequestContractError extends Error {
   constructor(code, publicMessage) {
     super(publicMessage);
     this.name = "RequestContractError";
+    this.code = code;
+    this.publicMessage = publicMessage;
+  }
+}
+
+class EngineTransientError extends Error {
+  constructor(code, publicMessage, internalMessage = publicMessage) {
+    super(internalMessage);
+    this.name = "EngineTransientError";
     this.code = code;
     this.publicMessage = publicMessage;
   }
@@ -64,13 +74,16 @@ async function readBody(request) {
 function clientError(response, error) {
   const inputError = error instanceof ReplayInputError;
   const contractError = error instanceof RequestContractError;
-  const known = inputError || contractError;
-  json(response, contractError ? 400 : inputError ? 422 : 500, {
+  const transientError = error instanceof EngineTransientError;
+  const known = inputError || contractError || transientError;
+  json(response, contractError ? 400 : inputError ? 422 : transientError ? 503 : 500, {
     kind: "blocked",
     code: known ? error.code : "rl_engine_failure",
     publicMessage: known ? error.publicMessage : "The replay engine failed safely. Your upload was not converted into coaching.",
     internalMessage: (error instanceof Error ? error.message : "Unknown replay engine failure.").slice(0, 1800),
-    retryable: !known,
+    candidatePlayers: inputError && Array.isArray(error.candidatePlayers) ? error.candidatePlayers : undefined,
+    replayContext: inputError && error.replayContext ? error.replayContext : undefined,
+    retryable: transientError || !known,
   });
 }
 
@@ -92,13 +105,20 @@ function maximumConcurrency(value) {
   return Number.isInteger(parsed) ? Math.min(8, Math.max(1, parsed)) : 1;
 }
 
+function jobTimeout(value) {
+  const parsed = Number(value ?? DEFAULT_JOB_TIMEOUT_MS);
+  return Number.isFinite(parsed) ? Math.min(115_000, Math.max(5_000, Math.round(parsed))) : DEFAULT_JOB_TIMEOUT_MS;
+}
+
 function replayWorkerError(payload) {
   if (payload?.name === "ReplayInputError" && typeof payload.code === "string") {
     const error = new ReplayInputError(
       payload.code,
       payload.publicMessage ?? "The replay could not be parsed safely.",
+      payload.message,
+      Array.isArray(payload.candidatePlayers) ? payload.candidatePlayers : [],
+      payload.replayContext ?? {},
     );
-    if (typeof payload.message === "string") error.message = payload.message;
     return error;
   }
   const error = new Error(
@@ -108,45 +128,124 @@ function replayWorkerError(payload) {
   return error;
 }
 
-export function processReplayInWorker({ operation, bytes, player, rank, publicOutputEnabled }) {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("./analysis-worker.mjs", import.meta.url), {
-      execArgv: [],
-    });
-    let settled = false;
+export function createReplayProcessor({ size = 1, timeoutMs = DEFAULT_JOB_TIMEOUT_MS } = {}) {
+  const workerCount = maximumConcurrency(size);
+  const deadlineMs = jobTimeout(timeoutMs);
+  const slots = [];
+  let sequence = 0;
+  let closed = false;
 
-    const finish = (callback, value) => {
-      if (settled) return;
-      settled = true;
-      callback(value);
-      void worker.terminate();
+  const failPending = (slot, error) => {
+    if (!slot.pending) return;
+    clearTimeout(slot.pending.timer);
+    slot.pending.reject(error);
+    slot.pending = null;
+    slot.busy = false;
+  };
+
+  const spawn = (slot) => {
+    if (closed) return;
+    const worker = new Worker(new URL("./analysis-worker.mjs", import.meta.url), { execArgv: [] });
+    slot.worker = worker;
+    slot.ready = false;
+    slot.busy = false;
+    worker.on("message", (message) => {
+      if (slot.worker !== worker) return;
+      if (message?.type === "ready") {
+        slot.ready = true;
+        return;
+      }
+      if (!slot.pending || message?.jobId !== slot.pending.jobId) return;
+      const pending = slot.pending;
+      clearTimeout(pending.timer);
+      slot.pending = null;
+      slot.busy = false;
+      if (message?.ok) pending.resolve(message.result);
+      else pending.reject(replayWorkerError(message?.error));
+    });
+    const replace = (error) => {
+      if (slot.worker !== worker) return;
+      slot.worker = null;
+      slot.ready = false;
+      failPending(slot, error);
+      if (!closed) spawn(slot);
     };
+    worker.once("error", (error) => replace(new EngineTransientError(
+      "rl_engine_worker_failed",
+      "The replay worker restarted safely. Your upload is preserved for an automatic retry.",
+      error instanceof Error ? error.message : "Replay worker failed.",
+    )));
+    worker.once("exit", (code) => replace(new EngineTransientError(
+      "rl_engine_worker_exited",
+      "The replay worker restarted safely. Your upload is preserved for an automatic retry.",
+      `Replay worker exited before returning a result (code ${code}).`,
+    )));
+  };
 
-    worker.once("message", (message) => {
-      if (message?.ok) finish(resolve, message.result);
-      else finish(reject, replayWorkerError(message?.error));
-    });
-    worker.once("error", (error) => finish(reject, error));
-    worker.once("exit", (code) => {
-      if (!settled) finish(reject, new Error(`Replay worker exited before returning a result (code ${code}).`));
-    });
+  for (let index = 0; index < workerCount; index += 1) {
+    const slot = { worker: null, ready: false, busy: false, pending: null };
+    slots.push(slot);
+    spawn(slot);
+  }
 
-    const replayBytes = new Uint8Array(bytes);
-    worker.postMessage(
-      { operation, bytes: replayBytes, player, rank, publicOutputEnabled },
-      [replayBytes.buffer],
-    );
-  });
+  const processReplay = ({ operation, bytes, player, rank, publicOutputEnabled }) => {
+    const slot = slots.find((candidate) => candidate.ready && !candidate.busy && candidate.worker);
+    if (!slot) return Promise.reject(new EngineTransientError(
+      "rl_engine_warming",
+      "The replay worker is warming up. Your upload is preserved for an automatic retry.",
+    ));
+    slot.busy = true;
+    const jobId = ++sequence;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        const worker = slot.worker;
+        failPending(slot, new EngineTransientError(
+          "rl_engine_job_timeout",
+          "The replay worker exceeded its safe processing window. Your upload is preserved for an automatic retry.",
+          `Replay processing exceeded ${deadlineMs}ms.`,
+        ));
+        slot.worker = null;
+        slot.ready = false;
+        if (worker) void worker.terminate();
+        if (!closed) spawn(slot);
+      }, deadlineMs);
+      timer.unref();
+      slot.pending = { jobId, resolve, reject, timer };
+      const replayBytes = new Uint8Array(bytes);
+      slot.worker.postMessage(
+        { jobId, operation, bytes: replayBytes, player, rank, publicOutputEnabled },
+        [replayBytes.buffer],
+      );
+    });
+  };
+
+  return {
+    processReplay,
+    isReady: () => !closed && slots.every((slot) => slot.ready && slot.worker),
+    close: async () => {
+      closed = true;
+      await Promise.all(slots.map(async (slot) => {
+        failPending(slot, new EngineTransientError("rl_engine_shutdown", "The replay worker is restarting."));
+        const worker = slot.worker;
+        slot.worker = null;
+        slot.ready = false;
+        if (worker) await worker.terminate();
+      }));
+    },
+  };
 }
 
-export function createServer({
-  token = process.env.RL_ENGINE_TOKEN,
-  maxConcurrency = process.env.RL_ENGINE_MAX_CONCURRENCY,
-  publicOutputEnabled = process.env.RL_PUBLIC_DETECTORS_ENABLED === "true",
-  processReplay = processReplayInWorker,
-} = {}) {
+export function createServer(options = {}) {
+  const token = options.token ?? process.env.RL_ENGINE_TOKEN;
+  const maxConcurrency = options.maxConcurrency ?? process.env.RL_ENGINE_MAX_CONCURRENCY;
+  const publicOutputEnabled = options.publicOutputEnabled ?? process.env.RL_PUBLIC_DETECTORS_ENABLED === "true";
   const concurrencyLimit = maximumConcurrency(maxConcurrency);
-  const ready = typeof token === "string" && token.length >= MINIMUM_TOKEN_LENGTH && token.length <= 512;
+  const processor = options.processReplay ? null : createReplayProcessor({
+    size: concurrencyLimit,
+    timeoutMs: options.jobTimeoutMs ?? process.env.RL_ENGINE_JOB_TIMEOUT_MS,
+  });
+  const processReplay = options.processReplay ?? processor.processReplay;
+  const configured = typeof token === "string" && token.length >= MINIMUM_TOKEN_LENGTH && token.length <= 512;
   let activeRequests = 0;
   const server = createHttpServer(async (request, response) => {
     const url = new URL(request.url ?? "/", "http://rl-engine.internal");
@@ -154,6 +253,7 @@ export function createServer({
       return json(response, 200, { ok: true, service: "replay-method-rl-engine", status: "live" });
     }
     if (request.method === "GET" && url.pathname === "/healthz") {
+      const ready = configured && (processor?.isReady() ?? true);
       return json(response, ready ? 200 : 503, {
         ok: ready,
         service: "replay-method-rl-engine",
@@ -186,7 +286,7 @@ export function createServer({
     try {
       requestId = requiredHeader(request, "x-replay-method-request", 32, "request_id_required", "The analysis request identifier was missing.");
       if (!/^[a-f0-9]{32}$/.test(requestId)) throw new RequestContractError("request_id_invalid", "The analysis request identifier was invalid.");
-      const player = requiredHeader(request, "x-replay-method-player", 160, "subject_player_required", "Add the exact in-game player name before uploading.");
+      const player = requiredHeader(request, "x-replay-method-player", 160, "subject_player_required", "Choose one player from the parsed replay.", { optional: true });
       const rank = requiredHeader(request, "x-replay-method-rank", 80, "rank_invalid", "The submitted rank metadata was invalid.", { optional: true });
       activeRequests += 1;
       counted = true;
@@ -215,6 +315,8 @@ export function createServer({
   server.keepAliveTimeout = 5_000;
   server.maxHeadersCount = 32;
   server.maxRequestsPerSocket = 100;
+  server.once("close", () => { void processor?.close(); });
+  server.once("error", () => { void processor?.close(); });
   return server;
 }
 

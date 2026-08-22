@@ -11,7 +11,7 @@ const replayPath = String.raw`%USERPROFILE%\Documents\My Games\Rocket League\TAG
 
 export default function ReplayUploadPage() {
   return <main className="replay-upload-page">
-    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link><Link href="/rocket-league#replay-upload">Back to upload</Link></nav>
+    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><Link href="/rocket-league#replay-upload">Back to upload</Link></nav>
     <section className="replay-upload-hero shell">
       <div className="replay-upload-copy">
         <span className="kicker">ROCKET LEAGUE · WINDOWS PC</span>
@@ -29,7 +29,7 @@ export default function ReplayUploadPage() {
         <article><i>02</i><div><span>PASTE THE FOLDER</span><h3>Use the replay location</h3><code>{replayPath}</code><p>Paste the path into Run, then press Enter. The <strong>Demos</strong> folder contains saved replay files.</p></div></article>
         <article><i>03</i><div><span>CHOOSE ONE MATCH</span><h3>Sort by “Date modified”</h3><p>Pick a recent ranked match that represents the problem you want to fix. Leave the file in its original <strong>.replay</strong> format.</p></div></article>
       </div>
-      <div className="replay-folder-note"><i>?</i><div><b>Folder empty?</b><p>Save a replay in Rocket League after a completed match, then open this folder again. Console replay export is not supported by the automated beta.</p></div></div>
+      <div className="replay-folder-note"><i>?</i><div><b>Folder empty?</b><p>After the final scoreboard, use Rocket League&apos;s <strong>Save Replay</strong> action before leaving the post-match screen, then open this folder again. Console replay export is not supported by the automated beta.</p></div></div>
     </section>
 
     <section className="replay-next shell">

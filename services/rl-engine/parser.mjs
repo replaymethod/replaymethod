@@ -17,15 +17,21 @@ export const NORMALIZER_VERSION = "rocket-league-normalizer@0.2.0";
 let initialized = false;
 
 export class ReplayInputError extends Error {
-  constructor(code, publicMessage, internalMessage = publicMessage) {
+  constructor(code, publicMessage, internalMessage = publicMessage, candidatePlayers = [], replayContext = {}) {
     super(internalMessage);
     this.name = "ReplayInputError";
     this.code = code;
     this.publicMessage = publicMessage;
+    this.candidatePlayers = [...new Set(candidatePlayers.filter((name) => typeof name === "string" && name.trim()).map((name) => name.trim()))].slice(0, 8);
+    this.replayContext = {
+      mode: text(replayContext?.mode) || null,
+      gameVersion: text(replayContext?.gameVersion) || null,
+      occurredAt: text(replayContext?.occurredAt) || null,
+    };
   }
 }
 
-function initializeParser() {
+export function initializeParser() {
   if (initialized) return;
   const wasmUrl = new URL(
     "rl_replay_subtr_actor_bg.wasm",
@@ -186,11 +192,14 @@ function resolvePlayer(meta, requestedIdentity) {
       "subject_player_not_found",
       `We parsed the replay but could not find “${candidates[0] || "the submitted player"}”. Use the exact in-game name shown in the match.`,
       `Requested ${JSON.stringify(candidates)}; replay players: ${players.map((player) => player.name).join(", ")}`,
+      players.map((player) => player.name),
     );
   }
   throw new ReplayInputError(
     "subject_player_ambiguous",
     "More than one replay player matched that identity. Add the exact platform ID.",
+    `Requested ${JSON.stringify(candidates)}; matching replay players: ${exact.map((player) => player.name).join(", ")}`,
+    exact.map((player) => player.name),
   );
 }
 
@@ -223,6 +232,20 @@ export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
   const info = plain(get_replay_info(data));
   const metaResult = plain(get_replay_meta(data, ["CurrentTime", "SecondsRemaining"], ["PlayerBoost", "PlayerBallDistance"]));
   const normalizedMeta = normalizeReplayMetadata(metaResult, info);
+  if (!text(requestedIdentity)) {
+    const players = normalizedMeta.players.map((player) => player.name);
+    throw new ReplayInputError(
+      "subject_player_required",
+      "We read the replay. Choose which player is you, then add that playlist's current rank.",
+      `Replay-first identity resolution found ${players.length} players.`,
+      players,
+      {
+        mode: normalizedMeta.mode,
+        gameVersion: normalizedMeta.gameVersion,
+        occurredAt: normalizedMeta.occurredAt,
+      },
+    );
+  }
   const { player, players } = resolvePlayer(normalizedMeta.meta, requestedIdentity);
   const ndarray = plain(get_ndarray_with_info(
     data,

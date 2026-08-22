@@ -12,6 +12,65 @@ export const waitlist = sqliteTable("waitlist", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
 }, table => [uniqueIndex("waitlist_email_game_unique").on(table.email, table.game)]);
 
+export const rlBetaSubmissions = sqliteTable("rl_beta_submissions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  email: text("email").notNull(),
+  playerName: text("player_name").notNull(),
+  rankCohort: text("rank_cohort").notNull(),
+  mode: text("mode").notNull().default("unknown"),
+  replayFingerprint: text("replay_fingerprint").notNull(),
+  fileKey: text("file_key").notNull(),
+  originalFileName: text("original_file_name").notNull(),
+  fileSize: integer("file_size").notNull(),
+  status: text("status").notNull().default("received"),
+  parserStatus: text("parser_status").notNull().default("pending"),
+  parserVersion: text("parser_version"),
+  parsedMode: text("parsed_mode"),
+  attributionStatus: text("attribution_status").notNull().default("pending"),
+  usabilityStatus: text("usability_status").notNull().default("pending"),
+  processingErrorCode: text("processing_error_code"),
+  processingMetadataJson: text("processing_metadata_json"),
+  reviewState: text("review_state").notNull().default("not_started"),
+  detectorSetVersion: text("detector_set_version"),
+  source: text("source").notNull().default("direct"),
+  campaign: text("campaign"),
+  consentVersion: text("consent_version").notNull(),
+  consentAt: text("consent_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  rightsConfirmedAt: text("rights_confirmed_at"),
+  updatesConsentAt: text("updates_consent_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("rl_beta_submissions_public_id_unique").on(table.publicId),
+  uniqueIndex("rl_beta_submissions_replay_email_unique").on(table.replayFingerprint, table.email),
+  index("rl_beta_submissions_email_created_idx").on(table.email, table.createdAt),
+  index("rl_beta_submissions_status_created_idx").on(table.status, table.createdAt)
+]);
+
+/**
+ * Product truth for each Rocket League playlist and rank cohort. A supported
+ * parser is not the same thing as validated coaching, so each layer is stored
+ * independently and can be queried without inferring capability from flags.
+ */
+export const rlCapabilities = sqliteTable("rl_capabilities", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  mode: text("mode").notNull(),
+  rankCohort: text("rank_cohort").notNull(),
+  uploadState: text("upload_state").notNull(),
+  parseState: text("parse_state").notNull(),
+  processState: text("process_state").notNull(),
+  detectorState: text("detector_state").notNull(),
+  coachingState: text("coaching_state").notNull(),
+  reason: text("reason").notNull(),
+  sourceVersion: text("source_version").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("rl_capabilities_mode_cohort_unique").on(table.mode, table.rankCohort),
+  index("rl_capabilities_coaching_state_idx").on(table.coachingState)
+]);
+
 export const funnelEvents = sqliteTable("funnel_events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   visitorId: text("visitor_id").notNull(),
@@ -33,6 +92,7 @@ export const analysisRequests = sqliteTable("analysis_requests", {
   publicId: text("public_id").notNull(),
   email: text("email").notNull(),
   game: text("game").notNull(),
+  platform: text("platform").notNull().default("pc"),
   currentRank: text("current_rank").notNull(),
   targetRank: text("target_rank"),
   playerContext: text("player_context"),
@@ -401,6 +461,7 @@ export const rlReviewCandidates = sqliteTable("rl_review_candidates", {
   timestampSeconds: real("timestamp_seconds"),
   frame: integer("frame"),
   observationJson: text("observation_json").notNull(),
+  momentObjectKey: text("moment_object_key"),
   verdict: text("verdict").notNull().default("unreviewed"),
   timestampVerified: integer("timestamp_verified", { mode: "boolean" }),
   notes: text("notes"),
@@ -413,14 +474,38 @@ export const rlReviewCandidates = sqliteTable("rl_review_candidates", {
   uniqueIndex("rl_review_candidates_key_unique").on(table.candidateKey),
   index("rl_review_candidates_detector_verdict_idx").on(table.detectorId, table.verdict),
   index("rl_review_candidates_replay_idx").on(table.replayFingerprint),
+  index("rl_review_candidates_moment_key_idx").on(table.momentObjectKey),
   index("rl_review_candidates_reviewed_at_idx").on(table.reviewedAt)
+]);
+
+export const rlReviewers = sqliteTable("rl_reviewers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  userId: text("user_id").notNull(),
+  email: text("email").notNull(),
+  displayName: text("display_name"),
+  qualification: text("qualification").notNull(),
+  playlistQualificationsJson: text("playlist_qualifications_json").notNull().default("{}"),
+  status: text("status").notNull().default("pending"),
+  approvedBy: text("approved_by"),
+  approvedAt: text("approved_at"),
+  revokedAt: text("revoked_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("rl_reviewers_public_id_unique").on(table.publicId),
+  uniqueIndex("rl_reviewers_user_id_unique").on(table.userId),
+  uniqueIndex("rl_reviewers_email_unique").on(table.email),
+  index("rl_reviewers_status_idx").on(table.status)
 ]);
 
 export const rlReviewLabels = sqliteTable("rl_review_labels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   candidateId: integer("candidate_id").notNull().references(() => rlReviewCandidates.id),
+  reviewerId: integer("reviewer_id").references(() => rlReviewers.id),
   reviewerEmail: text("reviewer_email").notNull(),
   reviewerQualification: text("reviewer_qualification").notNull().default("unverified"),
+  reviewerScopeJson: text("reviewer_scope_json").notNull().default("{}"),
   verdict: text("verdict").notNull(),
   timestampVerified: integer("timestamp_verified", { mode: "boolean" }),
   notes: text("notes"),
@@ -428,6 +513,7 @@ export const rlReviewLabels = sqliteTable("rl_review_labels", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
 }, table => [
   index("rl_review_labels_candidate_idx").on(table.candidateId),
+  index("rl_review_labels_reviewer_candidate_idx").on(table.reviewerId, table.candidateId),
   index("rl_review_labels_created_at_idx").on(table.createdAt)
 ]);
 

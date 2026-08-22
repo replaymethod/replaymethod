@@ -11,8 +11,9 @@ Configure these as server-only secrets or variables:
 - `STRIPE_MODE=test`
 - `STRIPE_RESTRICTED_KEY`: a restricted test key (`rk_test_…`)
 - `STRIPE_WEBHOOK_SECRET`: the signing secret (`whsec_…`) for `/api/billing/webhook`
-- `STRIPE_PRICE_QUARTERLY`: recurring USD Price ID for $27 every three months
-- `STRIPE_PRICE_MONTHLY`: recurring USD Price ID for $12 monthly
+- `STRIPE_PRICE_QUARTERLY`: recurring USD Price ID for $17.99 every three months
+- `STRIPE_PRICE_MONTHLY`: recurring USD Price ID for $6.99 monthly
+- `STRIPE_PRICE_SEMIANNUAL`: recurring USD Price ID for $28.99 every six months
 - `PUBLIC_SITE_URL`: canonical HTTPS origin used by Checkout and Portal redirects
 
 The application rejects a live key while `STRIPE_MODE=test` and rejects a test key while `STRIPE_MODE=live`. Do not put any Stripe secret in a `NEXT_PUBLIC_` variable.
@@ -30,12 +31,15 @@ The webhook handler also retrieves Subscriptions after lifecycle events. Expand 
 
 ## Test Products and Prices
 
-Create one product for Replay Method beta access and two recurring Prices:
+Create one product for Replay Method beta access and three recurring Prices:
 
-1. Monthly: USD 12.00, recurring every month.
-2. 3-month cycle: USD 27.00, recurring every three months.
+1. Monthly: USD 6.99, recurring every month.
+2. 3-month cycle: USD 17.99, recurring every three months.
+3. 6-month block: USD 28.99, recurring every six months.
 
-Put their `price_…` IDs in the environment variables above. The server accepts only the `monthly` and `quarterly` plan keys and maps them to these trusted Price IDs; the browser never supplies an amount.
+Put their `price_…` IDs in the environment variables above. The server accepts
+only the `monthly`, `quarterly` and `semiannual` plan keys and maps them to these trusted Price
+IDs; the browser never supplies an amount.
 
 ## Webhook endpoint
 
@@ -68,4 +72,4 @@ Before any separately authorized live-mode activation:
 6. Confirm four completed analyses are allowed per 30-day window, while failures and abstentions release their reservation.
 7. Confirm an unverified browser cannot buy for or use another player's paid entitlement by entering their email.
 
-Tax collection is intentionally not enabled. Seller identity and tax registrations must be resolved before enabling Stripe Tax or live billing.
+Tax collection is intentionally not enabled. Production seller disclosure, Stripe tax configuration, launch-market review and a separate live-billing approval remain required before enabling Stripe Tax or live billing.

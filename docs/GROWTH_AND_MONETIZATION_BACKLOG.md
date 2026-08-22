@@ -30,12 +30,13 @@ and consistent with the evidence-first product promise.
 
 - Preserve a useful limited free entry point and measure conversion after a
   successful analysis.
-- Compare monthly, three-month, six-month and annual commitments against real
-  competitors, processing cost and retention data before choosing prices.
-- Test annual-first presentation only as a transparent value comparison. Show
-  total charge, effective monthly price, renewal and cancellation clearly.
-- Candidate numbers such as $15 monthly, $25/3 months, $45/6 months and $70/year
-  are unvalidated inputs, not approved prices.
+- Compare the approved $6.99 monthly, $17.99 three-month and $28.99 six-month beta offers against
+  real conversion, retention, refund, utilization, support and contribution data.
+- Reconsider six- or twelve-month commitments only after retention supports the
+  promise; show total charge, effective monthly price, renewal and cancellation
+  clearly in any future test.
+- Price changes remain hypotheses until cohort data shows their effect on payer
+  conversion, renewal and net revenue.
 - Never guarantee rank improvement or use refund wording with hidden escape
   clauses. Any guarantee must have plain, fair, measurable conditions and a
   modeled loss ceiling.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { buildReplayEvidence, inspectReplayRoster } from "../services/rl-engine/parser.mjs";
 
@@ -118,7 +118,7 @@ if (!targets.length) {
   }
 
   const artifact = {
-    schemaVersion: "rocket-league-review-moments.v1",
+    schemaVersion: "rocket-league-review-moments.v2",
     sourceQueueVersion: queue.schemaVersion ?? null,
     generatedAt: new Date().toISOString(),
     privacy: "Player names and platform identifiers removed; coordinates rounded; owner-only review use.",
@@ -136,6 +136,7 @@ if (!targets.length) {
   const destination = resolve(output);
   mkdirSync(dirname(destination), { recursive: true });
   writeFileSync(destination, json);
+  chmodSync(destination, 0o600);
   console.error(`Wrote ${artifact.candidateCount} private review moments from ${artifact.replayCount} replays to ${destination}`);
   if (missingReplays.length || artifact.missingCandidateCount) process.exitCode = 2;
 }

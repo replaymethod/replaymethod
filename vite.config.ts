@@ -5,6 +5,15 @@ import { sites } from "./build/sites-vite-plugin";
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
+const localBooleanBindings = [
+  "BILLING_CHECKOUT_ENABLED",
+  "TRANSACTIONAL_EMAIL_ENABLED",
+  "RL_ENGINE_ENABLED",
+  "RL_PUBLIC_DETECTORS_ENABLED",
+  "RL_CALIBRATION_INTAKE_ENABLED",
+  "RIOT_INGESTION_ENABLED",
+  "BACKGROUND_PROCESSING_ENABLED",
+] as const;
 
 const { d1, r2 } = hostingConfig;
 
@@ -14,6 +23,10 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 const localBindingConfig = {
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
+  vars: {
+    REPLAYMETHOD_E2E_FIXTURES: process.env.REPLAYMETHOD_E2E_FIXTURES === "true" ? "true" : "false",
+    ...Object.fromEntries(localBooleanBindings.map(key => [key, process.env[key] === "true" ? "true" : "false"])),
+  },
   d1_databases: d1
     ? [
         {

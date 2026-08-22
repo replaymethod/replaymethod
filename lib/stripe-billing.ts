@@ -1,8 +1,6 @@
 import type Stripe from "stripe";
 import { PAYMENT_GRACE_MS } from "./entitlement-policy.mjs";
-import { planForPrice, stripeObjectId, type PaidPlan } from "./stripe";
-
-type PriceMap = Record<PaidPlan, string>;
+import { planForPrice, stripeObjectId, type PriceMap } from "./stripe";
 
 function iso(seconds: number | null | undefined) {
   return seconds == null ? null : new Date(seconds * 1000).toISOString();

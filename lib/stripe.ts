@@ -1,7 +1,8 @@
 import Stripe from "stripe";
 
-export const STRIPE_API_VERSION = "2026-06-24.dahlia" as const;
-export type PaidPlan = "quarterly" | "monthly";
+export const STRIPE_API_VERSION = "2026-07-29.dahlia" as const;
+export type PaidPlan = "monthly" | "quarterly" | "semiannual";
+export type PriceMap = Partial<Record<PaidPlan, string>>;
 
 type StripeEnvironment = {
   STRIPE_MODE?: string;
@@ -9,13 +10,17 @@ type StripeEnvironment = {
   STRIPE_WEBHOOK_SECRET?: string;
   STRIPE_PRICE_QUARTERLY?: string;
   STRIPE_PRICE_MONTHLY?: string;
+  STRIPE_PRICE_SEMIANNUAL?: string;
+  STRIPE_AUTOMATIC_TAX_ENABLED?: string;
+  STRIPE_TAX_REGISTRATION_CONFIRMED?: string;
+  STRIPE_MANAGED_PAYMENTS_ENABLED?: string;
   PUBLIC_SITE_URL?: string;
 };
 
 export class BillingConfigurationError extends Error {}
 
 export function isPaidPlan(value: unknown): value is PaidPlan {
-  return value === "quarterly" || value === "monthly";
+  return value === "monthly" || value === "quarterly" || value === "semiannual";
 }
 
 export async function stripeEnvironment() {
@@ -43,10 +48,14 @@ export async function billingConfiguration() {
   const env = await stripeEnvironment();
   const quarterly = env.STRIPE_PRICE_QUARTERLY?.trim();
   const monthly = env.STRIPE_PRICE_MONTHLY?.trim();
+  const semiannual = env.STRIPE_PRICE_SEMIANNUAL?.trim();
   if (!quarterly || !monthly) throw new BillingConfigurationError("Paid plan prices are not configured yet.");
   return {
     stripe: await stripeClient(),
-    prices: { quarterly, monthly } satisfies Record<PaidPlan, string>,
+    prices: { monthly, quarterly, ...(semiannual ? { semiannual } : {}) } satisfies PriceMap,
+    automaticTaxEnabled: env.STRIPE_AUTOMATIC_TAX_ENABLED?.trim() === "true"
+      && env.STRIPE_TAX_REGISTRATION_CONFIRMED?.trim() === "true",
+    managedPaymentsEnabled: env.STRIPE_MANAGED_PAYMENTS_ENABLED?.trim() === "true",
     siteUrl: safeSiteUrl(env.PUBLIC_SITE_URL),
     webhookSecret: env.STRIPE_WEBHOOK_SECRET?.trim() || "",
   };
@@ -63,9 +72,10 @@ function safeSiteUrl(value?: string) {
   }
 }
 
-export function planForPrice(priceId: string, prices: Record<PaidPlan, string>): PaidPlan | "unknown" {
+export function planForPrice(priceId: string, prices: PriceMap): PaidPlan | "unknown" {
   if (priceId === prices.quarterly) return "quarterly";
   if (priceId === prices.monthly) return "monthly";
+  if (priceId === prices.semiannual) return "semiannual";
   return "unknown";
 }
 

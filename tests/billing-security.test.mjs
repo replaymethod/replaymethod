@@ -7,6 +7,7 @@ const webhookPath = new URL("../app/api/billing/webhook/route.ts", import.meta.u
 const schemaPath = new URL("../db/schema.ts", import.meta.url);
 const billingProjectionPath = new URL("../lib/stripe-billing.ts", import.meta.url);
 const pricingPath = new URL("../app/components/PricingLadder.tsx", import.meta.url);
+const stripePath = new URL("../lib/stripe.ts", import.meta.url);
 
 test("checkout trusts server Price IDs and enforces authenticated same-origin writes", async () => {
   const source = await readFile(checkoutPath, "utf8");
@@ -14,14 +15,51 @@ test("checkout trusts server Price IDs and enforces authenticated same-origin wr
   assert.match(source, /authenticatedPlayer\(request, db\)/);
   assert.match(source, /payload\.adultPurchaser !== true/);
   assert.match(source, /config\.prices\[payload\.plan\]/);
+  assert.match(source, /managedPaymentsEnabled \? \{ managed_payments: \{ enabled: true \} \} : \{\}/);
+  assert.match(source, /automaticTaxEnabled \? \{ automatic_tax: \{ enabled: true \} \} : \{\}/);
+  assert.doesNotMatch(source, /customer_update/);
   assert.doesNotMatch(source, /payment_method_types/);
-  assert.doesNotMatch(source, /automatic_tax/);
 });
 
-test("Riot request-only pricing cannot enter paid Checkout", async () => {
+test("automatic tax fails closed until both tax switches are explicit", async () => {
+  const source = await readFile(stripePath, "utf8");
+  assert.match(source, /STRIPE_AUTOMATIC_TAX_ENABLED/);
+  assert.match(source, /STRIPE_TAX_REGISTRATION_CONFIRMED/);
+  assert.match(source, /STRIPE_AUTOMATIC_TAX_ENABLED\?\.trim\(\) === "true"/);
+  assert.match(source, /STRIPE_TAX_REGISTRATION_CONFIRMED\?\.trim\(\) === "true"/);
+});
+
+test("closed or Riot request-only pricing cannot enter paid Checkout", async () => {
   const source = await readFile(pricingPath, "utf8");
-  assert.match(source, /disabled=\{requestOnly \|\| loading !== null\}/);
+  assert.match(source, /disabled=\{requestOnly \|\| !checkoutOpen \|\| loading !== null\}/);
   assert.match(source, /Official access required first/);
+  assert.match(source, /Paid beta opens after detector validation/);
+});
+
+test("all displayed paid durations map only to server-owned Stripe Price IDs", async () => {
+  const source = await readFile(stripePath, "utf8");
+  for (const plan of ["monthly", "quarterly", "semiannual"]) {
+    assert.match(source, new RegExp(`value === "${plan}"`));
+    assert.match(source, new RegExp(`prices\\.${plan}`));
+  }
+  assert.match(source, /satisfies PriceMap/);
+  const checkout = await readFile(checkoutPath, "utf8");
+  assert.match(checkout, /const priceId = config\.prices\[payload\.plan\]/);
+  assert.match(checkout, /if \(!priceId\) throw new BillingConfigurationError/);
+});
+
+test("pricing leads with free proof and offers one, three, and six month paid cadences", async () => {
+  const source = await readFile(pricingPath, "utf8");
+  const orderedPlans = ["monthly", "quarterly", "semiannual"];
+  const positions = orderedPlans.map(plan => source.indexOf(`key: "${plan}"`));
+  assert.ok(positions.every(position => position >= 0));
+  assert.deepEqual([...positions].sort((a, b) => a - b), positions);
+  for (const price of ["$6.99", "$17.99", "$28.99", "$0"]) assert.match(source, new RegExp(`\\${price}`));
+  assert.doesNotMatch(source, /key: "annual"/);
+  assert.match(source, /useState<PlanKey>\("free"\)/);
+  assert.match(source, /LOWEST COMMITMENT/);
+  assert.match(source, /LOWEST MONTHLY · SAVE 31%/);
+  assert.doesNotMatch(source, /MOST POPULAR/i);
 });
 
 test("webhooks require Stripe's signature over the raw body", async () => {

@@ -41,20 +41,20 @@ async function processDueRetries(env: Env, limit = 5) {
     env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
       updated_at = CURRENT_TIMESTAMP WHERE status = 'reserved' AND analysis_request_id IN (
         SELECT analysis_request_id FROM analysis_jobs WHERE status = 'running'
-          AND updated_at <= datetime('now', '-10 minutes') AND attempts >= max_attempts
+          AND updated_at <= datetime('now', '-3 minutes') AND attempts >= max_attempts
       )`),
     env.DB.prepare(`UPDATE analysis_requests SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id IN (
       SELECT analysis_request_id FROM analysis_jobs WHERE status = 'running'
-        AND updated_at <= datetime('now', '-10 minutes') AND attempts >= max_attempts
+        AND updated_at <= datetime('now', '-3 minutes') AND attempts >= max_attempts
     )`),
     env.DB.prepare(`UPDATE analysis_jobs SET status = 'failed', stage = 'failed', stage_label = 'Interrupted analysis needs attention',
       error_code = 'stale_running_lease', error_message = 'The prior worker stopped before completing this analysis.',
       next_retry_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE status = 'running'
-        AND updated_at <= datetime('now', '-10 minutes') AND attempts >= max_attempts`),
+        AND updated_at <= datetime('now', '-3 minutes') AND attempts >= max_attempts`),
     env.DB.prepare(`UPDATE analysis_jobs SET status = 'retry', stage = 'retry', stage_label = 'Interrupted analysis recovered',
       error_code = 'stale_running_lease', error_message = 'The prior worker stopped before completing this analysis.',
       next_retry_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE status = 'running'
-        AND updated_at <= datetime('now', '-10 minutes') AND attempts < max_attempts`),
+        AND updated_at <= datetime('now', '-3 minutes') AND attempts < max_attempts`),
   ]);
   const due = await env.DB.prepare(`SELECT public_id FROM analysis_jobs
     WHERE (status = 'queued' AND updated_at <= datetime('now', '-1 minute'))
@@ -107,6 +107,7 @@ const worker = {
     // from the persistent analysis_jobs table.
     const schedulesAnalysis = request.method === "POST" && (
       (url.pathname === "/api/analyses" && response.status === 201) ||
+      (/^\/api\/analyses\/[a-f0-9]{32}$/.test(url.pathname) && response.ok) ||
       (/^\/api\/admin\/analyses\/\d+\/retry$/.test(url.pathname) && response.ok)
     );
     if (schedulesAnalysis) {
@@ -124,11 +125,37 @@ const worker = {
     if (request.method === "GET" && /^\/api\/analyses\/[a-f0-9]{32}$/.test(url.pathname) && response.ok) {
       try {
         const body = await response.clone().json() as {
-          processing?: { status?: string; nextRetryAt?: string | null; jobPublicId?: string };
+          processing?: { status?: string; nextRetryAt?: string | null; jobPublicId?: string; updatedAt?: string };
         };
         const processing = body.processing;
         if (processing?.status === "retry" && processing.jobPublicId && processing.nextRetryAt && new Date(processing.nextRetryAt) <= new Date()) {
           ctx.waitUntil(processAnalysisJob(processing.jobPublicId, env));
+        } else if (processing?.status === "running" && processing.jobPublicId && processing.updatedAt && Date.now() - new Date(`${processing.updatedAt}Z`).getTime() >= 180_000) {
+          ctx.waitUntil((async () => {
+            const exhausted = await env.DB.prepare(`UPDATE analysis_jobs SET status = 'failed', stage = 'failed',
+              stage_label = 'Analysis engine did not respond', error_code = 'stale_running_lease',
+              error_message = 'The analysis engine did not complete within the recovery window.', next_retry_at = NULL,
+              updated_at = CURRENT_TIMESTAMP WHERE public_id = ? AND status = 'running'
+              AND updated_at <= datetime('now', '-3 minutes') AND attempts >= max_attempts`).bind(processing.jobPublicId).run();
+            if (exhausted.meta.changes) {
+              await env.DB.batch([
+                env.DB.prepare(`UPDATE analysis_requests SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id IN (
+                  SELECT analysis_request_id FROM analysis_jobs WHERE public_id = ?
+                )`).bind(processing.jobPublicId),
+                env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
+                  updated_at = CURRENT_TIMESTAMP WHERE status = 'reserved' AND analysis_request_id IN (
+                    SELECT analysis_request_id FROM analysis_jobs WHERE public_id = ?
+                  )`).bind(processing.jobPublicId),
+              ]);
+              return;
+            }
+            const recovered = await env.DB.prepare(`UPDATE analysis_jobs SET status = 'retry', stage = 'blocked',
+              stage_label = 'Restarting interrupted analysis', error_code = 'stale_running_lease',
+              error_message = 'The prior worker stopped before completing this analysis.', next_retry_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP WHERE public_id = ? AND status = 'running'
+              AND updated_at <= datetime('now', '-3 minutes') AND attempts < max_attempts`).bind(processing.jobPublicId).run();
+            if (recovered.meta.changes) await processAnalysisJob(processing.jobPublicId, env);
+          })());
         }
       } catch (error) {
         console.error("could not wake analysis retry", { code: error instanceof Error ? error.name : "unknown_error" });

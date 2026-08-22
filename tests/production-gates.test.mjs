@@ -1,0 +1,64 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const read = path => readFile(new URL(path, import.meta.url), "utf8");
+
+test("Rocket League intake fails closed before upload storage", async () => {
+  const route = await read("../app/api/analyses/route.ts");
+  const gate = route.indexOf('game === "rocket-league"');
+  const storage = route.indexOf("bucket.put");
+  assert.ok(gate > -1);
+  assert.ok(route.includes("RL_ENGINE_ENABLED"));
+  assert.ok(route.includes("status: 503"));
+  assert.ok(gate < storage, "engine gate must run before the replay is stored");
+});
+
+test("production landing opens replay processing independently from detector publication", async () => {
+  const landing = await read("../app/components/Landing.tsx");
+  const home = await read("../app/page.tsx");
+  assert.match(home, /RL_ENGINE_ENABLED/);
+  assert.doesNotMatch(home, /RL_PUBLIC_DETECTORS_ENABLED/);
+  assert.match(home, /RL_CALIBRATION_INTAKE_ENABLED/);
+  assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
+  assert.match(landing, /<QuickReplayStart placement="marcel_hero"/);
+  assert.match(landing, /engineOpen \? <QuickReplayStart/);
+  assert.match(landing, /Stop grinding blind/);
+  assert.doesNotMatch(landing, /Choose my game|Contribute one replay/);
+});
+
+test("calibration collection is independently gated before private storage", async () => {
+  const [route, page, controls] = await Promise.all([
+    read("../app/api/rl-beta-submissions/route.ts"),
+    read("../app/rocket-league-beta/page.tsx"),
+    read("../lib/subsystem-controls.mjs"),
+  ]);
+  const gate = route.indexOf("RL_CALIBRATION_INTAKE_ENABLED");
+  const storage = route.indexOf("BUCKET.put");
+  assert.ok(gate > -1 && storage > gate);
+  assert.match(route, /calibrationConsent/);
+  assert.match(route, /rightsConfirmed/);
+  assert.match(route, /crypto\.subtle\.digest\("SHA-256"/);
+  assert.match(route, /rl-calibration\/\$\{publicId\}/);
+  assert.doesNotMatch(route, /rl-calibration\/\$\{email\}/);
+  assert.match(page, /subsystemEnabled/);
+  assert.match(controls, /rocketLeagueCalibrationIntake/);
+});
+
+test("paid checkout is coupled to the complete product-readiness gate", async () => {
+  const home = await read("../app/page.tsx");
+  const game = await read("../app/[game]/page.tsx");
+  const checkout = await read("../app/api/billing/checkout/route.ts");
+  for (const source of [home, game, checkout]) assert.match(source, /paidCheckoutReadiness/);
+});
+
+test("verified player data controls require auth, origin and explicit deletion confirmation", async () => {
+  const route = await read("../app/api/player/data/route.ts");
+  assert.match(route, /authenticatedPlayer\(request, database\)/);
+  assert.match(route, /if \(!isSameOrigin\(request\)\)/);
+  assert.match(route, /payload\.confirmation !== "DELETE MY DATA"/);
+  assert.match(route, /activeSubscriptionStatuses\.has/);
+  assert.match(route, /await bucket\.delete\(objectKeys\)/);
+  assert.match(route, /DELETE FROM player_sessions/);
+  assert.doesNotMatch(route, /stripe_customer_id AS/);
+});
