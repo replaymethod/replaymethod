@@ -7,7 +7,7 @@ import {
   randomIntegrationIdentifier,
 } from "../../../../lib/stripe";
 import { operationalErrorCode } from "../../../../lib/request-security.mjs";
-import { subsystemEnabled } from "../../../../lib/subsystem-controls.mjs";
+import { paidCheckoutReadiness } from "../../../../lib/subsystem-controls.mjs";
 
 export const runtime = "edge";
 
@@ -18,7 +18,8 @@ export async function POST(request: Request) {
 
   try {
     const { env } = await import("cloudflare:workers");
-    if (!subsystemEnabled((env as unknown as { BILLING_CHECKOUT_ENABLED?: string }).BILLING_CHECKOUT_ENABLED)) {
+    const readiness = paidCheckoutReadiness(env as unknown as Record<string, unknown>);
+    if (!readiness.ready) {
       return Response.json({ error: "Paid checkout is not open yet." }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }
     const payload = await request.json() as { plan?: unknown; adultPurchaser?: unknown };
@@ -43,6 +44,8 @@ export async function POST(request: Request) {
     }
 
     const config = await billingConfiguration();
+    const priceId = config.prices[payload.plan];
+    if (!priceId) throw new BillingConfigurationError("That paid plan is not configured yet.");
     const mapped = await db.prepare("SELECT stripe_customer_id AS stripeCustomerId FROM billing_customers WHERE player_id = ?")
       .bind(player.id).first<{ stripeCustomerId: string }>();
     let customerId = mapped?.stripeCustomerId;
@@ -62,12 +65,15 @@ export async function POST(request: Request) {
       mode: "subscription",
       customer: customerId,
       client_reference_id: player.publicId,
-      line_items: [{ price: config.prices[payload.plan], quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${config.siteUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.siteUrl}/?checkout=canceled#pricing`,
+      billing_address_collection: "auto",
       metadata: { player_public_id: player.publicId, plan_key: payload.plan },
       subscription_data: { metadata: { player_public_id: player.publicId, plan_key: payload.plan } },
       integration_identifier: randomIntegrationIdentifier(),
+      ...(config.automaticTaxEnabled ? { automatic_tax: { enabled: true } } : {}),
+      ...(config.managedPaymentsEnabled ? { managed_payments: { enabled: true } } : {}),
     }, { idempotencyKey: `replay_method_checkout_${player.publicId}_${payload.plan}_${bucket}` });
 
     if (!session.url) throw new Error("Stripe did not return a Checkout URL.");

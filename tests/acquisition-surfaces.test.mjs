@@ -37,10 +37,37 @@ test("distinguishes Riot access requests from evidence-gated replay outcomes", a
     source("../app/components/QuickReplayStart.tsx"),
     source("../app/analyze/page.tsx"),
   ]);
-  assert.match(landing, /const riotRequest = game === "league" \|\| game === "valorant"/);
-  assert.match(landing, /Official ingestion is pending/);
+  assert.match(landing, /if \(game === "league" \|\| game === "valorant"\) return <FutureGame/);
+  assert.match(landing, /authorized match evidence can support the same standard/);
+  assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
+  assert.match(landing, /<QuickReplayStart placement="marcel_hero"/);
   assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
-  assert.match(intake, /START REPLAY EVIDENCE CHECK/);
+  assert.match(quickReplay, /ANALYZE THIS REPLAY — FREE/);
+  assert.match(intake, /Automated League and VALORANT analysis is not live/);
   assert.doesNotMatch(quickReplay, /Get one priority|START FREE ANALYSIS/);
   assert.doesNotMatch(metadata, /get one focused Replay Method diagnosis/i);
+});
+
+test("puts the product action before explanatory browsing", async () => {
+  const [landing, contribution] = await Promise.all([
+    source("../app/components/Landing.tsx"),
+    source("../app/rocket-league-beta/ReplayContribution.tsx"),
+  ]);
+  assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
+  assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
+  assert.match(landing, /engineOpen \? <QuickReplayStart/);
+  assert.match(landing, /Stop grinding blind/);
+  assert.match(landing, /Drop the replay/);
+  assert.match(contribution, /replay && <section className="rl-intake-context"/);
+  assert.match(contribution, /Choose the original PC file\. The next step appears instantly/);
+});
+
+test("puts match evidence before player context without changing the intake contract", async () => {
+  const intake = await source("../app/analyze/AnalyzeFlow.tsx");
+  assert.match(intake, /step === 1 && game && <section>.*MATCH EVIDENCE/s);
+  assert.match(intake, /step === 2 && game && <section>.*PLAYER CONTEXT/s);
+  assert.match(intake, /step === 1 && game === "rocket-league" && platform === "pc" && !engineOpen/);
+  for (const field of ["currentRank", "targetRank", "playerContext", "goal", "notes", "evidenceUrl", "email", "dataConsent"]) {
+    assert.match(intake, new RegExp(`data\\.set\\("${field}"`));
+  }
 });

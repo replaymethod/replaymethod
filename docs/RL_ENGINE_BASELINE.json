@@ -1,12 +1,13 @@
 {
   "schemaVersion": "rocket-league-calibration-report.v1",
-  "generatedAt": "2026-08-18T16:47:37.509Z",
+  "generatedAt": "2026-08-20T21:54:24.092Z",
   "corpus": {
     "replayCount": 6,
+    "calibrationEligibleReplayCount": 6,
     "failureCount": 0,
     "modes": {
-      "Lan": 3,
-      "Ranked Doubles": 3
+      "unknown": 3,
+      "2v2": 3
     },
     "totalSampledFrames": 22992,
     "totalParserEvents": 52971,
@@ -15,7 +16,16 @@
   "replays": [
     {
       "replayFingerprint": "709c0cde2286a1ae",
-      "mode": "Lan",
+      "evidenceSource": "real_replay",
+      "versions": {
+        "parser": "subtr-actor@1.2.0",
+        "normalizer": "rocket-league-normalizer@0.2.0",
+        "shadowRuntime": "rocket-league-shadow-runtime@0.2.0"
+      },
+      "mode": "unknown",
+      "rankCohort": "unranked-unknown",
+      "cohortKey": "unknown:unranked-unknown",
+      "metadataProvenance": "replay-only",
       "gameVersion": "161109.39595.145160",
       "playerCount": 6,
       "sampledFrames": 4227,
@@ -176,153 +186,234 @@
         },
         {
           "detectorId": "boost.supersonic_waste",
-          "detectorVersion": "0.1.0",
+          "detectorVersion": "0.2.0",
           "status": "observed",
-          "candidateCount": 72,
+          "candidateCount": 28,
           "measurements": {
             "totalBoostSpent": 521.4264569282532,
-            "peakSpeed": 2300.064891177623
+            "peakSpeed": 2300.064891177623,
+            "sampledFrames": 72
           },
           "evidence": [
             {
-              "timeSeconds": 1471.184814453125,
-              "frame": 81,
-              "speed": 2220.4356993437477,
-              "boostSpent": 8.343704223632812,
-              "boostRemaining": 142.3564910888672
+              "startTimeSeconds": 1471.184814453125,
+              "startFrame": 81,
+              "endTimeSeconds": 1471.2847900390625,
+              "endFrame": 82,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 16.668411254882812,
+              "boostRemaining": 134.0317840576172,
+              "peakSpeed": 2293.0410244919667
             },
             {
-              "timeSeconds": 1471.2847900390625,
-              "frame": 82,
-              "speed": 2293.0410244919667,
-              "boostSpent": 8.32470703125,
-              "boostRemaining": 134.0317840576172
-            },
-            {
-              "timeSeconds": 1521.7724609375,
-              "frame": 587,
-              "speed": 2299.9760555733933,
+              "startTimeSeconds": 1521.7724609375,
+              "startFrame": 587,
+              "endTimeSeconds": 1521.7724609375,
+              "endFrame": 587,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
               "boostSpent": 6.188213348388672,
-              "boostRemaining": 28
+              "boostRemaining": 28,
+              "peakSpeed": 2299.9760555733933
             },
             {
-              "timeSeconds": 1522.772216796875,
-              "frame": 597,
-              "speed": 2300.0341899669884,
-              "boostSpent": 4.162357330322266,
-              "boostRemaining": 23.837642669677734
+              "startTimeSeconds": 1522.772216796875,
+              "startFrame": 597,
+              "endTimeSeconds": 1522.8721923828125,
+              "endFrame": 598,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 14,
+              "boostRemaining": 14,
+              "peakSpeed": 2300.0358944825634
             },
             {
-              "timeSeconds": 1522.8721923828125,
-              "frame": 598,
-              "speed": 2300.0358944825634,
-              "boostSpent": 9.837642669677734,
-              "boostRemaining": 14
-            },
-            {
-              "timeSeconds": 1527.6710205078125,
-              "frame": 646,
-              "speed": 2192.3062363265253,
+              "startTimeSeconds": 1527.6710205078125,
+              "startFrame": 646,
+              "endTimeSeconds": 1527.6710205078125,
+              "endFrame": 646,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
               "boostSpent": 8.324710845947266,
-              "boostRemaining": 62.561466217041016
+              "boostRemaining": 62.561466217041016,
+              "peakSpeed": 2192.3062363265253
             },
             {
-              "timeSeconds": 1527.970947265625,
-              "frame": 649,
-              "speed": 2247.9721297300403,
-              "boostSpent": 8.324745178222656,
-              "boostRemaining": 56.675254821777344
+              "startTimeSeconds": 1527.970947265625,
+              "startFrame": 649,
+              "endTimeSeconds": 1528.6707763671875,
+              "endFrame": 656,
+              "durationSeconds": 0.6998291015625,
+              "sampledFrames": 8,
+              "boostSpent": 65,
+              "boostRemaining": 0,
+              "peakSpeed": 2300.036892970606
             },
             {
-              "timeSeconds": 1528.0709228515625,
-              "frame": 650,
-              "speed": 2299.980412904928,
-              "boostSpent": 8.325782775878906,
-              "boostRemaining": 48.34947204589844
-            },
-            {
-              "timeSeconds": 1528.1708984375,
-              "frame": 651,
-              "speed": 2299.9944121712124,
-              "boostSpent": 8.325233459472656,
-              "boostRemaining": 40.02423858642578
-            },
-            {
-              "timeSeconds": 1528.2708740234375,
-              "frame": 652,
-              "speed": 2300.036892970606,
-              "boostSpent": 8.32562255859375,
-              "boostRemaining": 31.69861602783203
-            },
-            {
-              "timeSeconds": 1528.370849609375,
-              "frame": 653,
-              "speed": 2299.996209075192,
-              "boostSpent": 8.326435089111328,
-              "boostRemaining": 23.372180938720703
-            },
-            {
-              "timeSeconds": 1528.4708251953125,
-              "frame": 654,
-              "speed": 2299.9608861890033,
-              "boostSpent": 8.324713706970215,
-              "boostRemaining": 15.047467231750488
-            },
-            {
-              "timeSeconds": 1528.57080078125,
-              "frame": 655,
-              "speed": 2300.0306187583574,
-              "boostSpent": 8.324712753295898,
-              "boostRemaining": 6.72275447845459
-            },
-            {
-              "timeSeconds": 1528.6707763671875,
-              "frame": 656,
-              "speed": 2299.9697757017316,
-              "boostSpent": 6.72275447845459,
-              "boostRemaining": 0
-            },
-            {
-              "timeSeconds": 1531.8699951171875,
-              "frame": 688,
-              "speed": 2267.9817191339566,
+              "startTimeSeconds": 1531.8699951171875,
+              "startFrame": 688,
+              "endTimeSeconds": 1531.8699951171875,
+              "endFrame": 688,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
               "boostSpent": 1.20849609375,
-              "boostRemaining": 208
+              "boostRemaining": 208,
+              "peakSpeed": 2267.9817191339566
             },
             {
-              "timeSeconds": 1537.6685791015625,
-              "frame": 746,
-              "speed": 2208.4814088226417,
-              "boostSpent": 8.324714660644531,
-              "boostRemaining": 57.21319580078125
+              "startTimeSeconds": 1537.6685791015625,
+              "startFrame": 746,
+              "endTimeSeconds": 1537.968505859375,
+              "endFrame": 749,
+              "durationSeconds": 0.2999267578125,
+              "sampledFrames": 4,
+              "boostSpent": 33.29924774169922,
+              "boostRemaining": 32.23866271972656,
+              "peakSpeed": 2300.0245567309084
             },
             {
-              "timeSeconds": 1537.7685546875,
-              "frame": 747,
-              "speed": 2241.285576593782,
-              "boostSpent": 8.324714660644531,
-              "boostRemaining": 48.88848114013672
+              "startTimeSeconds": 1538.4683837890625,
+              "startFrame": 754,
+              "endTimeSeconds": 1538.8682861328125,
+              "endFrame": 758,
+              "durationSeconds": 0.39990234375,
+              "sampledFrames": 5,
+              "boostSpent": 32,
+              "boostRemaining": 0,
+              "peakSpeed": 2300.011013059573
             },
             {
-              "timeSeconds": 1537.8685302734375,
-              "frame": 748,
-              "speed": 2284.9545181725584,
-              "boostSpent": 8.324714660644531,
-              "boostRemaining": 40.56376647949219
+              "startTimeSeconds": 1540.2679443359375,
+              "startFrame": 772,
+              "endTimeSeconds": 1540.2679443359375,
+              "endFrame": 772,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 8.324712753295898,
+              "boostRemaining": 5.025177955627441,
+              "peakSpeed": 2300.054658659719
             },
             {
-              "timeSeconds": 1537.968505859375,
-              "frame": 749,
-              "speed": 2300.0245567309084,
-              "boostSpent": 8.325103759765625,
-              "boostRemaining": 32.23866271972656
+              "startTimeSeconds": 1548.765869140625,
+              "startFrame": 857,
+              "endTimeSeconds": 1548.9658203125,
+              "endFrame": 859,
+              "durationSeconds": 0.199951171875,
+              "sampledFrames": 3,
+              "boostSpent": 18.8623046875,
+              "boostRemaining": 159,
+              "peakSpeed": 2299.9893215409475
             },
             {
-              "timeSeconds": 1538.4683837890625,
-              "frame": 754,
-              "speed": 2300.0098423523345,
-              "boostSpent": 4.162357330322266,
-              "boostRemaining": 27.837642669677734
+              "startTimeSeconds": 1563.2623291015625,
+              "startFrame": 1002,
+              "endTimeSeconds": 1563.3623046875,
+              "endFrame": 1003,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 11.837646484375,
+              "boostRemaining": 206,
+              "peakSpeed": 2300.019249320774
+            },
+            {
+              "startTimeSeconds": 1565.2618408203125,
+              "startFrame": 1022,
+              "endTimeSeconds": 1565.4617919921875,
+              "endFrame": 1024,
+              "durationSeconds": 0.199951171875,
+              "sampledFrames": 3,
+              "boostSpent": 18.67529296875,
+              "boostRemaining": 228,
+              "peakSpeed": 2299.952775706858
+            },
+            {
+              "startTimeSeconds": 1595.2545166015625,
+              "startFrame": 1322,
+              "endTimeSeconds": 1595.3544921875,
+              "endFrame": 1323,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 16.649429321289062,
+              "boostRemaining": 49.26025390625,
+              "peakSpeed": 2299.9921915607097
+            },
+            {
+              "startTimeSeconds": 1596.8541259765625,
+              "startFrame": 1338,
+              "endTimeSeconds": 1596.8541259765625,
+              "endFrame": 1338,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 8.32471227645874,
+              "boostRemaining": 5.863502025604248,
+              "peakSpeed": 2299.966986140016
+            },
+            {
+              "startTimeSeconds": 1598.15380859375,
+              "startFrame": 1351,
+              "endTimeSeconds": 1598.15380859375,
+              "endFrame": 1351,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 6,
+              "boostRemaining": 0,
+              "peakSpeed": 2289.927302357123
+            },
+            {
+              "startTimeSeconds": 1633.0452880859375,
+              "startFrame": 1700,
+              "endTimeSeconds": 1633.145263671875,
+              "endFrame": 1701,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 9,
+              "boostRemaining": 4,
+              "peakSpeed": 2300.042544716798
+            },
+            {
+              "startTimeSeconds": 1691.531005859375,
+              "startFrame": 2285,
+              "endTimeSeconds": 1691.531005859375,
+              "endFrame": 2285,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 8.32470703125,
+              "boostRemaining": 223.0247039794922,
+              "peakSpeed": 2299.9920200460247
+            },
+            {
+              "startTimeSeconds": 1692.6307373046875,
+              "startFrame": 2296,
+              "endTimeSeconds": 1692.9306640625,
+              "endFrame": 2299,
+              "durationSeconds": 0.2999267578125,
+              "sampledFrames": 4,
+              "boostSpent": 30,
+              "boostRemaining": 225,
+              "peakSpeed": 2300.0467961590466
+            },
+            {
+              "startTimeSeconds": 1697.2296142578125,
+              "startFrame": 2342,
+              "endTimeSeconds": 1697.32958984375,
+              "endFrame": 2343,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 12.288299560546875,
+              "boostRemaining": 87.837646484375,
+              "peakSpeed": 2299.980544214509
+            },
+            {
+              "startTimeSeconds": 1702.5283203125,
+              "startFrame": 2395,
+              "endTimeSeconds": 1702.728271484375,
+              "endFrame": 2397,
+              "durationSeconds": 0.199951171875,
+              "sampledFrames": 3,
+              "boostSpent": 19.373809814453125,
+              "boostRemaining": 194,
+              "peakSpeed": 2299.9625205314996
             }
           ]
         },
@@ -1345,7 +1436,16 @@
     },
     {
       "replayFingerprint": "b36807e7483cb85a",
-      "mode": "Lan",
+      "evidenceSource": "real_replay",
+      "versions": {
+        "parser": "subtr-actor@1.2.0",
+        "normalizer": "rocket-league-normalizer@0.2.0",
+        "shadowRuntime": "rocket-league-shadow-runtime@0.2.0"
+      },
+      "mode": "unknown",
+      "rankCohort": "unranked-unknown",
+      "cohortKey": "unknown:unranked-unknown",
+      "metadataProvenance": "replay-only",
       "gameVersion": "191004.56206.249352",
       "playerCount": 6,
       "sampledFrames": 3738,
@@ -1442,153 +1542,234 @@
         },
         {
           "detectorId": "boost.supersonic_waste",
-          "detectorVersion": "0.1.0",
+          "detectorVersion": "0.2.0",
           "status": "observed",
-          "candidateCount": 164,
+          "candidateCount": 51,
           "measurements": {
             "totalBoostSpent": 1147.9539732933044,
-            "peakSpeed": 2299.999235026474
+            "peakSpeed": 2299.999235026474,
+            "sampledFrames": 164
           },
           "evidence": [
             {
-              "timeSeconds": 34.41526412963867,
-              "frame": 152,
-              "speed": 2218.0379159377776,
+              "startTimeSeconds": 34.41526412963867,
+              "startFrame": 152,
+              "endTimeSeconds": 34.41526412963867,
+              "endFrame": 152,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
               "boostSpent": 6.397651672363281,
-              "boostRemaining": 102
+              "boostRemaining": 102,
+              "peakSpeed": 2218.0379159377776
             },
             {
-              "timeSeconds": 34.71525955200195,
-              "frame": 155,
-              "speed": 2225.6708527565265,
-              "boostSpent": 5.7348480224609375,
-              "boostRemaining": 96.26515197753906
+              "startTimeSeconds": 34.71525955200195,
+              "startFrame": 155,
+              "endTimeSeconds": 34.81525802612305,
+              "endFrame": 156,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 8,
+              "boostRemaining": 94,
+              "peakSpeed": 2297.1886048611063
             },
             {
-              "timeSeconds": 34.81525802612305,
-              "frame": 156,
-              "speed": 2297.1886048611063,
-              "boostSpent": 2.2651519775390625,
-              "boostRemaining": 94
+              "startTimeSeconds": 39.51518630981445,
+              "startFrame": 203,
+              "endTimeSeconds": 39.815181732177734,
+              "endFrame": 206,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 3,
+              "boostSpent": 16.662857055664062,
+              "boostRemaining": 0,
+              "peakSpeed": 2299.0318391008886
             },
             {
-              "timeSeconds": 39.51518630981445,
-              "frame": 203,
-              "speed": 2249.919454811876,
-              "boostSpent": 8.60233211517334,
-              "boostRemaining": 8.060524940490723
+              "startTimeSeconds": 40.615169525146484,
+              "startFrame": 214,
+              "endTimeSeconds": 40.81516647338867,
+              "endFrame": 216,
+              "durationSeconds": 0.1999969482421875,
+              "sampledFrames": 3,
+              "boostSpent": 20.988433837890625,
+              "boostRemaining": 191,
+              "peakSpeed": 2297.989604957214
             },
             {
-              "timeSeconds": 39.61518478393555,
-              "frame": 204,
-              "speed": 2299.0318391008886,
-              "boostSpent": 4.060524940490723,
-              "boostRemaining": 4
+              "startTimeSeconds": 55.11494827270508,
+              "startFrame": 359,
+              "endTimeSeconds": 55.41494369506836,
+              "endFrame": 362,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 4,
+              "boostSpent": 28.988494873046875,
+              "boostRemaining": 183,
+              "peakSpeed": 2299.9977925760368
             },
             {
-              "timeSeconds": 39.815181732177734,
-              "frame": 206,
-              "speed": 2294.7600531911135,
-              "boostSpent": 4,
-              "boostRemaining": 0
-            },
-            {
-              "timeSeconds": 40.615169525146484,
-              "frame": 214,
-              "speed": 2186.0728266877168,
-              "boostSpent": 8.602249145507812,
-              "boostRemaining": 203.3861846923828
-            },
-            {
-              "timeSeconds": 40.71516799926758,
-              "frame": 215,
-              "speed": 2275.49169628859,
-              "boostSpent": 8.602294921875,
-              "boostRemaining": 194.7838897705078
-            },
-            {
-              "timeSeconds": 40.81516647338867,
-              "frame": 216,
-              "speed": 2297.989604957214,
-              "boostSpent": 3.7838897705078125,
-              "boostRemaining": 191
-            },
-            {
-              "timeSeconds": 55.11494827270508,
-              "frame": 359,
-              "speed": 2194.9704434511073,
-              "boostSpent": 8.602249145507812,
-              "boostRemaining": 203.38624572753906
-            },
-            {
-              "timeSeconds": 55.21494674682617,
-              "frame": 360,
-              "speed": 2257.529913701739,
-              "boostSpent": 8.602264404296875,
-              "boostRemaining": 194.7839813232422
-            },
-            {
-              "timeSeconds": 55.314945220947266,
-              "frame": 361,
-              "speed": 2299.9977925760368,
-              "boostSpent": 8.602294921875,
-              "boostRemaining": 186.1816864013672
-            },
-            {
-              "timeSeconds": 55.41494369506836,
-              "frame": 362,
-              "speed": 2299.6111922186565,
-              "boostSpent": 3.1816864013671875,
-              "boostRemaining": 183
-            },
-            {
-              "timeSeconds": 58.61489486694336,
-              "frame": 394,
-              "speed": 2299.9945865418795,
+              "startTimeSeconds": 58.61489486694336,
+              "startFrame": 394,
+              "endTimeSeconds": 58.61489486694336,
+              "endFrame": 394,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
               "boostSpent": 8.602302551269531,
-              "boostRemaining": 121.25357818603516
+              "boostRemaining": 121.25357818603516,
+              "peakSpeed": 2299.9945865418795
             },
             {
-              "timeSeconds": 71.7146987915039,
-              "frame": 525,
-              "speed": 2280.047580376593,
-              "boostSpent": 8.602302551269531,
-              "boostRemaining": 115.91648864746094
+              "startTimeSeconds": 71.7146987915039,
+              "startFrame": 525,
+              "endTimeSeconds": 71.814697265625,
+              "endFrame": 526,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 10.518791198730469,
+              "boostRemaining": 114,
+              "peakSpeed": 2299.9916241650803
             },
             {
-              "timeSeconds": 71.814697265625,
-              "frame": 526,
-              "speed": 2299.9916241650803,
-              "boostSpent": 1.9164886474609375,
-              "boostRemaining": 114
+              "startTimeSeconds": 73.01467895507812,
+              "startFrame": 538,
+              "endTimeSeconds": 74.01466369628906,
+              "endFrame": 548,
+              "durationSeconds": 0.9999847412109375,
+              "sampledFrames": 11,
+              "boostSpent": 88.13253784179688,
+              "boostRemaining": 164,
+              "peakSpeed": 2299.9955153735154
             },
             {
-              "timeSeconds": 73.01467895507812,
-              "frame": 538,
-              "speed": 2205.418267784169,
-              "boostSpent": 8.602340698242188,
-              "boostRemaining": 243.5301971435547
+              "startTimeSeconds": 76.7146224975586,
+              "startFrame": 575,
+              "endTimeSeconds": 76.7146224975586,
+              "endFrame": 575,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 5.734893798828125,
+              "boostRemaining": 158.26510620117188,
+              "peakSpeed": 2207.354313506801
             },
             {
-              "timeSeconds": 73.11467742919922,
-              "frame": 539,
-              "speed": 2242.0709848097767,
-              "boostSpent": 8.602310180664062,
-              "boostRemaining": 234.92788696289062
+              "startTimeSeconds": 77.11461639404297,
+              "startFrame": 579,
+              "endTimeSeconds": 77.41461181640625,
+              "endFrame": 582,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 4,
+              "boostSpent": 26.458328247070312,
+              "boostRemaining": 106,
+              "peakSpeed": 2299.994485082833
             },
             {
-              "timeSeconds": 73.21467590332031,
-              "frame": 540,
-              "speed": 2204.634991182396,
-              "boostSpent": 8.602310180664062,
-              "boostRemaining": 226.32557678222656
+              "startTimeSeconds": 79.21458435058594,
+              "startFrame": 600,
+              "endTimeSeconds": 79.31458282470703,
+              "endFrame": 601,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 11.4697265625,
+              "boostRemaining": 125.5302734375,
+              "peakSpeed": 2299.9975903704294
             },
             {
-              "timeSeconds": 73.3146743774414,
-              "frame": 541,
-              "speed": 2203.2197864495397,
-              "boostSpent": 8.602325439453125,
-              "boostRemaining": 217.72325134277344
+              "startTimeSeconds": 84.91449737548828,
+              "startFrame": 657,
+              "endTimeSeconds": 84.91449737548828,
+              "endFrame": 657,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 8.602298736572266,
+              "boostRemaining": 47.98841857910156,
+              "peakSpeed": 2180.0675592182874
+            },
+            {
+              "startTimeSeconds": 86.2144775390625,
+              "startFrame": 670,
+              "endTimeSeconds": 86.3144760131836,
+              "endFrame": 671,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 8,
+              "boostRemaining": 32,
+              "peakSpeed": 2299.9906641300845
+            },
+            {
+              "startTimeSeconds": 88.11444854736328,
+              "startFrame": 689,
+              "endTimeSeconds": 88.41444396972656,
+              "endFrame": 692,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 4,
+              "boostSpent": 28.674362182617188,
+              "boostRemaining": 33.32563781738281,
+              "peakSpeed": 2299.9947570865747
+            },
+            {
+              "startTimeSeconds": 88.71443939208984,
+              "startFrame": 695,
+              "endTimeSeconds": 89.01443481445312,
+              "endFrame": 698,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 4,
+              "boostSpent": 28.674392700195312,
+              "boostRemaining": 221.3256072998047,
+              "peakSpeed": 2256.775154094345
+            },
+            {
+              "startTimeSeconds": 89.4144287109375,
+              "startFrame": 702,
+              "endTimeSeconds": 89.5144271850586,
+              "endFrame": 703,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 14.530242919921875,
+              "boostRemaining": 198,
+              "peakSpeed": 2255.547311053518
+            },
+            {
+              "startTimeSeconds": 89.91442108154297,
+              "startFrame": 707,
+              "endTimeSeconds": 89.91442108154297,
+              "endFrame": 707,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 7.1325836181640625,
+              "boostRemaining": 188,
+              "peakSpeed": 2221.4568267250306
+            },
+            {
+              "startTimeSeconds": 93.91436004638672,
+              "startFrame": 747,
+              "endTimeSeconds": 94.01435852050781,
+              "endFrame": 748,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 9.04888916015625,
+              "boostRemaining": 174,
+              "peakSpeed": 2299.075107093425
+            },
+            {
+              "startTimeSeconds": 116.81401062011719,
+              "startFrame": 976,
+              "endTimeSeconds": 116.81401062011719,
+              "endFrame": 976,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 8.602279663085938,
+              "boostRemaining": 72.0484848022461,
+              "peakSpeed": 2218.594268486356
+            },
+            {
+              "startTimeSeconds": 123.71390533447266,
+              "startFrame": 1045,
+              "endTimeSeconds": 123.81390380859375,
+              "endFrame": 1046,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 10,
+              "boostRemaining": 21,
+              "peakSpeed": 2299.9933155115
             }
           ]
         },
@@ -2528,7 +2709,16 @@
     },
     {
       "replayFingerprint": "edf46af011fb016c",
-      "mode": "Lan",
+      "evidenceSource": "real_replay",
+      "versions": {
+        "parser": "subtr-actor@1.2.0",
+        "normalizer": "rocket-league-normalizer@0.2.0",
+        "shadowRuntime": "rocket-league-shadow-runtime@0.2.0"
+      },
+      "mode": "unknown",
+      "rankCohort": "unranked-unknown",
+      "cohortKey": "unknown:unranked-unknown",
+      "metadataProvenance": "replay-only",
       "gameVersion": "160721.58730.135786",
       "playerCount": 6,
       "sampledFrames": 4021,
@@ -2649,153 +2839,234 @@
         },
         {
           "detectorId": "boost.supersonic_waste",
-          "detectorVersion": "0.1.0",
+          "detectorVersion": "0.2.0",
           "status": "observed",
-          "candidateCount": 81,
+          "candidateCount": 26,
           "measurements": {
             "totalBoostSpent": 575.5309028625488,
-            "peakSpeed": 2300.0618396450586
+            "peakSpeed": 2300.0618396450586,
+            "sampledFrames": 81
           },
           "evidence": [
             {
-              "timeSeconds": 1320.76904296875,
-              "frame": 159,
-              "speed": 2211.1575983227863,
-              "boostSpent": 8.324668884277344,
-              "boostRemaining": 34.701324462890625
+              "startTimeSeconds": 1320.76904296875,
+              "startFrame": 159,
+              "endTimeSeconds": 1321.0689697265625,
+              "endFrame": 162,
+              "durationSeconds": 0.2999267578125,
+              "sampledFrames": 4,
+              "boostSpent": 27.02599334716797,
+              "boostRemaining": 16,
+              "peakSpeed": 2299.9990561769505
             },
             {
-              "timeSeconds": 1320.8690185546875,
-              "frame": 160,
-              "speed": 2278.748238394924,
-              "boostSpent": 8.325042724609375,
-              "boostRemaining": 26.37628173828125
+              "startTimeSeconds": 1356.160400390625,
+              "startFrame": 513,
+              "endTimeSeconds": 1356.4603271484375,
+              "endFrame": 516,
+              "durationSeconds": 0.2999267578125,
+              "sampledFrames": 4,
+              "boostSpent": 27.91165542602539,
+              "boostRemaining": 10,
+              "peakSpeed": 2300.016523632373
             },
             {
-              "timeSeconds": 1320.968994140625,
-              "frame": 161,
-              "speed": 2299.9990561769505,
-              "boostSpent": 8.324823379516602,
-              "boostRemaining": 18.05145835876465
+              "startTimeSeconds": 1379.15478515625,
+              "startFrame": 743,
+              "endTimeSeconds": 1379.354736328125,
+              "endFrame": 745,
+              "durationSeconds": 0.199951171875,
+              "sampledFrames": 3,
+              "boostSpent": 22.07563018798828,
+              "boostRemaining": 71,
+              "peakSpeed": 2300.0538544831848
             },
             {
-              "timeSeconds": 1321.0689697265625,
-              "frame": 162,
-              "speed": 2216.480353811944,
-              "boostSpent": 2.0514583587646484,
-              "boostRemaining": 16
+              "startTimeSeconds": 1380.0545654296875,
+              "startFrame": 752,
+              "endTimeSeconds": 1380.2545166015625,
+              "endFrame": 754,
+              "durationSeconds": 0.199951171875,
+              "sampledFrames": 3,
+              "boostSpent": 24.975421905517578,
+              "boostRemaining": 46.02457809448242,
+              "peakSpeed": 2245.9706914244293
             },
             {
-              "timeSeconds": 1356.160400390625,
-              "frame": 513,
-              "speed": 2236.497987891729,
-              "boostSpent": 8.324668884277344,
-              "boostRemaining": 29.586986541748047
+              "startTimeSeconds": 1380.954345703125,
+              "startFrame": 761,
+              "endTimeSeconds": 1381.154296875,
+              "endFrame": 763,
+              "durationSeconds": 0.199951171875,
+              "sampledFrames": 3,
+              "boostSpent": 24.97400665283203,
+              "boostRemaining": 19.02599334716797,
+              "peakSpeed": 2300.0541669137515
             },
             {
-              "timeSeconds": 1356.2603759765625,
-              "frame": 514,
-              "speed": 2300.016523632373,
-              "boostSpent": 8.324668884277344,
-              "boostRemaining": 21.262317657470703
-            },
-            {
-              "timeSeconds": 1356.3603515625,
-              "frame": 515,
-              "speed": 2299.9851898385273,
-              "boostSpent": 8.324823379516602,
-              "boostRemaining": 12.937494277954102
-            },
-            {
-              "timeSeconds": 1356.4603271484375,
-              "frame": 516,
-              "speed": 2298.143969892343,
-              "boostSpent": 2.9374942779541016,
-              "boostRemaining": 10
-            },
-            {
-              "timeSeconds": 1379.15478515625,
-              "frame": 743,
-              "speed": 2299.959607303898,
-              "boostSpent": 8.324661254882812,
-              "boostRemaining": 84.75096893310547
-            },
-            {
-              "timeSeconds": 1379.2547607421875,
-              "frame": 744,
-              "speed": 2300.011772447793,
-              "boostSpent": 8.324661254882812,
-              "boostRemaining": 76.42630767822266
-            },
-            {
-              "timeSeconds": 1379.354736328125,
-              "frame": 745,
-              "speed": 2300.0538544831848,
-              "boostSpent": 5.426307678222656,
-              "boostRemaining": 71
-            },
-            {
-              "timeSeconds": 1380.0545654296875,
-              "frame": 752,
-              "speed": 2243.7001833800077,
-              "boostSpent": 8.325157165527344,
-              "boostRemaining": 62.674842834472656
-            },
-            {
-              "timeSeconds": 1380.154541015625,
-              "frame": 753,
-              "speed": 2245.9706914244293,
-              "boostSpent": 8.325000762939453,
-              "boostRemaining": 54.3498420715332
-            },
-            {
-              "timeSeconds": 1380.2545166015625,
-              "frame": 754,
-              "speed": 2215.74609799086,
-              "boostSpent": 8.325263977050781,
-              "boostRemaining": 46.02457809448242
-            },
-            {
-              "timeSeconds": 1380.954345703125,
-              "frame": 761,
-              "speed": 2234.8985263105988,
-              "boostSpent": 8.324668884277344,
-              "boostRemaining": 35.675331115722656
-            },
-            {
-              "timeSeconds": 1381.0543212890625,
-              "frame": 762,
-              "speed": 2300.0541669137515,
-              "boostSpent": 8.324668884277344,
-              "boostRemaining": 27.350662231445312
-            },
-            {
-              "timeSeconds": 1381.154296875,
-              "frame": 763,
-              "speed": 2299.965216396924,
-              "boostSpent": 8.324668884277344,
-              "boostRemaining": 19.02599334716797
-            },
-            {
-              "timeSeconds": 1381.4542236328125,
-              "frame": 766,
-              "speed": 2219.491102087651,
+              "startTimeSeconds": 1381.4542236328125,
+              "startFrame": 766,
+              "endTimeSeconds": 1381.4542236328125,
+              "endFrame": 766,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
               "boostSpent": 2.3759732246398926,
-              "boostRemaining": 0
+              "boostRemaining": 0,
+              "peakSpeed": 2219.491102087651
             },
             {
-              "timeSeconds": 1396.3505859375,
-              "frame": 915,
-              "speed": 2207.5596984358917,
-              "boostSpent": 8.324676513671875,
-              "boostRemaining": 190.18734741210938
+              "startTimeSeconds": 1396.3505859375,
+              "startFrame": 915,
+              "endTimeSeconds": 1396.6505126953125,
+              "endFrame": 918,
+              "durationSeconds": 0.2999267578125,
+              "sampledFrames": 4,
+              "boostSpent": 28.51202392578125,
+              "boostRemaining": 170,
+              "peakSpeed": 2300.0295433822594
             },
             {
-              "timeSeconds": 1396.4505615234375,
-              "frame": 916,
-              "speed": 2276.0627661070357,
-              "boostSpent": 8.324676513671875,
-              "boostRemaining": 181.8626708984375
+              "startTimeSeconds": 1427.4429931640625,
+              "startFrame": 1226,
+              "endTimeSeconds": 1427.6429443359375,
+              "endFrame": 1228,
+              "durationSeconds": 0.199951171875,
+              "sampledFrames": 3,
+              "boostSpent": 21.862823486328125,
+              "boostRemaining": 204,
+              "peakSpeed": 2299.992023921356
+            },
+            {
+              "startTimeSeconds": 1429.142578125,
+              "startFrame": 1243,
+              "endTimeSeconds": 1429.2425537109375,
+              "endFrame": 1244,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 12.512985229492188,
+              "boostRemaining": 179,
+              "peakSpeed": 2300.0183372478923
+            },
+            {
+              "startTimeSeconds": 1429.54248046875,
+              "startFrame": 1247,
+              "endTimeSeconds": 1430.942138671875,
+              "endFrame": 1261,
+              "durationSeconds": 1.399658203125,
+              "sampledFrames": 14,
+              "boostSpent": 108.6240005493164,
+              "boostRemaining": 70.3759994506836,
+              "peakSpeed": 2300.0618396450586
+            },
+            {
+              "startTimeSeconds": 1451.93701171875,
+              "startFrame": 1471,
+              "endTimeSeconds": 1451.93701171875,
+              "endFrame": 1471,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 4.863372802734375,
+              "boostRemaining": 18,
+              "peakSpeed": 2256.34379675266
+            },
+            {
+              "startTimeSeconds": 1469.2327880859375,
+              "startFrame": 1644,
+              "endTimeSeconds": 1469.2327880859375,
+              "endFrame": 1644,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 8.326850891113281,
+              "boostRemaining": 39.69915008544922,
+              "peakSpeed": 2224.382561671947
+            },
+            {
+              "startTimeSeconds": 1472.33203125,
+              "startFrame": 1675,
+              "endTimeSeconds": 1472.4320068359375,
+              "endFrame": 1676,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 13.675323486328125,
+              "boostRemaining": 124,
+              "peakSpeed": 2251.6639658771246
+            },
+            {
+              "startTimeSeconds": 1472.8319091796875,
+              "startFrame": 1680,
+              "endTimeSeconds": 1473.2318115234375,
+              "endFrame": 1684,
+              "durationSeconds": 0.39990234375,
+              "sampledFrames": 5,
+              "boostSpent": 34,
+              "boostRemaining": 90,
+              "peakSpeed": 2300.0284770050525
+            },
+            {
+              "startTimeSeconds": 1487.5283203125,
+              "startFrame": 1827,
+              "endTimeSeconds": 1487.6282958984375,
+              "endFrame": 1828,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 15.538925170898438,
+              "boostRemaining": 56,
+              "peakSpeed": 2279.3182081670902
+            },
+            {
+              "startTimeSeconds": 1532.917236328125,
+              "startFrame": 2281,
+              "endTimeSeconds": 1532.917236328125,
+              "endFrame": 2281,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 5.149391174316406,
+              "boostRemaining": 39,
+              "peakSpeed": 2207.963985828313
+            },
+            {
+              "startTimeSeconds": 1562.510009765625,
+              "startFrame": 2577,
+              "endTimeSeconds": 1563.10986328125,
+              "endFrame": 2583,
+              "durationSeconds": 0.599853515625,
+              "sampledFrames": 7,
+              "boostSpent": 55,
+              "boostRemaining": 200,
+              "peakSpeed": 2300.0364089408713
+            },
+            {
+              "startTimeSeconds": 1563.4097900390625,
+              "startFrame": 2586,
+              "endTimeSeconds": 1563.6097412109375,
+              "endFrame": 2588,
+              "durationSeconds": 0.199951171875,
+              "sampledFrames": 3,
+              "boostSpent": 16,
+              "boostRemaining": 184,
+              "peakSpeed": 2300.009678622639
+            },
+            {
+              "startTimeSeconds": 1595.501953125,
+              "startFrame": 2907,
+              "endTimeSeconds": 1595.6019287109375,
+              "endFrame": 2908,
+              "durationSeconds": 0.0999755859375,
+              "sampledFrames": 2,
+              "boostSpent": 12.53826904296875,
+              "boostRemaining": 190,
+              "peakSpeed": 2295.1395377516333
+            },
+            {
+              "startTimeSeconds": 1601.2005615234375,
+              "startFrame": 2964,
+              "endTimeSeconds": 1601.4005126953125,
+              "endFrame": 2966,
+              "durationSeconds": 0.199951171875,
+              "sampledFrames": 3,
+              "boostSpent": 19.512435913085938,
+              "boostRemaining": 159,
+              "peakSpeed": 2300.0359656190053
             }
           ]
         },
@@ -3748,7 +4019,16 @@
     },
     {
       "replayFingerprint": "f4b2c319787c3c11",
-      "mode": "Ranked Doubles",
+      "evidenceSource": "real_replay",
+      "versions": {
+        "parser": "subtr-actor@1.2.0",
+        "normalizer": "rocket-league-normalizer@0.2.0",
+        "shadowRuntime": "rocket-league-shadow-runtime@0.2.0"
+      },
+      "mode": "2v2",
+      "rankCohort": "unranked-unknown",
+      "cohortKey": "2v2:unranked-unknown",
+      "metadataProvenance": "replay-only",
       "gameVersion": "260316.80791.512269",
       "playerCount": 4,
       "sampledFrames": 4059,
@@ -3933,153 +4213,234 @@
         },
         {
           "detectorId": "boost.supersonic_waste",
-          "detectorVersion": "0.1.0",
+          "detectorVersion": "0.2.0",
           "status": "observed",
-          "candidateCount": 214,
+          "candidateCount": 74,
           "measurements": {
             "totalBoostSpent": 1506.7872805595398,
-            "peakSpeed": 2300.0000106133525
+            "peakSpeed": 2300.0000106133525,
+            "sampledFrames": 214
           },
           "evidence": [
             {
-              "timeSeconds": 11.893577575683594,
-              "frame": 83,
-              "speed": 2299.9867884387004,
-              "boostSpent": 7.0245771408081055,
-              "boostRemaining": 0
+              "startTimeSeconds": 11.893577575683594,
+              "startFrame": 83,
+              "endTimeSeconds": 12.093578338623047,
+              "endFrame": 85,
+              "durationSeconds": 0.20000076293945312,
+              "sampledFrames": 2,
+              "boostSpent": 9.024577140808105,
+              "boostRemaining": 0,
+              "peakSpeed": 2299.9905699374785
             },
             {
-              "timeSeconds": 12.093578338623047,
-              "frame": 85,
-              "speed": 2299.9905699374785,
-              "boostSpent": 2,
-              "boostRemaining": 0
+              "startTimeSeconds": 32.69364547729492,
+              "startFrame": 291,
+              "endTimeSeconds": 33.19363784790039,
+              "endFrame": 296,
+              "durationSeconds": 0.49999237060546875,
+              "sampledFrames": 6,
+              "boostSpent": 52.523681640625,
+              "boostRemaining": 158.14187622070312,
+              "peakSpeed": 2299.9945167586707
             },
             {
-              "timeSeconds": 32.69364547729492,
-              "frame": 291,
-              "speed": 2256.5264192257255,
-              "boostSpent": 9.17718505859375,
-              "boostRemaining": 201.48837280273438
+              "startTimeSeconds": 34.99361038208008,
+              "startFrame": 314,
+              "endTimeSeconds": 35.693599700927734,
+              "endFrame": 321,
+              "durationSeconds": 0.6999893188476562,
+              "sampledFrames": 8,
+              "boostSpent": 60.86653137207031,
+              "boostRemaining": 37,
+              "peakSpeed": 2300.0000106133525
             },
             {
-              "timeSeconds": 32.793643951416016,
-              "frame": 292,
-              "speed": 2299.994404762038,
-              "boostSpent": 9.235031127929688,
-              "boostRemaining": 192.2533416748047
+              "startTimeSeconds": 36.69358444213867,
+              "startFrame": 331,
+              "endTimeSeconds": 36.89358139038086,
+              "endFrame": 333,
+              "durationSeconds": 0.1999969482421875,
+              "sampledFrames": 3,
+              "boostSpent": 25.984886169433594,
+              "boostRemaining": 8,
+              "peakSpeed": 2299.9969512155863
             },
             {
-              "timeSeconds": 32.89364242553711,
-              "frame": 293,
-              "speed": 2299.990833700952,
-              "boostSpent": 9.5206298828125,
-              "boostRemaining": 182.7327117919922
+              "startTimeSeconds": 37.49357223510742,
+              "startFrame": 339,
+              "endTimeSeconds": 37.593570709228516,
+              "endFrame": 340,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 8,
+              "boostRemaining": 0,
+              "peakSpeed": 2299.9982151184595
             },
             {
-              "timeSeconds": 32.9936408996582,
-              "frame": 294,
-              "speed": 2299.9945167586707,
-              "boostSpent": 6.5612030029296875,
-              "boostRemaining": 176.1715087890625
+              "startTimeSeconds": 44.793460845947266,
+              "startFrame": 412,
+              "endTimeSeconds": 44.793460845947266,
+              "endFrame": 412,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 4.75335693359375,
+              "boostRemaining": 152,
+              "peakSpeed": 2208.107551026312
             },
             {
-              "timeSeconds": 33.0936393737793,
-              "frame": 295,
-              "speed": 2299.990963018024,
-              "boostSpent": 8.884292602539062,
-              "boostRemaining": 167.28721618652344
+              "startTimeSeconds": 45.99344253540039,
+              "startFrame": 424,
+              "endTimeSeconds": 45.99344253540039,
+              "endFrame": 424,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 9.177574157714844,
+              "boostRemaining": 102.04451751708984,
+              "peakSpeed": 2191.665619642883
             },
             {
-              "timeSeconds": 33.19363784790039,
-              "frame": 296,
-              "speed": 2299.9938628859563,
-              "boostSpent": 9.145339965820312,
-              "boostRemaining": 158.14187622070312
+              "startTimeSeconds": 51.193363189697266,
+              "startFrame": 476,
+              "endTimeSeconds": 51.193363189697266,
+              "endFrame": 476,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 5.50349235534668,
+              "boostRemaining": 4,
+              "peakSpeed": 2213.3944529740584
             },
             {
-              "timeSeconds": 34.99361038208008,
-              "frame": 314,
-              "speed": 2299.997741804365,
-              "boostSpent": 6.035255432128906,
-              "boostRemaining": 91.8312759399414
+              "startTimeSeconds": 51.693355560302734,
+              "startFrame": 481,
+              "endTimeSeconds": 51.79335403442383,
+              "endFrame": 482,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 4,
+              "boostRemaining": 0,
+              "peakSpeed": 2245.139485425527
             },
             {
-              "timeSeconds": 35.09360885620117,
-              "frame": 315,
-              "speed": 2299.9924382431172,
-              "boostSpent": 8.88848876953125,
-              "boostRemaining": 82.94278717041016
+              "startTimeSeconds": 62.69318771362305,
+              "startFrame": 591,
+              "endTimeSeconds": 62.79318618774414,
+              "endFrame": 592,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 17.576820373535156,
+              "boostRemaining": 80.87049102783203,
+              "peakSpeed": 2299.996875864093
             },
             {
-              "timeSeconds": 35.193607330322266,
-              "frame": 316,
-              "speed": 2299.991227028305,
-              "boostSpent": 8.871833801269531,
-              "boostRemaining": 74.07095336914062
+              "startTimeSeconds": 63.993167877197266,
+              "startFrame": 604,
+              "endTimeSeconds": 64.89315795898438,
+              "endFrame": 613,
+              "durationSeconds": 0.8999900817871094,
+              "sampledFrames": 8,
+              "boostSpent": 44.93665313720703,
+              "boostRemaining": 97,
+              "peakSpeed": 2299.998420691713
             },
             {
-              "timeSeconds": 35.29360580444336,
-              "frame": 317,
-              "speed": 2299.989724549397,
-              "boostSpent": 9.25604248046875,
-              "boostRemaining": 64.81491088867188
+              "startTimeSeconds": 66.49313354492188,
+              "startFrame": 629,
+              "endTimeSeconds": 66.69313049316406,
+              "endFrame": 631,
+              "durationSeconds": 0.1999969482421875,
+              "sampledFrames": 2,
+              "boostSpent": 18.74560546875,
+              "boostRemaining": 241.62396240234375,
+              "peakSpeed": 2299.993876135927
             },
             {
-              "timeSeconds": 35.39360427856445,
-              "frame": 318,
-              "speed": 2299.994974118124,
-              "boostSpent": 9.296810150146484,
-              "boostRemaining": 55.51810073852539
+              "startTimeSeconds": 94.49270629882812,
+              "startFrame": 909,
+              "endTimeSeconds": 94.59270477294922,
+              "endFrame": 910,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 13.053736686706543,
+              "boostRemaining": 0,
+              "peakSpeed": 2299.405364182277
             },
             {
-              "timeSeconds": 35.49360275268555,
-              "frame": 319,
-              "speed": 2300.0000106133525,
-              "boostSpent": 8.977256774902344,
-              "boostRemaining": 46.54084396362305
+              "startTimeSeconds": 99.39263153076172,
+              "startFrame": 958,
+              "endTimeSeconds": 99.49263000488281,
+              "endFrame": 959,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 15.566650390625,
+              "boostRemaining": 215,
+              "peakSpeed": 2281.631755344835
             },
             {
-              "timeSeconds": 35.59360122680664,
-              "frame": 320,
-              "speed": 2299.997750009577,
-              "boostSpent": 6.339973449707031,
-              "boostRemaining": 40.200870513916016
+              "startTimeSeconds": 101.69259643554688,
+              "startFrame": 981,
+              "endTimeSeconds": 101.69259643554688,
+              "endFrame": 981,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 1.0033111572265625,
+              "boostRemaining": 189,
+              "peakSpeed": 2190.9308766888375
             },
             {
-              "timeSeconds": 35.693599700927734,
-              "frame": 321,
-              "speed": 2299.992999479106,
-              "boostSpent": 3.2008705139160156,
-              "boostRemaining": 37
+              "startTimeSeconds": 102.19258880615234,
+              "startFrame": 986,
+              "endTimeSeconds": 102.69258117675781,
+              "endFrame": 991,
+              "durationSeconds": 0.49999237060546875,
+              "sampledFrames": 6,
+              "boostSpent": 47,
+              "boostRemaining": 142,
+              "peakSpeed": 2299.9949148186615
             },
             {
-              "timeSeconds": 36.69358444213867,
-              "frame": 331,
-              "speed": 2203.96921234806,
-              "boostSpent": 9.14695930480957,
-              "boostRemaining": 24.837926864624023
+              "startTimeSeconds": 102.9925765991211,
+              "startFrame": 994,
+              "endTimeSeconds": 103.29257202148438,
+              "endFrame": 997,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 4,
+              "boostSpent": 33.905723571777344,
+              "boostRemaining": 108.09427642822266,
+              "peakSpeed": 2299.996123625054
             },
             {
-              "timeSeconds": 36.793582916259766,
-              "frame": 332,
-              "speed": 2299.9969512155863,
-              "boostSpent": 9.350279808044434,
-              "boostRemaining": 15.48764705657959
+              "startTimeSeconds": 104.4925537109375,
+              "startFrame": 1009,
+              "endTimeSeconds": 104.4925537109375,
+              "endFrame": 1009,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 9.153900146484375,
+              "boostRemaining": 99.84609985351562,
+              "peakSpeed": 2299.9934781573966
             },
             {
-              "timeSeconds": 36.89358139038086,
-              "frame": 333,
-              "speed": 2298.2807773458035,
-              "boostSpent": 7.48764705657959,
-              "boostRemaining": 8
+              "startTimeSeconds": 105.59253692626953,
+              "startFrame": 1020,
+              "endTimeSeconds": 105.59253692626953,
+              "endFrame": 1020,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 0.5341053009033203,
+              "boostRemaining": 14,
+              "peakSpeed": 2249.317785390969
             },
             {
-              "timeSeconds": 37.49357223510742,
-              "frame": 339,
-              "speed": 2299.991760587107,
-              "boostSpent": 6.025359392166138,
-              "boostRemaining": 1.9746406078338623
+              "startTimeSeconds": 106.59252166748047,
+              "startFrame": 1030,
+              "endTimeSeconds": 106.59252166748047,
+              "endFrame": 1030,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 9.730864524841309,
+              "boostRemaining": 4.269135475158691,
+              "peakSpeed": 2299.9913310327825
             }
           ]
         },
@@ -5138,7 +5499,16 @@
     },
     {
       "replayFingerprint": "215a4e006a25d263",
-      "mode": "Ranked Doubles",
+      "evidenceSource": "real_replay",
+      "versions": {
+        "parser": "subtr-actor@1.2.0",
+        "normalizer": "rocket-league-normalizer@0.2.0",
+        "shadowRuntime": "rocket-league-shadow-runtime@0.2.0"
+      },
+      "mode": "2v2",
+      "rankCohort": "unranked-unknown",
+      "cohortKey": "2v2:unranked-unknown",
+      "metadataProvenance": "replay-only",
       "gameVersion": "260114.55864.507183",
       "playerCount": 4,
       "sampledFrames": 3480,
@@ -5283,153 +5653,234 @@
         },
         {
           "detectorId": "boost.supersonic_waste",
-          "detectorVersion": "0.1.0",
+          "detectorVersion": "0.2.0",
           "status": "observed",
-          "candidateCount": 120,
+          "candidateCount": 37,
           "measurements": {
             "totalBoostSpent": 858.4833421707153,
-            "peakSpeed": 2299.9997277484026
+            "peakSpeed": 2299.9997277484026,
+            "sampledFrames": 120
           },
           "evidence": [
             {
-              "timeSeconds": 12.811362266540527,
-              "frame": 75,
-              "speed": 2215.8570609457583,
+              "startTimeSeconds": 12.811362266540527,
+              "startFrame": 75,
+              "endTimeSeconds": 12.811362266540527,
+              "endFrame": 75,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
               "boostSpent": 4.232975006103516,
-              "boostRemaining": 46
+              "boostRemaining": 46,
+              "peakSpeed": 2215.8570609457583
             },
             {
-              "timeSeconds": 21.511394500732422,
-              "frame": 162,
-              "speed": 2297.698703613384,
-              "boostSpent": 2.8553085327148438,
-              "boostRemaining": 83
+              "startTimeSeconds": 21.511394500732422,
+              "startFrame": 162,
+              "endTimeSeconds": 22.71139907836914,
+              "endFrame": 174,
+              "durationSeconds": 1.2000045776367188,
+              "sampledFrames": 12,
+              "boostSpent": 85.85530853271484,
+              "boostRemaining": 0,
+              "peakSpeed": 2299.998567481819
             },
             {
-              "timeSeconds": 21.711395263671875,
-              "frame": 164,
-              "speed": 2297.538877776569,
-              "boostSpent": 3.0723495483398438,
-              "boostRemaining": 79.92765045166016
+              "startTimeSeconds": 26.711414337158203,
+              "startFrame": 214,
+              "endTimeSeconds": 26.81141471862793,
+              "endFrame": 215,
+              "durationSeconds": 0.10000038146972656,
+              "sampledFrames": 2,
+              "boostSpent": 15.362213134765625,
+              "boostRemaining": 185.05908203125,
+              "peakSpeed": 2282.7770742574066
             },
             {
-              "timeSeconds": 21.8113956451416,
-              "frame": 165,
-              "speed": 2288.2901531344164,
-              "boostSpent": 6.1446990966796875,
-              "boostRemaining": 73.78295135498047
+              "startTimeSeconds": 28.111419677734375,
+              "startFrame": 228,
+              "endTimeSeconds": 28.2114200592041,
+              "endFrame": 229,
+              "durationSeconds": 0.10000038146972656,
+              "sampledFrames": 2,
+              "boostSpent": 17,
+              "boostRemaining": 199,
+              "peakSpeed": 2299.9914445915306
             },
             {
-              "timeSeconds": 21.911396026611328,
-              "frame": 166,
-              "speed": 2299.9938216701157,
-              "boostSpent": 9.217010498046875,
-              "boostRemaining": 64.5659408569336
+              "startTimeSeconds": 28.711421966552734,
+              "startFrame": 234,
+              "endTimeSeconds": 28.911422729492188,
+              "endFrame": 236,
+              "durationSeconds": 0.20000076293945312,
+              "sampledFrames": 3,
+              "boostSpent": 21.565887451171875,
+              "boostRemaining": 159,
+              "peakSpeed": 2299.992623110934
             },
             {
-              "timeSeconds": 22.011396408081055,
-              "frame": 167,
-              "speed": 2299.9948590636654,
-              "boostSpent": 9.217601776123047,
-              "boostRemaining": 55.34833908081055
+              "startTimeSeconds": 29.511425018310547,
+              "startFrame": 242,
+              "endTimeSeconds": 29.71142578125,
+              "endFrame": 244,
+              "durationSeconds": 0.20000076293945312,
+              "sampledFrames": 3,
+              "boostSpent": 17,
+              "boostRemaining": 142,
+              "peakSpeed": 2299.9997277484026
             },
             {
-              "timeSeconds": 22.11139678955078,
-              "frame": 168,
-              "speed": 2299.998567481819,
-              "boostSpent": 9.21700668334961,
-              "boostRemaining": 46.13133239746094
+              "startTimeSeconds": 30.511428833007812,
+              "startFrame": 252,
+              "endTimeSeconds": 31.811433792114258,
+              "endFrame": 265,
+              "durationSeconds": 1.3000049591064453,
+              "sampledFrames": 13,
+              "boostSpent": 103.57972717285156,
+              "boostRemaining": 39,
+              "peakSpeed": 2299.9985398495073
             },
             {
-              "timeSeconds": 22.211397171020508,
-              "frame": 169,
-              "speed": 2299.990161990788,
-              "boostSpent": 9.217342376708984,
-              "boostRemaining": 36.91399002075195
+              "startTimeSeconds": 35.81137466430664,
+              "startFrame": 305,
+              "endTimeSeconds": 35.81137466430664,
+              "endFrame": 305,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 2.5055999755859375,
+              "boostRemaining": 228,
+              "peakSpeed": 2235.52983325779
             },
             {
-              "timeSeconds": 22.311397552490234,
-              "frame": 170,
-              "speed": 2299.9971647862967,
-              "boostSpent": 6.144721984863281,
-              "boostRemaining": 30.769268035888672
+              "startTimeSeconds": 44.5112419128418,
+              "startFrame": 392,
+              "endTimeSeconds": 44.61124038696289,
+              "endFrame": 393,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 8.782974243164062,
+              "boostRemaining": 80,
+              "peakSpeed": 2294.90716098798
             },
             {
-              "timeSeconds": 22.41139793395996,
-              "frame": 171,
-              "speed": 2299.9927789838302,
-              "boostSpent": 9.217041015625,
-              "boostRemaining": 21.552227020263672
+              "startTimeSeconds": 45.811222076416016,
+              "startFrame": 405,
+              "endTimeSeconds": 46.71120834350586,
+              "endFrame": 414,
+              "durationSeconds": 0.8999862670898438,
+              "sampledFrames": 10,
+              "boostSpent": 79,
+              "boostRemaining": 1,
+              "peakSpeed": 2299.998673268957
             },
             {
-              "timeSeconds": 22.511398315429688,
-              "frame": 172,
-              "speed": 2299.9940147052475,
-              "boostSpent": 9.218546867370605,
-              "boostRemaining": 12.333680152893066
+              "startTimeSeconds": 47.111202239990234,
+              "startFrame": 418,
+              "endTimeSeconds": 47.111202239990234,
+              "endFrame": 418,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 1,
+              "boostRemaining": 0,
+              "peakSpeed": 2299.9906420880193
             },
             {
-              "timeSeconds": 22.611398696899414,
-              "frame": 173,
-              "speed": 2299.9970458184903,
-              "boostSpent": 9.217066764831543,
-              "boostRemaining": 3.1166133880615234
+              "startTimeSeconds": 61.810977935791016,
+              "startFrame": 565,
+              "endTimeSeconds": 61.91097640991211,
+              "endFrame": 566,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 9.676254272460938,
+              "boostRemaining": 41,
+              "peakSpeed": 2299.994114498857
             },
             {
-              "timeSeconds": 22.71139907836914,
-              "frame": 174,
-              "speed": 2299.9929620858175,
-              "boostSpent": 3.1166133880615234,
-              "boostRemaining": 0
+              "startTimeSeconds": 69.01087188720703,
+              "startFrame": 637,
+              "endTimeSeconds": 69.31086730957031,
+              "endFrame": 640,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 4,
+              "boostSpent": 33.798248291015625,
+              "boostRemaining": 19.375282287597656,
+              "peakSpeed": 2299.9881630500186
             },
             {
-              "timeSeconds": 26.711414337158203,
-              "frame": 214,
-              "speed": 2183.7376697731447,
-              "boostSpent": 9.217529296875,
-              "boostRemaining": 191.20376586914062
+              "startTimeSeconds": 79.2107162475586,
+              "startFrame": 739,
+              "endTimeSeconds": 79.51071166992188,
+              "endFrame": 742,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 4,
+              "boostSpent": 29.71059799194336,
+              "boostRemaining": 15,
+              "peakSpeed": 2299.996726445998
             },
             {
-              "timeSeconds": 26.81141471862793,
-              "frame": 215,
-              "speed": 2282.7770742574066,
-              "boostSpent": 6.144683837890625,
-              "boostRemaining": 185.05908203125
+              "startTimeSeconds": 96.91044616699219,
+              "startFrame": 916,
+              "endTimeSeconds": 96.91044616699219,
+              "endFrame": 916,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 5.493598937988281,
+              "boostRemaining": 4,
+              "peakSpeed": 2235.102698844956
             },
             {
-              "timeSeconds": 28.111419677734375,
-              "frame": 228,
-              "speed": 2263.317223976826,
-              "boostSpent": 9.217117309570312,
-              "boostRemaining": 206.7828826904297
+              "startTimeSeconds": 105.61031341552734,
+              "startFrame": 1003,
+              "endTimeSeconds": 105.71031188964844,
+              "endFrame": 1004,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 9.217079162597656,
+              "boostRemaining": 74.78292083740234,
+              "peakSpeed": 2299.8919542870785
             },
             {
-              "timeSeconds": 28.2114200592041,
-              "frame": 229,
-              "speed": 2299.9914445915306,
-              "boostSpent": 7.7828826904296875,
-              "boostRemaining": 199
+              "startTimeSeconds": 158.81185913085938,
+              "startFrame": 1535,
+              "endTimeSeconds": 159.21188354492188,
+              "endFrame": 1539,
+              "durationSeconds": 0.4000244140625,
+              "sampledFrames": 5,
+              "boostSpent": 43.01417541503906,
+              "boostRemaining": 112.5382080078125,
+              "peakSpeed": 2299.9945739979466
             },
             {
-              "timeSeconds": 28.711421966552734,
-              "frame": 234,
-              "speed": 2200.023440843594,
-              "boostSpent": 9.21710205078125,
-              "boostRemaining": 171.34878540039062
+              "startTimeSeconds": 188.01364135742188,
+              "startFrame": 1827,
+              "endTimeSeconds": 188.31365966796875,
+              "endFrame": 1830,
+              "durationSeconds": 0.300018310546875,
+              "sampledFrames": 4,
+              "boostSpent": 28,
+              "boostRemaining": 92,
+              "peakSpeed": 2299.9969253353106
             },
             {
-              "timeSeconds": 28.81142234802246,
-              "frame": 235,
-              "speed": 2270.1953897859894,
-              "boostSpent": 6.144683837890625,
-              "boostRemaining": 165.2041015625
+              "startTimeSeconds": 188.81369018554688,
+              "startFrame": 1835,
+              "endTimeSeconds": 188.9136962890625,
+              "endFrame": 1836,
+              "durationSeconds": 0.100006103515625,
+              "sampledFrames": 2,
+              "boostSpent": 15.361801147460938,
+              "boostRemaining": 76.63819885253906,
+              "peakSpeed": 2299.993261912016
             },
             {
-              "timeSeconds": 28.911422729492188,
-              "frame": 236,
-              "speed": 2299.992623110934,
-              "boostSpent": 6.2041015625,
-              "boostRemaining": 159
+              "startTimeSeconds": 189.7137451171875,
+              "startFrame": 1844,
+              "endTimeSeconds": 189.81375122070312,
+              "endFrame": 1845,
+              "durationSeconds": 0.100006103515625,
+              "sampledFrames": 2,
+              "boostSpent": 11,
+              "boostRemaining": 96,
+              "peakSpeed": 2299.9949344241522
             }
           ]
         },
@@ -6414,7 +6865,16 @@
     },
     {
       "replayFingerprint": "d8e920fb76216d6e",
-      "mode": "Ranked Doubles",
+      "evidenceSource": "real_replay",
+      "versions": {
+        "parser": "subtr-actor@1.2.0",
+        "normalizer": "rocket-league-normalizer@0.2.0",
+        "shadowRuntime": "rocket-league-shadow-runtime@0.2.0"
+      },
+      "mode": "2v2",
+      "rankCohort": "unranked-unknown",
+      "cohortKey": "2v2:unranked-unknown",
+      "metadataProvenance": "replay-only",
       "gameVersion": "260114.55864.507183",
       "playerCount": 4,
       "sampledFrames": 3467,
@@ -6543,153 +7003,234 @@
         },
         {
           "detectorId": "boost.supersonic_waste",
-          "detectorVersion": "0.1.0",
+          "detectorVersion": "0.2.0",
           "status": "observed",
-          "candidateCount": 165,
+          "candidateCount": 41,
           "measurements": {
             "totalBoostSpent": 1150.8562545776367,
-            "peakSpeed": 2299.9998247529147
+            "peakSpeed": 2299.9998247529147,
+            "sampledFrames": 165
           },
           "evidence": [
             {
-              "timeSeconds": 11.73112678527832,
-              "frame": 80,
-              "speed": 2299.9957662956804,
-              "boostSpent": 6.086374282836914,
-              "boostRemaining": 24.913625717163086
+              "startTimeSeconds": 11.73112678527832,
+              "startFrame": 80,
+              "endTimeSeconds": 11.831127166748047,
+              "endFrame": 81,
+              "durationSeconds": 0.10000038146972656,
+              "sampledFrames": 2,
+              "boostSpent": 10,
+              "boostRemaining": 21,
+              "peakSpeed": 2299.9957662956804
             },
             {
-              "timeSeconds": 11.831127166748047,
-              "frame": 81,
-              "speed": 2299.6100610565527,
-              "boostSpent": 3.913625717163086,
-              "boostRemaining": 21
+              "startTimeSeconds": 13.331132888793945,
+              "startFrame": 96,
+              "endTimeSeconds": 13.631134033203125,
+              "endFrame": 99,
+              "durationSeconds": 0.3000011444091797,
+              "sampledFrames": 4,
+              "boostSpent": 21,
+              "boostRemaining": 0,
+              "peakSpeed": 2299.9965802226266
             },
             {
-              "timeSeconds": 13.331132888793945,
-              "frame": 96,
-              "speed": 2211.1111419474482,
-              "boostSpent": 3.073221206665039,
-              "boostRemaining": 17.92677879333496
+              "startTimeSeconds": 51.330909729003906,
+              "startFrame": 476,
+              "endTimeSeconds": 51.430908203125,
+              "endFrame": 477,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 10.158447265625,
+              "boostRemaining": 0,
+              "peakSpeed": 2253.8450264930157
             },
             {
-              "timeSeconds": 13.431133270263672,
-              "frame": 97,
-              "speed": 2287.1850004384996,
-              "boostSpent": 6.044034957885742,
-              "boostRemaining": 11.882743835449219
+              "startTimeSeconds": 70.93061065673828,
+              "startFrame": 672,
+              "endTimeSeconds": 71.23060607910156,
+              "endFrame": 675,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 4,
+              "boostSpent": 22,
+              "boostRemaining": 136,
+              "peakSpeed": 2298.41754766442
             },
             {
-              "timeSeconds": 13.531133651733398,
-              "frame": 98,
-              "speed": 2299.9947611457624,
-              "boostSpent": 9.128378629684448,
-              "boostRemaining": 2.7543652057647705
+              "startTimeSeconds": 80.93045806884766,
+              "startFrame": 772,
+              "endTimeSeconds": 81.03045654296875,
+              "endFrame": 773,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 15.985452651977539,
+              "boostRemaining": 9,
+              "peakSpeed": 2299.992234298858
             },
             {
-              "timeSeconds": 13.631134033203125,
-              "frame": 99,
-              "speed": 2299.9965802226266,
-              "boostSpent": 2.7543652057647705,
-              "boostRemaining": 0
-            },
-            {
-              "timeSeconds": 51.330909729003906,
-              "frame": 476,
-              "speed": 2197.3310345665295,
-              "boostSpent": 9.056800127029419,
-              "boostRemaining": 1.101647138595581
-            },
-            {
-              "timeSeconds": 51.430908203125,
-              "frame": 477,
-              "speed": 2253.8450264930157,
-              "boostSpent": 1.101647138595581,
-              "boostRemaining": 0
-            },
-            {
-              "timeSeconds": 70.93061065673828,
-              "frame": 672,
-              "speed": 2222.0355695507983,
-              "boostSpent": 6.1143035888671875,
-              "boostRemaining": 151.8856964111328
-            },
-            {
-              "timeSeconds": 71.03060913085938,
-              "frame": 673,
-              "speed": 2298.41754766442,
-              "boostSpent": 8.976119995117188,
-              "boostRemaining": 142.90957641601562
-            },
-            {
-              "timeSeconds": 71.13060760498047,
-              "frame": 674,
-              "speed": 2298.41754766442,
-              "boostSpent": 6.064971923828125,
-              "boostRemaining": 136.8446044921875
-            },
-            {
-              "timeSeconds": 71.23060607910156,
-              "frame": 675,
-              "speed": 2279.492308376174,
-              "boostSpent": 0.8446044921875,
-              "boostRemaining": 136
-            },
-            {
-              "timeSeconds": 80.93045806884766,
-              "frame": 772,
-              "speed": 2218.421325791378,
-              "boostSpent": 5.899553298950195,
-              "boostRemaining": 19.085899353027344
-            },
-            {
-              "timeSeconds": 81.03045654296875,
-              "frame": 773,
-              "speed": 2299.992234298858,
-              "boostSpent": 10.085899353027344,
-              "boostRemaining": 9
-            },
-            {
-              "timeSeconds": 87.83035278320312,
-              "frame": 841,
-              "speed": 2252.7590218829205,
+              "startTimeSeconds": 87.83035278320312,
+              "startFrame": 841,
+              "endTimeSeconds": 87.83035278320312,
+              "endFrame": 841,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
               "boostSpent": 8.94859504699707,
-              "boostRemaining": 22.05140495300293
+              "boostRemaining": 22.05140495300293,
+              "peakSpeed": 2252.7590218829205
             },
             {
-              "timeSeconds": 88.63034057617188,
-              "frame": 849,
-              "speed": 2299.994145426877,
-              "boostSpent": 5.949867248535156,
-              "boostRemaining": 16.050132751464844
+              "startTimeSeconds": 88.63034057617188,
+              "startFrame": 849,
+              "endTimeSeconds": 88.73033905029297,
+              "endFrame": 850,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 12,
+              "boostRemaining": 10,
+              "peakSpeed": 2299.998879521562
             },
             {
-              "timeSeconds": 88.73033905029297,
-              "frame": 850,
-              "speed": 2299.998879521562,
-              "boostSpent": 6.050132751464844,
-              "boostRemaining": 10
+              "startTimeSeconds": 96.03022766113281,
+              "startFrame": 923,
+              "endTimeSeconds": 96.3302230834961,
+              "endFrame": 926,
+              "durationSeconds": 0.29999542236328125,
+              "sampledFrames": 4,
+              "boostSpent": 32.59534454345703,
+              "boostRemaining": 96.10948944091797,
+              "peakSpeed": 2299.9972852693736
             },
             {
-              "timeSeconds": 96.03022766113281,
-              "frame": 923,
-              "speed": 2184.6348361088676,
-              "boostSpent": 9.159774780273438,
-              "boostRemaining": 119.54505920410156
+              "startTimeSeconds": 102.03013610839844,
+              "startFrame": 983,
+              "endTimeSeconds": 102.13013458251953,
+              "endFrame": 984,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 17,
+              "boostRemaining": 110,
+              "peakSpeed": 2272.165656156671
             },
             {
-              "timeSeconds": 96.1302261352539,
-              "frame": 924,
-              "speed": 2246.784445720169,
-              "boostSpent": 8.357139587402344,
-              "boostRemaining": 111.18791961669922
+              "startTimeSeconds": 104.53009796142578,
+              "startFrame": 1008,
+              "endTimeSeconds": 104.63009643554688,
+              "endFrame": 1009,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 14.32958984375,
+              "boostRemaining": 202,
+              "peakSpeed": 2299.992449991154
             },
             {
-              "timeSeconds": 96.230224609375,
-              "frame": 925,
-              "speed": 2299.9972852693736,
-              "boostSpent": 8.913558959960938,
-              "boostRemaining": 102.27436065673828
+              "startTimeSeconds": 104.93009185791016,
+              "startFrame": 1012,
+              "endTimeSeconds": 105.53008270263672,
+              "endFrame": 1018,
+              "durationSeconds": 0.5999908447265625,
+              "sampledFrames": 7,
+              "boostSpent": 53.23956298828125,
+              "boostRemaining": 148.76043701171875,
+              "peakSpeed": 2299.999497927638
+            },
+            {
+              "startTimeSeconds": 105.9300765991211,
+              "startFrame": 1022,
+              "endTimeSeconds": 106.03007507324219,
+              "endFrame": 1023,
+              "durationSeconds": 0.09999847412109375,
+              "sampledFrames": 2,
+              "boostSpent": 17.749053955078125,
+              "boostRemaining": 132.25094604492188,
+              "peakSpeed": 2299.9976781814903
+            },
+            {
+              "startTimeSeconds": 129.1298065185547,
+              "startFrame": 1254,
+              "endTimeSeconds": 129.32981872558594,
+              "endFrame": 1256,
+              "durationSeconds": 0.20001220703125,
+              "sampledFrames": 3,
+              "boostSpent": 24.15435791015625,
+              "boostRemaining": 67.75627136230469,
+              "peakSpeed": 2299.988045502635
+            },
+            {
+              "startTimeSeconds": 129.72984313964844,
+              "startFrame": 1260,
+              "endTimeSeconds": 129.72984313964844,
+              "endFrame": 1260,
+              "durationSeconds": 0,
+              "sampledFrames": 1,
+              "boostSpent": 9.099411010742188,
+              "boostRemaining": 60.90058898925781,
+              "peakSpeed": 2299.9912825873566
+            },
+            {
+              "startTimeSeconds": 178.3328094482422,
+              "startFrame": 1746,
+              "endTimeSeconds": 178.4328155517578,
+              "endFrame": 1747,
+              "durationSeconds": 0.100006103515625,
+              "sampledFrames": 2,
+              "boostSpent": 18.119003295898438,
+              "boostRemaining": 47.50080108642578,
+              "peakSpeed": 2269.8494130873232
+            },
+            {
+              "startTimeSeconds": 179.33287048339844,
+              "startFrame": 1756,
+              "endTimeSeconds": 179.73289489746094,
+              "endFrame": 1760,
+              "durationSeconds": 0.4000244140625,
+              "sampledFrames": 4,
+              "boostSpent": 28.058448791503906,
+              "boostRemaining": 74.9415512084961,
+              "peakSpeed": 2299.9976903469187
+            },
+            {
+              "startTimeSeconds": 190.7335662841797,
+              "startFrame": 1870,
+              "endTimeSeconds": 190.8335723876953,
+              "endFrame": 1871,
+              "durationSeconds": 0.100006103515625,
+              "sampledFrames": 2,
+              "boostSpent": 15.452774047851562,
+              "boostRemaining": 159,
+              "peakSpeed": 2299.998440873168
+            },
+            {
+              "startTimeSeconds": 196.7339324951172,
+              "startFrame": 1930,
+              "endTimeSeconds": 196.93394470214844,
+              "endFrame": 1932,
+              "durationSeconds": 0.20001220703125,
+              "sampledFrames": 3,
+              "boostSpent": 17,
+              "boostRemaining": 50,
+              "peakSpeed": 2299.9936851933758
+            },
+            {
+              "startTimeSeconds": 197.9340057373047,
+              "startFrame": 1942,
+              "endTimeSeconds": 198.0340118408203,
+              "endFrame": 1943,
+              "durationSeconds": 0.100006103515625,
+              "sampledFrames": 2,
+              "boostSpent": 14.864517211914062,
+              "boostRemaining": 49.13548278808594,
+              "peakSpeed": 2299.992884279592
+            },
+            {
+              "startTimeSeconds": 199.03407287597656,
+              "startFrame": 1953,
+              "endTimeSeconds": 200.0341339111328,
+              "endFrame": 1963,
+              "durationSeconds": 1.00006103515625,
+              "sampledFrames": 9,
+              "boostSpent": 57.97390937805176,
+              "boostRemaining": 232,
+              "peakSpeed": 2299.9991381377454
             }
           ]
         },
@@ -7583,6 +8124,7 @@
       "executionErrors": 0,
       "replaysWithSignal": 6,
       "candidateCount": 91,
+      "ineligibleReplayRuns": 0,
       "signalReplayRate": 1,
       "publicQualityGate": {
         "eligible": false,
@@ -7604,6 +8146,10 @@
             "passed": false
           },
           {
+            "id": "precision_lower_bound",
+            "passed": false
+          },
+          {
             "id": "false_positive_rate",
             "passed": false
           },
@@ -7616,7 +8162,43 @@
             "passed": false
           },
           {
+            "id": "cohort_sample_floor",
+            "passed": false
+          },
+          {
+            "id": "independent_reviewers",
+            "passed": false
+          },
+          {
+            "id": "reviewer_agreement",
+            "passed": false
+          },
+          {
+            "id": "label_provenance",
+            "passed": false
+          },
+          {
             "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "version_drift",
+            "passed": false
+          },
+          {
+            "id": "confidence_calibration",
+            "passed": false
+          },
+          {
+            "id": "deterministic_reproducibility",
+            "passed": false
+          },
+          {
+            "id": "detector_dependencies",
+            "passed": false
+          },
+          {
+            "id": "conflict_resolution",
             "passed": false
           },
           {
@@ -7633,10 +8215,20 @@
           "reviewed_positives",
           "reviewed_negatives",
           "precision",
+          "precision_lower_bound",
           "false_positive_rate",
           "timestamp_verification",
           "rank_mode_cohorts",
+          "cohort_sample_floor",
+          "independent_reviewers",
+          "reviewer_agreement",
+          "label_provenance",
           "patch_regression",
+          "version_drift",
+          "confidence_calibration",
+          "deterministic_reproducibility",
+          "detector_dependencies",
+          "conflict_resolution",
           "expert_labels",
           "abstention_rule"
         ],
@@ -7645,19 +8237,24 @@
           "minimumReviewedPositives": 30,
           "minimumReviewedNegatives": 30,
           "minimumPrecision": 0.9,
+          "minimumPrecisionLowerBound": 0.85,
           "maximumFalsePositiveRate": 0.05,
           "minimumTimestampVerifiedRate": 0.95,
-          "minimumRankModeCohorts": 3
+          "minimumRankModeCohorts": 3,
+          "minimumExamplesPerCohort": 5,
+          "minimumIndependentReviewers": 2,
+          "minimumReviewerAgreement": 0.6
         }
       }
     },
     {
       "detectorId": "boost.supersonic_waste",
-      "detectorVersion": "0.1.0",
+      "detectorVersion": "0.2.0",
       "replayRuns": 6,
       "executionErrors": 0,
       "replaysWithSignal": 6,
-      "candidateCount": 816,
+      "candidateCount": 257,
+      "ineligibleReplayRuns": 0,
       "signalReplayRate": 1,
       "publicQualityGate": {
         "eligible": false,
@@ -7679,6 +8276,10 @@
             "passed": false
           },
           {
+            "id": "precision_lower_bound",
+            "passed": false
+          },
+          {
             "id": "false_positive_rate",
             "passed": false
           },
@@ -7691,7 +8292,43 @@
             "passed": false
           },
           {
+            "id": "cohort_sample_floor",
+            "passed": false
+          },
+          {
+            "id": "independent_reviewers",
+            "passed": false
+          },
+          {
+            "id": "reviewer_agreement",
+            "passed": false
+          },
+          {
+            "id": "label_provenance",
+            "passed": false
+          },
+          {
             "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "version_drift",
+            "passed": false
+          },
+          {
+            "id": "confidence_calibration",
+            "passed": false
+          },
+          {
+            "id": "deterministic_reproducibility",
+            "passed": false
+          },
+          {
+            "id": "detector_dependencies",
+            "passed": false
+          },
+          {
+            "id": "conflict_resolution",
             "passed": false
           },
           {
@@ -7708,10 +8345,20 @@
           "reviewed_positives",
           "reviewed_negatives",
           "precision",
+          "precision_lower_bound",
           "false_positive_rate",
           "timestamp_verification",
           "rank_mode_cohorts",
+          "cohort_sample_floor",
+          "independent_reviewers",
+          "reviewer_agreement",
+          "label_provenance",
           "patch_regression",
+          "version_drift",
+          "confidence_calibration",
+          "deterministic_reproducibility",
+          "detector_dependencies",
+          "conflict_resolution",
           "expert_labels",
           "abstention_rule"
         ],
@@ -7720,9 +8367,13 @@
           "minimumReviewedPositives": 30,
           "minimumReviewedNegatives": 30,
           "minimumPrecision": 0.9,
+          "minimumPrecisionLowerBound": 0.85,
           "maximumFalsePositiveRate": 0.05,
           "minimumTimestampVerifiedRate": 0.95,
-          "minimumRankModeCohorts": 3
+          "minimumRankModeCohorts": 3,
+          "minimumExamplesPerCohort": 5,
+          "minimumIndependentReviewers": 2,
+          "minimumReviewerAgreement": 0.6
         }
       }
     },
@@ -7733,6 +8384,7 @@
       "executionErrors": 0,
       "replaysWithSignal": 6,
       "candidateCount": 13,
+      "ineligibleReplayRuns": 0,
       "signalReplayRate": 1,
       "publicQualityGate": {
         "eligible": false,
@@ -7754,6 +8406,10 @@
             "passed": false
           },
           {
+            "id": "precision_lower_bound",
+            "passed": false
+          },
+          {
             "id": "false_positive_rate",
             "passed": false
           },
@@ -7766,7 +8422,43 @@
             "passed": false
           },
           {
+            "id": "cohort_sample_floor",
+            "passed": false
+          },
+          {
+            "id": "independent_reviewers",
+            "passed": false
+          },
+          {
+            "id": "reviewer_agreement",
+            "passed": false
+          },
+          {
+            "id": "label_provenance",
+            "passed": false
+          },
+          {
             "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "version_drift",
+            "passed": false
+          },
+          {
+            "id": "confidence_calibration",
+            "passed": false
+          },
+          {
+            "id": "deterministic_reproducibility",
+            "passed": false
+          },
+          {
+            "id": "detector_dependencies",
+            "passed": false
+          },
+          {
+            "id": "conflict_resolution",
             "passed": false
           },
           {
@@ -7783,10 +8475,20 @@
           "reviewed_positives",
           "reviewed_negatives",
           "precision",
+          "precision_lower_bound",
           "false_positive_rate",
           "timestamp_verification",
           "rank_mode_cohorts",
+          "cohort_sample_floor",
+          "independent_reviewers",
+          "reviewer_agreement",
+          "label_provenance",
           "patch_regression",
+          "version_drift",
+          "confidence_calibration",
+          "deterministic_reproducibility",
+          "detector_dependencies",
+          "conflict_resolution",
           "expert_labels",
           "abstention_rule"
         ],
@@ -7795,9 +8497,13 @@
           "minimumReviewedPositives": 30,
           "minimumReviewedNegatives": 30,
           "minimumPrecision": 0.9,
+          "minimumPrecisionLowerBound": 0.85,
           "maximumFalsePositiveRate": 0.05,
           "minimumTimestampVerifiedRate": 0.95,
-          "minimumRankModeCohorts": 3
+          "minimumRankModeCohorts": 3,
+          "minimumExamplesPerCohort": 5,
+          "minimumIndependentReviewers": 2,
+          "minimumReviewerAgreement": 0.6
         }
       }
     },
@@ -7808,6 +8514,7 @@
       "executionErrors": 0,
       "replaysWithSignal": 6,
       "candidateCount": 186,
+      "ineligibleReplayRuns": 0,
       "signalReplayRate": 1,
       "publicQualityGate": {
         "eligible": false,
@@ -7829,6 +8536,10 @@
             "passed": false
           },
           {
+            "id": "precision_lower_bound",
+            "passed": false
+          },
+          {
             "id": "false_positive_rate",
             "passed": false
           },
@@ -7841,7 +8552,43 @@
             "passed": false
           },
           {
+            "id": "cohort_sample_floor",
+            "passed": false
+          },
+          {
+            "id": "independent_reviewers",
+            "passed": false
+          },
+          {
+            "id": "reviewer_agreement",
+            "passed": false
+          },
+          {
+            "id": "label_provenance",
+            "passed": false
+          },
+          {
             "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "version_drift",
+            "passed": false
+          },
+          {
+            "id": "confidence_calibration",
+            "passed": false
+          },
+          {
+            "id": "deterministic_reproducibility",
+            "passed": false
+          },
+          {
+            "id": "detector_dependencies",
+            "passed": false
+          },
+          {
+            "id": "conflict_resolution",
             "passed": false
           },
           {
@@ -7858,10 +8605,20 @@
           "reviewed_positives",
           "reviewed_negatives",
           "precision",
+          "precision_lower_bound",
           "false_positive_rate",
           "timestamp_verification",
           "rank_mode_cohorts",
+          "cohort_sample_floor",
+          "independent_reviewers",
+          "reviewer_agreement",
+          "label_provenance",
           "patch_regression",
+          "version_drift",
+          "confidence_calibration",
+          "deterministic_reproducibility",
+          "detector_dependencies",
+          "conflict_resolution",
           "expert_labels",
           "abstention_rule"
         ],
@@ -7870,9 +8627,13 @@
           "minimumReviewedPositives": 30,
           "minimumReviewedNegatives": 30,
           "minimumPrecision": 0.9,
+          "minimumPrecisionLowerBound": 0.85,
           "maximumFalsePositiveRate": 0.05,
           "minimumTimestampVerifiedRate": 0.95,
-          "minimumRankModeCohorts": 3
+          "minimumRankModeCohorts": 3,
+          "minimumExamplesPerCohort": 5,
+          "minimumIndependentReviewers": 2,
+          "minimumReviewerAgreement": 0.6
         }
       }
     },
@@ -7883,6 +8644,7 @@
       "executionErrors": 0,
       "replaysWithSignal": 6,
       "candidateCount": 32,
+      "ineligibleReplayRuns": 0,
       "signalReplayRate": 1,
       "publicQualityGate": {
         "eligible": false,
@@ -7904,6 +8666,10 @@
             "passed": false
           },
           {
+            "id": "precision_lower_bound",
+            "passed": false
+          },
+          {
             "id": "false_positive_rate",
             "passed": false
           },
@@ -7916,7 +8682,43 @@
             "passed": false
           },
           {
+            "id": "cohort_sample_floor",
+            "passed": false
+          },
+          {
+            "id": "independent_reviewers",
+            "passed": false
+          },
+          {
+            "id": "reviewer_agreement",
+            "passed": false
+          },
+          {
+            "id": "label_provenance",
+            "passed": false
+          },
+          {
             "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "version_drift",
+            "passed": false
+          },
+          {
+            "id": "confidence_calibration",
+            "passed": false
+          },
+          {
+            "id": "deterministic_reproducibility",
+            "passed": false
+          },
+          {
+            "id": "detector_dependencies",
+            "passed": false
+          },
+          {
+            "id": "conflict_resolution",
             "passed": false
           },
           {
@@ -7933,10 +8735,20 @@
           "reviewed_positives",
           "reviewed_negatives",
           "precision",
+          "precision_lower_bound",
           "false_positive_rate",
           "timestamp_verification",
           "rank_mode_cohorts",
+          "cohort_sample_floor",
+          "independent_reviewers",
+          "reviewer_agreement",
+          "label_provenance",
           "patch_regression",
+          "version_drift",
+          "confidence_calibration",
+          "deterministic_reproducibility",
+          "detector_dependencies",
+          "conflict_resolution",
           "expert_labels",
           "abstention_rule"
         ],
@@ -7945,9 +8757,13 @@
           "minimumReviewedPositives": 30,
           "minimumReviewedNegatives": 30,
           "minimumPrecision": 0.9,
+          "minimumPrecisionLowerBound": 0.85,
           "maximumFalsePositiveRate": 0.05,
           "minimumTimestampVerifiedRate": 0.95,
-          "minimumRankModeCohorts": 3
+          "minimumRankModeCohorts": 3,
+          "minimumExamplesPerCohort": 5,
+          "minimumIndependentReviewers": 2,
+          "minimumReviewerAgreement": 0.6
         }
       }
     },
@@ -7958,6 +8774,7 @@
       "executionErrors": 0,
       "replaysWithSignal": 6,
       "candidateCount": 119,
+      "ineligibleReplayRuns": 0,
       "signalReplayRate": 1,
       "publicQualityGate": {
         "eligible": false,
@@ -7979,6 +8796,10 @@
             "passed": false
           },
           {
+            "id": "precision_lower_bound",
+            "passed": false
+          },
+          {
             "id": "false_positive_rate",
             "passed": false
           },
@@ -7991,7 +8812,43 @@
             "passed": false
           },
           {
+            "id": "cohort_sample_floor",
+            "passed": false
+          },
+          {
+            "id": "independent_reviewers",
+            "passed": false
+          },
+          {
+            "id": "reviewer_agreement",
+            "passed": false
+          },
+          {
+            "id": "label_provenance",
+            "passed": false
+          },
+          {
             "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "version_drift",
+            "passed": false
+          },
+          {
+            "id": "confidence_calibration",
+            "passed": false
+          },
+          {
+            "id": "deterministic_reproducibility",
+            "passed": false
+          },
+          {
+            "id": "detector_dependencies",
+            "passed": false
+          },
+          {
+            "id": "conflict_resolution",
             "passed": false
           },
           {
@@ -8008,10 +8865,20 @@
           "reviewed_positives",
           "reviewed_negatives",
           "precision",
+          "precision_lower_bound",
           "false_positive_rate",
           "timestamp_verification",
           "rank_mode_cohorts",
+          "cohort_sample_floor",
+          "independent_reviewers",
+          "reviewer_agreement",
+          "label_provenance",
           "patch_regression",
+          "version_drift",
+          "confidence_calibration",
+          "deterministic_reproducibility",
+          "detector_dependencies",
+          "conflict_resolution",
           "expert_labels",
           "abstention_rule"
         ],
@@ -8020,9 +8887,13 @@
           "minimumReviewedPositives": 30,
           "minimumReviewedNegatives": 30,
           "minimumPrecision": 0.9,
+          "minimumPrecisionLowerBound": 0.85,
           "maximumFalsePositiveRate": 0.05,
           "minimumTimestampVerifiedRate": 0.95,
-          "minimumRankModeCohorts": 3
+          "minimumRankModeCohorts": 3,
+          "minimumExamplesPerCohort": 5,
+          "minimumIndependentReviewers": 2,
+          "minimumReviewerAgreement": 0.6
         }
       }
     },
@@ -8033,6 +8904,7 @@
       "executionErrors": 0,
       "replaysWithSignal": 5,
       "candidateCount": 26,
+      "ineligibleReplayRuns": 0,
       "signalReplayRate": 0.8333333333333334,
       "publicQualityGate": {
         "eligible": false,
@@ -8054,6 +8926,10 @@
             "passed": false
           },
           {
+            "id": "precision_lower_bound",
+            "passed": false
+          },
+          {
             "id": "false_positive_rate",
             "passed": false
           },
@@ -8066,7 +8942,43 @@
             "passed": false
           },
           {
+            "id": "cohort_sample_floor",
+            "passed": false
+          },
+          {
+            "id": "independent_reviewers",
+            "passed": false
+          },
+          {
+            "id": "reviewer_agreement",
+            "passed": false
+          },
+          {
+            "id": "label_provenance",
+            "passed": false
+          },
+          {
             "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "version_drift",
+            "passed": false
+          },
+          {
+            "id": "confidence_calibration",
+            "passed": false
+          },
+          {
+            "id": "deterministic_reproducibility",
+            "passed": false
+          },
+          {
+            "id": "detector_dependencies",
+            "passed": false
+          },
+          {
+            "id": "conflict_resolution",
             "passed": false
           },
           {
@@ -8083,10 +8995,20 @@
           "reviewed_positives",
           "reviewed_negatives",
           "precision",
+          "precision_lower_bound",
           "false_positive_rate",
           "timestamp_verification",
           "rank_mode_cohorts",
+          "cohort_sample_floor",
+          "independent_reviewers",
+          "reviewer_agreement",
+          "label_provenance",
           "patch_regression",
+          "version_drift",
+          "confidence_calibration",
+          "deterministic_reproducibility",
+          "detector_dependencies",
+          "conflict_resolution",
           "expert_labels",
           "abstention_rule"
         ],
@@ -8095,9 +9017,13 @@
           "minimumReviewedPositives": 30,
           "minimumReviewedNegatives": 30,
           "minimumPrecision": 0.9,
+          "minimumPrecisionLowerBound": 0.85,
           "maximumFalsePositiveRate": 0.05,
           "minimumTimestampVerifiedRate": 0.95,
-          "minimumRankModeCohorts": 3
+          "minimumRankModeCohorts": 3,
+          "minimumExamplesPerCohort": 5,
+          "minimumIndependentReviewers": 2,
+          "minimumReviewerAgreement": 0.6
         }
       }
     },
@@ -8108,6 +9034,7 @@
       "executionErrors": 0,
       "replaysWithSignal": 6,
       "candidateCount": 15,
+      "ineligibleReplayRuns": 0,
       "signalReplayRate": 1,
       "publicQualityGate": {
         "eligible": false,
@@ -8129,6 +9056,10 @@
             "passed": false
           },
           {
+            "id": "precision_lower_bound",
+            "passed": false
+          },
+          {
             "id": "false_positive_rate",
             "passed": false
           },
@@ -8141,7 +9072,43 @@
             "passed": false
           },
           {
+            "id": "cohort_sample_floor",
+            "passed": false
+          },
+          {
+            "id": "independent_reviewers",
+            "passed": false
+          },
+          {
+            "id": "reviewer_agreement",
+            "passed": false
+          },
+          {
+            "id": "label_provenance",
+            "passed": false
+          },
+          {
             "id": "patch_regression",
+            "passed": false
+          },
+          {
+            "id": "version_drift",
+            "passed": false
+          },
+          {
+            "id": "confidence_calibration",
+            "passed": false
+          },
+          {
+            "id": "deterministic_reproducibility",
+            "passed": false
+          },
+          {
+            "id": "detector_dependencies",
+            "passed": false
+          },
+          {
+            "id": "conflict_resolution",
             "passed": false
           },
           {
@@ -8158,10 +9125,20 @@
           "reviewed_positives",
           "reviewed_negatives",
           "precision",
+          "precision_lower_bound",
           "false_positive_rate",
           "timestamp_verification",
           "rank_mode_cohorts",
+          "cohort_sample_floor",
+          "independent_reviewers",
+          "reviewer_agreement",
+          "label_provenance",
           "patch_regression",
+          "version_drift",
+          "confidence_calibration",
+          "deterministic_reproducibility",
+          "detector_dependencies",
+          "conflict_resolution",
           "expert_labels",
           "abstention_rule"
         ],
@@ -8170,9 +9147,13 @@
           "minimumReviewedPositives": 30,
           "minimumReviewedNegatives": 30,
           "minimumPrecision": 0.9,
+          "minimumPrecisionLowerBound": 0.85,
           "maximumFalsePositiveRate": 0.05,
           "minimumTimestampVerifiedRate": 0.95,
-          "minimumRankModeCohorts": 3
+          "minimumRankModeCohorts": 3,
+          "minimumExamplesPerCohort": 5,
+          "minimumIndependentReviewers": 2,
+          "minimumReviewerAgreement": 0.6
         }
       }
     }
@@ -8182,5 +9163,6 @@
     "parserCoverageEstablished": true,
     "publicDetectorsEnabled": 0,
     "nextGate": "Add timestamp-reviewed expert labels across representative rank and mode cohorts."
-  }
+  },
+  "reproducibilityFingerprint": "8ca92b978c6296bd4d7be63a64dd4ca36042e7842e3e0fc8d3698445f36c5e3a"
 }

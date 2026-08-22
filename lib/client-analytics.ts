@@ -4,6 +4,8 @@ export type AnalyticsGame = AnalysisGame | "general";
 export type ProductEvent =
   | "page_view" | "cta_click" | "game_select" | "signup" | "tool_start" | "tool_complete"
   | "hardstuck_select" | "replay_selected" | "validation_failed" | "upload_started"
+  | "upload_complete" | "parse_complete" | "mode_detected" | "player_pick" | "identity_captured" | "processing_started" | "abstention" | "evidence_viewed"
+  | "calibration_start" | "calibration_submit"
   | "analysis_start" | "analysis_submit" | "analysis_failed" | "analysis_completed"
   | "report_view" | "followup_started" | "second_match_submitted" | "pricing_viewed" | "upgrade_intent"
   | "checkout_started" | "paid_activation" | "feedback" | "share_started";

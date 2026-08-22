@@ -1,6 +1,7 @@
 import { assessPublicDetectorGate } from "./quality-gates.mjs";
+import { normalizeMode } from "./context.mjs";
 
-export const SHADOW_RUNTIME_VERSION = "rocket-league-shadow-runtime@0.1.0";
+export const SHADOW_RUNTIME_VERSION = "rocket-league-shadow-runtime@0.2.0";
 
 const distance3d = (a, b) => {
   if (![a?.x, a?.y, a?.z, b?.x, b?.y, b?.z].every(Number.isFinite)) return null;
@@ -72,7 +73,7 @@ function subjectFrames(evidence) {
 
 function supersonicBoostWaste(evidence) {
   const samples = subjectFrames(evidence);
-  const candidates = [];
+  const wasteSamples = [];
   for (let index = 1; index < samples.length; index += 1) {
     const current = samples[index];
     const previous = samples[index - 1];
@@ -81,22 +82,43 @@ function supersonicBoostWaste(evidence) {
       ? previous.player.boost - current.player.boost
       : 0;
     if (speed !== null && speed >= 2180 && boostSpent >= 0.4) {
-      candidates.push({
-        timeSeconds: current.frame.timeSeconds,
-        frame: current.frame.index,
+      wasteSamples.push({
+        frame: current.frame,
         speed,
         boostSpent,
         boostRemaining: current.player.boost,
       });
     }
   }
+
+  // One continuous boost press is one reviewable decision. The previous
+  // implementation exported every 10 Hz frame as a separate candidate, which
+  // inflated review counts and could make adjacent samples look like
+  // independent evidence.
+  const episodes = episodeize(
+    wasteSamples,
+    () => true,
+    0,
+    (active, durationSeconds) => ({
+      startTimeSeconds: active.first.frame.timeSeconds,
+      startFrame: active.first.frame.index,
+      endTimeSeconds: active.last.frame.timeSeconds,
+      endFrame: active.last.frame.index,
+      durationSeconds,
+      sampledFrames: active.samples.length,
+      boostSpent: active.samples.reduce((sum, item) => sum + item.boostSpent, 0),
+      boostRemaining: active.last.boostRemaining,
+      peakSpeed: Math.max(...active.samples.map((item) => item.speed)),
+    }),
+  );
   return {
-    candidateCount: candidates.length,
+    candidateCount: episodes.length,
     measurements: {
-      totalBoostSpent: candidates.reduce((sum, item) => sum + item.boostSpent, 0),
-      peakSpeed: Math.max(0, ...candidates.map((item) => item.speed)),
+      totalBoostSpent: episodes.reduce((sum, item) => sum + item.boostSpent, 0),
+      peakSpeed: Math.max(0, ...episodes.map((item) => item.peakSpeed)),
+      sampledFrames: wasteSamples.length,
     },
-    evidence: candidates.slice(0, 20),
+    evidence: episodes.slice(0, 20),
   };
 }
 
@@ -307,18 +329,33 @@ function subjectDiveCandidates(evidence) {
 }
 
 export const SHADOW_DETECTORS = Object.freeze([
-  Object.freeze({ id: "boost.zero_duration", version: "0.1.0", evaluate: zeroBoostExposure }),
-  Object.freeze({ id: "boost.supersonic_waste", version: "0.1.0", evaluate: supersonicBoostWaste }),
-  Object.freeze({ id: "kickoff.speed", version: "0.1.0", evaluate: subjectKickoffs }),
-  Object.freeze({ id: "possession.first_touch", version: "0.1.0", evaluate: subjectFirstTouches }),
-  Object.freeze({ id: "challenge.dive", version: "0.1.0", evaluate: subjectDiveCandidates }),
-  Object.freeze({ id: "rotation.spacing_too_close", version: "0.1.0", evaluate: tightTeammateSpacing }),
-  Object.freeze({ id: "teamplay.double_commit", version: "0.1.0", evaluate: doubleCommitCandidates }),
-  Object.freeze({ id: "recovery.momentum_loss", version: "0.1.0", evaluate: momentumLossCandidates }),
+  Object.freeze({ id: "boost.zero_duration", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: zeroBoostExposure }),
+  Object.freeze({ id: "boost.supersonic_waste", version: "0.2.0", modes: ["1v1", "2v2", "3v3"], evaluate: supersonicBoostWaste }),
+  Object.freeze({ id: "kickoff.speed", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: subjectKickoffs }),
+  Object.freeze({ id: "possession.first_touch", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: subjectFirstTouches }),
+  Object.freeze({ id: "challenge.dive", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: subjectDiveCandidates }),
+  Object.freeze({ id: "rotation.spacing_too_close", version: "0.1.0", modes: ["2v2", "3v3"], evaluate: tightTeammateSpacing }),
+  Object.freeze({ id: "teamplay.double_commit", version: "0.1.0", modes: ["2v2", "3v3"], evaluate: doubleCommitCandidates }),
+  Object.freeze({ id: "recovery.momentum_loss", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: momentumLossCandidates }),
 ]);
 
 export function runShadowDetectors(evidence, detectors = SHADOW_DETECTORS) {
+  const mode = normalizeMode(evidence.normalized.mode);
   const runs = detectors.map((detector) => {
+    if (mode !== "unknown" && Array.isArray(detector.modes) && !detector.modes.includes(mode)) {
+      return {
+        detectorId: detector.id,
+        detectorVersion: detector.version,
+        lifecycle: "shadow",
+        public: false,
+        status: "not_applicable",
+        applicableModes: detector.modes,
+        candidateCount: 0,
+        measurements: {},
+        evidence: [],
+        qualityGate: assessPublicDetectorGate(),
+      };
+    }
     try {
       const observation = detector.evaluate(evidence);
       return {
@@ -352,7 +389,8 @@ export function runShadowDetectors(evidence, detectors = SHADOW_DETECTORS) {
     runs,
     summary: {
       detectorCount: runs.length,
-      executed: runs.filter((run) => run.status !== "error").length,
+      executed: runs.filter((run) => !["error", "not_applicable"].includes(run.status)).length,
+      notApplicable: runs.filter((run) => run.status === "not_applicable").length,
       errors: runs.filter((run) => run.status === "error").length,
       observed: runs.filter((run) => run.status === "observed").length,
       candidateCount: runs.reduce((sum, run) => sum + run.candidateCount, 0),

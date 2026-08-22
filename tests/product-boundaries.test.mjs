@@ -20,9 +20,28 @@ test("public mutations consistently enforce same-origin product boundaries", asy
     "../app/api/analyses/route.ts",
     "../app/api/analyses/history/route.ts",
     "../app/api/analyses/[publicId]/feedback/route.ts",
+    "../app/api/analyses/[publicId]/route.ts",
     "../app/api/events/route.ts",
     "../app/api/waitlist/route.ts",
   ]) assert.match(await source(path), /isSameOriginRequest\(request\)/, path);
+});
+
+test("a parsed replay roster can resolve player identity without another upload", async () => {
+  const [engine, adapter, pipeline, report, route] = await Promise.all([
+    source("../services/rl-engine/server.mjs"),
+    source("../lib/adapters/index.ts"),
+    source("../lib/core/pipeline.ts"),
+    source("../app/report/[publicId]/ReportClient.tsx"),
+    source("../app/api/analyses/[publicId]/route.ts"),
+  ]);
+  assert.match(engine, /candidatePlayers/);
+  assert.match(adapter, /userResolvable/);
+  assert.match(pipeline, /encodePlayerResolutionContext/);
+  assert.match(report, /Which one is you\?/);
+  assert.match(report, /Analyze this saved replay/);
+  assert.match(route, /analysis\.fileKey/);
+  assert.match(route, /playerContext: canonicalPlayer/);
+  assert.match(route, /jobPublicId: job\.publicId/);
 });
 
 test("private bearer identifiers stay out of object keys and engine logs", async () => {
@@ -39,10 +58,20 @@ test("private bearer identifiers stay out of object keys and engine logs", async
 });
 
 test("runtime recovery and response headers fail closed without blocking healthy work", async () => {
-  const worker = await source("../worker/index.ts");
+  const [worker, reportClient] = await Promise.all([
+    source("../worker/index.ts"),
+    source("../app/report/[publicId]/ReportClient.tsx"),
+  ]);
   assert.match(worker, /stale_running_lease/);
-  assert.match(worker, /updated_at <= datetime\('now', '-10 minutes'\)/);
+  assert.doesNotMatch(worker, /updated_at <= datetime\('now', '-10 minutes'\)/);
+  assert.match(worker, /updated_at <= datetime\('now', '-3 minutes'\)/);
+  assert.match(worker, /Restarting interrupted analysis/);
+  assert.match(worker, /Analysis engine did not respond/);
+  assert.match(worker, /attempts >= max_attempts/);
   assert.match(worker, /status = 'queued' AND updated_at <= datetime\('now', '-1 minute'\)/);
+  assert.match(reportClient, /void refresh\(\)/);
+  assert.match(reportClient, /window\.setInterval\(refresh, 10000\)/);
+  assert.match(reportClient, /AUTOMATIC RECOVERY STARTED/);
   assert.match(worker, /frame-ancestors 'none'/);
   assert.match(worker, /Referrer-Policy/);
   assert.match(worker, /private, no-store/);
@@ -61,4 +90,20 @@ test("admin exports and replay downloads neutralize active content", async () =>
   assert.match(evidence, /X-Content-Type-Options/);
   assert.match(override, /analysisUsage/);
   assert.match(override, /status: "consumed"/);
+});
+
+test("console intake keeps video evidence separate from frame-exact replay telemetry", async () => {
+  const [intake, adapter, flow] = await Promise.all([
+    source("../app/api/analyses/route.ts"),
+    source("../lib/adapters/index.ts"),
+    source("../app/analyze/AnalyzeFlow.tsx"),
+  ]);
+  assert.match(intake, /RL_PLATFORMS = new Set\(\["pc", "ps5", "xbox", "switch"\]\)/);
+  assert.match(intake, /evidenceType = hasReplay \? "replay_file" : "gameplay_video"/);
+  assert.match(intake, /evidenceType = "vod_link"/);
+  assert.match(intake, /Console submissions use gameplay video or a VOD link/);
+  assert.match(adapter, /\["gameplay_video", "vod_link"\]\.includes\(input\.evidenceType\)/);
+  assert.match(adapter, /no hidden telemetry will be invented/i);
+  assert.match(intake, /RL_VIDEO_ANALYSIS_ENABLED/);
+  assert.match(flow, /We are not collecting console footage until the video analysis can return a useful result/);
 });

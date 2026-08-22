@@ -7,11 +7,16 @@ import { coarseAnalyticsValue } from "../../../lib/analytics-policy.mjs";
 import { sendAnalysisReceived } from "../../../lib/email";
 import { createPlayerToken, expiresAt, hashPlayerToken, PLAYER_CLAIM_SECONDS } from "../../../lib/player-identity.mjs";
 import { declaredBodyTooLarge, isSameOriginRequest, operationalErrorCode } from "../../../lib/request-security.mjs";
+import { subsystemEnabled } from "../../../lib/subsystem-controls.mjs";
 
 export const runtime = "edge";
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
-const MAX_INTAKE_BYTES = 17 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 95 * 1024 * 1024;
+const MAX_INTAKE_BYTES = 98 * 1024 * 1024;
+const RL_PLATFORMS = new Set(["pc", "ps5", "xbox", "switch"]);
+const VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".webm", ".mpeg", ".mpg", ".m4v"]);
+const VIDEO_TYPES = new Set(["video/mp4", "video/quicktime", "video/webm", "video/mpeg", "video/x-m4v"]);
 
 function validEvidenceUrl(raw: string) {
   if (!raw) return "";
@@ -27,6 +32,12 @@ function safeFileName(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "match.replay";
 }
 
+function isSupportedVideo(file: File) {
+  const lower = file.name.toLowerCase();
+  const extension = [...VIDEO_EXTENSIONS].find(item => lower.endsWith(item));
+  return Boolean(extension && (!file.type || VIDEO_TYPES.has(file.type)));
+}
+
 export async function POST(request: Request) {
   let uploadedKey: string | null = null;
   let reservedPublicId: string | null = null;
@@ -38,7 +49,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Submit the analysis as form data." }, { status: 415, headers: { "Cache-Control": "no-store" } });
     }
     if (declaredBodyTooLarge(request, MAX_INTAKE_BYTES)) {
-      return Response.json({ error: "That upload is too large. Rocket League replay files may be at most 16 MB." }, { status: 413 });
+      return Response.json({ error: "That upload is too large. Replay files may be 16 MB and gameplay videos may be 95 MB." }, { status: 413 });
     }
     const form = await request.formData();
     if (cleanText(form.get("company"), 200)) {
@@ -47,6 +58,7 @@ export async function POST(request: Request) {
 
     const email = cleanText(form.get("email"), 254).toLowerCase();
     const game = cleanText(form.get("game"), 30);
+    const platform = cleanText(form.get("platform"), 20) || "pc";
     const currentRank = cleanText(form.get("currentRank"), 80);
     const targetRank = cleanText(form.get("targetRank"), 80) || null;
     const playerContext = cleanText(form.get("playerContext"), 160) || null;
@@ -58,24 +70,51 @@ export async function POST(request: Request) {
     const dataConsent = form.get("dataConsent") === "true";
     const updatesConsent = form.get("updatesConsent") === "true";
     const replay = form.get("replay");
+    const video = form.get("video");
+    const hasReplay = replay instanceof File && replay.size > 0;
+    const hasVideo = video instanceof File && video.size > 0;
+    const replayFirstRocketLeague = game === "rocket-league" && platform === "pc" && hasReplay;
 
     if (!emailPattern.test(email)) return Response.json({ error: "Enter a valid email address." }, { status: 400 });
     if (!isAnalysisGame(game)) return Response.json({ error: "Choose a supported game." }, { status: 400 });
-    if (currentRank.length < 2) return Response.json({ error: "Enter your current rank." }, { status: 400 });
-    if (playerContext == null) return Response.json({ error: "Add the player identity and mode or role." }, { status: 400 });
-    if (goal.length < 8) return Response.json({ error: "Tell us what you want to improve." }, { status: 400 });
+    if (game === "rocket-league" && !RL_PLATFORMS.has(platform)) return Response.json({ error: "Choose a supported Rocket League platform." }, { status: 400 });
+    if (!replayFirstRocketLeague && currentRank.length < 2) return Response.json({ error: "Enter your current rank." }, { status: 400 });
+    if (!replayFirstRocketLeague && playerContext == null) return Response.json({ error: "Add the player identity and mode or role." }, { status: 400 });
+    if (!replayFirstRocketLeague && goal.length < 8) return Response.json({ error: "Tell us what you want to improve." }, { status: 400 });
     if (!dataConsent) return Response.json({ error: "Confirm that we may process the submitted match data." }, { status: 400 });
 
-    const hasFile = replay instanceof File && replay.size > 0;
-    if (hasFile && game !== "rocket-league") return Response.json({ error: "Replay file uploads are currently for Rocket League. Use a match or VOD link for this game." }, { status: 400 });
-    if (hasFile && (!replay.name.toLowerCase().endsWith(".replay") || replay.size > MAX_REPLAY_BYTES)) {
+    const hasVideoEvidence = hasVideo || Boolean(evidenceUrl);
+
+    if (game === "rocket-league" && platform === "pc" && hasReplay) {
+      const { env } = await import("cloudflare:workers");
+      const runtime = env as unknown as { RL_ENGINE_ENABLED?: string };
+      if (!subsystemEnabled(runtime.RL_ENGINE_ENABLED)) {
+        return Response.json({ error: "Rocket League replay processing is temporarily paused. Your file was not uploaded." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } });
+      }
+    }
+
+    if (game === "rocket-league" && platform !== "pc") {
+      const { env } = await import("cloudflare:workers");
+      if (!subsystemEnabled((env as unknown as { RL_VIDEO_ANALYSIS_ENABLED?: string }).RL_VIDEO_ANALYSIS_ENABLED)) {
+        return Response.json({ error: "Console video analysis is not live yet. Join the console waitlist for first access." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "86400" } });
+      }
+    }
+
+    if ((hasReplay || hasVideo) && game !== "rocket-league") return Response.json({ error: "File uploads are currently for Rocket League. Use a match or VOD link for this game." }, { status: 400 });
+    if (hasReplay && (!replay.name.toLowerCase().endsWith(".replay") || replay.size > MAX_REPLAY_BYTES)) {
       return Response.json({ error: "Upload a Rocket League .replay file no larger than 16 MB." }, { status: 400 });
     }
-    if (game === "rocket-league" && !hasFile) return Response.json({ error: "Automatic Rocket League coaching requires the original .replay file." }, { status: 400 });
-    if (!hasFile && !evidenceUrl) return Response.json({ error: "Add a match, replay or VOD link." }, { status: 400 });
+    if (hasVideo && (!isSupportedVideo(video) || video.size > MAX_VIDEO_BYTES)) {
+      return Response.json({ error: "Upload an MP4, MOV, WebM or MPEG gameplay video no larger than 95 MB." }, { status: 400 });
+    }
+    if (hasReplay && platform !== "pc") return Response.json({ error: "Console submissions use gameplay video or a VOD link, not a PC .replay file." }, { status: 400 });
+    if (hasVideo && platform === "pc") return Response.json({ error: "Choose PS5, Xbox or Switch for video evidence, or upload the original PC .replay file." }, { status: 400 });
+    if (game === "rocket-league" && platform === "pc" && !hasReplay) return Response.json({ error: "PC deep analysis requires the original .replay file." }, { status: 400 });
+    if (game === "rocket-league" && platform !== "pc" && !hasVideoEvidence) return Response.json({ error: "Add a gameplay video or private/public VOD link for the console video beta." }, { status: 400 });
+    if (!hasReplay && !hasVideo && !evidenceUrl) return Response.json({ error: "Add a match, replay, gameplay video or VOD link." }, { status: 400 });
 
     let bucket: R2Bucket | undefined;
-    if (hasFile) {
+    if (hasReplay || hasVideo) {
       const { env } = await import("cloudflare:workers");
       bucket = (env as unknown as { BUCKET?: R2Bucket }).BUCKET;
       if (!bucket) return Response.json({ error: "Replay uploads are temporarily unavailable. Paste a Ballchasing or VOD link instead." }, { status: 503 });
@@ -107,23 +146,27 @@ export async function POST(request: Request) {
     let fileSize: number | null = null;
     let evidenceType = "link";
 
-    if (hasFile) {
-      originalFileName = safeFileName(replay.name);
-      fileSize = replay.size;
-      evidenceType = "replay_file";
+    if (hasReplay || hasVideo) {
+      const file = hasReplay ? replay : video;
+      originalFileName = safeFileName(file.name);
+      fileSize = file.size;
+      evidenceType = hasReplay ? "replay_file" : "gameplay_video";
       const storageId = crypto.randomUUID().replaceAll("-", "");
       uploadedKey = `analyses/${storageId}/${originalFileName}`;
-      await bucket.put(uploadedKey, replay.stream(), {
-        httpMetadata: { contentType: "application/octet-stream" },
-        customMetadata: { game, objectId: storageId }
+      await bucket.put(uploadedKey, file.stream(), {
+        httpMetadata: { contentType: hasReplay ? "application/octet-stream" : (file.type || "video/mp4") },
+        customMetadata: { game, platform, evidenceType, objectId: storageId }
       });
+    } else if (game === "rocket-league" && platform !== "pc" && evidenceUrl) {
+      evidenceType = "vod_link";
     }
 
     const inserted = await db.insert(analysisRequests).values({
       publicId,
       email,
       game,
-      currentRank,
+      platform,
+      currentRank: currentRank || "Pending replay context",
       targetRank,
       playerContext,
       evidenceType,
@@ -131,7 +174,7 @@ export async function POST(request: Request) {
       fileKey: uploadedKey,
       originalFileName,
       fileSize,
-      goal,
+      goal: goal || "Find the most useful evidence-backed focus in this replay.",
       notes,
       source,
       campaign
@@ -163,7 +206,7 @@ export async function POST(request: Request) {
       game,
       status: "queued",
       stage: "queued",
-      stageLabel: "Upload received",
+      stageLabel: evidenceType === "replay_file" ? "Replay received" : evidenceType === "gameplay_video" || evidenceType === "vod_link" ? "Video evidence received" : "Match reference received",
       schemaVersion: "coaching.v1"
     });
 

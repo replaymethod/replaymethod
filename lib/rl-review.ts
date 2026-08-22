@@ -1,7 +1,7 @@
 import reviewQueue from "../docs/RL_REVIEW_QUEUE.json";
 import { getDb } from "../db";
 
-export const RL_LABEL_SET_VERSION = "rocket-league-expert-labels.v1";
+export const RL_LABEL_SET_VERSION = "rocket-league-expert-labels.v2";
 export const RL_REVIEW_VERDICTS = ["unreviewed", "confirmed", "rejected", "uncertain"] as const;
 export type RlReviewVerdict = typeof RL_REVIEW_VERDICTS[number];
 
@@ -10,7 +10,7 @@ type QueueCandidate = {
   replayFingerprint: string;
   mode: string | null;
   rankCohort?: string | null;
-  contextKey?: string | null;
+  cohortKey?: string | null;
   metadataProvenance?: string | null;
   gameVersion: string | null;
   detectorId: string;
@@ -22,6 +22,8 @@ type QueueCandidate = {
 };
 
 let seedPromise: Promise<void> | null = null;
+const currentCandidates = reviewQueue.candidates as QueueCandidate[];
+export const RL_REVIEW_CANDIDATE_KEYS = new Set(currentCandidates.map(candidate => candidate.id));
 
 export async function ensureRlReviewQueueSeeded() {
   if (!seedPromise) {
@@ -29,9 +31,10 @@ export async function ensureRlReviewQueueSeeded() {
       await getDb();
       const { env } = await import("cloudflare:workers");
       const database = env.DB as D1Database;
-      const current = await database.prepare("SELECT COUNT(*) AS count FROM rl_review_candidates").first<{ count: number }>();
-      const candidates = reviewQueue.candidates as QueueCandidate[];
-      if (Number(current?.count ?? 0) >= candidates.length) return;
+      const existingRows = await database.prepare("SELECT candidate_key AS candidateKey FROM rl_review_candidates").all<{ candidateKey: string }>();
+      const existingKeys = new Set((existingRows.results ?? []).map(row => row.candidateKey));
+      const candidates = currentCandidates.filter(candidate => !existingKeys.has(candidate.id));
+      if (!candidates.length) return;
 
       for (let offset = 0; offset < candidates.length; offset += 50) {
         const statements = candidates.slice(offset, offset + 50).map(candidate => database.prepare(`INSERT OR IGNORE INTO rl_review_candidates (
@@ -42,7 +45,7 @@ export async function ensureRlReviewQueueSeeded() {
           candidate.replayFingerprint,
           candidate.mode,
           candidate.rankCohort ?? null,
-          candidate.contextKey ?? null,
+          candidate.cohortKey ?? null,
           candidate.metadataProvenance ?? "checked_in_real_replay",
           candidate.gameVersion,
           candidate.detectorId,
@@ -76,4 +79,13 @@ export function detectorName(detectorId: string) {
     "teamplay.double_commit": "Double commit",
     "recovery.momentum_loss": "Momentum loss"
   } as Record<string, string>)[detectorId] ?? detectorId;
+}
+
+export function reviewerPlaylistScopes(value: string | null | undefined) {
+  try {
+    const parsed = JSON.parse(value || "{}") as Record<string, unknown>;
+    return new Set(["1v1", "2v2", "3v3"].filter(mode => typeof parsed[mode] === "string" && parsed[mode] !== "unverified"));
+  } catch {
+    return new Set<string>();
+  }
 }

@@ -41,6 +41,21 @@ test("sends an HTTP-safe exact player identity through the versioned authenticat
   assert.equal(captured.init.signal instanceof AbortSignal, true);
 });
 
+test("supports replay-first parsing without a pre-entered player or rank", async () => {
+  const config = resolveRocketLeagueEngine({ RL_ENGINE_URL: "https://engine.example", RL_ENGINE_TOKEN: token });
+  let captured;
+  await requestRocketLeagueAnalysis(config, {
+    jobPublicId: "b".repeat(32),
+    playerContext: null,
+    currentRank: "",
+  }, new Uint8Array([1]), async (_url, init) => {
+    captured = init;
+    return new Response("{}", { status: 200 });
+  });
+  assert.equal(captured.headers["X-Replay-Method-Player"], "");
+  assert.equal(captured.headers["X-Replay-Method-Rank"], "");
+});
+
 test("keeps retryable blocks pollable and releases terminal reservations", () => {
   const retry = blockedRetryDisposition({ retryable: true, attempts: 1, maxAttempts: 3, now: 0 });
   assert.deepEqual(retry, {

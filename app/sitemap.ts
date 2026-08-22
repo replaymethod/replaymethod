@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/league`, changeFrequency: "weekly", priority: .85 },
     { url: `${base}/valorant`, changeFrequency: "weekly", priority: .85 },
     { url: `${base}/rocket-league`, changeFrequency: "weekly", priority: .85 },
+    { url: `${base}/rocket-league-beta`, changeFrequency: "weekly", priority: .7 },
     { url: `${base}/replay-upload`, changeFrequency: "monthly", priority: .8 },
     { url: `${base}/guides`, changeFrequency: "weekly", priority: .8 },
     ...guides.map(guide => ({ url: `${base}/guides/${guide.slug}`, changeFrequency: "monthly" as const, priority: .75 })),

@@ -2,10 +2,13 @@ import { desc } from "drizzle-orm";
 import Link from "next/link";
 import { requireChatGPTUser, chatGPTSignOutPath } from "../chatgpt-auth";
 import { getDb } from "../../db";
-import { analysisJobs, analysisRequests, analysisUsage, billingEvents, billingSubscriptions, emailDeliveries, funnelEvents, playerFocuses, rlReviewCandidates, waitlist } from "../../db/schema";
+import { analysisJobs, analysisRequests, analysisUsage, billingEvents, billingSubscriptions, emailDeliveries, funnelEvents, playerFocuses, rlBetaSubmissions, rlReviewLabels, rlReviewers, waitlist } from "../../db/schema";
 import { isConfiguredSiteAdmin } from "../../lib/admin";
 import DeleteLeadButton from "./DeleteLeadButton";
 import { subsystemState } from "../../lib/subsystem-controls.mjs";
+import ReviewerAccessForm from "./ReviewerAccessForm";
+import ReviewQueueImport from "./ReviewQueueImport";
+import ReplayCorpusStatusForm from "./ReplayCorpusStatusForm";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +26,7 @@ export default async function AdminPage() {
   const db = await getDb();
   const { env } = await import("cloudflare:workers");
   const controls = subsystemState(env as unknown as Record<string, unknown>);
-  const [leads, events, analyses, jobs, subscriptions, usage, deliveries, focuses, billingEventRows, reviewCandidates] = await Promise.all([
+  const [leads, events, analyses, jobs, subscriptions, usage, deliveries, focuses, billingEventRows, reviewLabels, reviewers, betaReplays] = await Promise.all([
     db.select().from(waitlist).orderBy(desc(waitlist.createdAt), desc(waitlist.id)).limit(5000),
     db.select().from(funnelEvents).orderBy(desc(funnelEvents.createdAt), desc(funnelEvents.id)).limit(20000),
     db.select().from(analysisRequests).orderBy(desc(analysisRequests.createdAt), desc(analysisRequests.id)).limit(1000),
@@ -33,7 +36,9 @@ export default async function AdminPage() {
     db.select().from(emailDeliveries).orderBy(desc(emailDeliveries.updatedAt), desc(emailDeliveries.id)).limit(5000),
     db.select().from(playerFocuses).orderBy(desc(playerFocuses.updatedAt), desc(playerFocuses.id)).limit(5000),
     db.select().from(billingEvents).orderBy(desc(billingEvents.updatedAt), desc(billingEvents.id)).limit(5000),
-    db.select().from(rlReviewCandidates).orderBy(desc(rlReviewCandidates.updatedAt), desc(rlReviewCandidates.id)).limit(5000)
+    db.select().from(rlReviewLabels).orderBy(desc(rlReviewLabels.createdAt), desc(rlReviewLabels.id)).limit(10000),
+    db.select().from(rlReviewers).orderBy(desc(rlReviewers.updatedAt), desc(rlReviewers.id)).limit(100),
+    db.select().from(rlBetaSubmissions).orderBy(desc(rlBetaSubmissions.createdAt), desc(rlBetaSubmissions.id)).limit(1000)
   ]);
 
   const uniqueFor = (event: string, game?: string) => new Set(events.filter(row => row.event === event && (!game || row.game === game)).map(row => row.visitorId)).size;
@@ -59,7 +64,18 @@ export default async function AdminPage() {
   const emailAttention = deliveries.filter(row => row.status !== "accepted" && Boolean(row.lastErrorCode)).length;
   const activeFocuses = focuses.filter(row => row.status === "active").length;
   const completedFocuses = focuses.filter(row => row.status === "completed").length;
-  const unreviewedCandidates = reviewCandidates.filter(row => row.verdict === "unreviewed").length;
+  const betaContributors = new Set(betaReplays.map(row => row.email.toLowerCase())).size;
+  const usableReplays = betaReplays.filter(row => row.usabilityStatus === "usable").length;
+  const parserFailures = betaReplays.filter(row => row.parserStatus === "failed").length;
+  const attributionMismatches = betaReplays.filter(row => row.attributionStatus === "mismatch").length;
+  const consentedReplays = betaReplays.filter(row => Boolean(row.consentVersion && row.consentAt)).length;
+  const reviewedReplays = betaReplays.filter(row => row.reviewState === "reviewed").length;
+  const rankCohorts = ["bronze-silver", "gold-platinum", "diamond-champion", "grand-champion-ssl"];
+  const playlistModes = ["1v1", "2v2", "3v3"];
+  const cohortCounts = playlistModes.flatMap(mode => rankCohorts.map(rank => ({ mode, rank, count: betaReplays.filter(row => row.rankCohort === rank && (row.parsedMode || row.mode) === mode && row.usabilityStatus !== "rejected").length })));
+  const nextCohort = [...cohortCounts].sort((a, b) => a.count - b.count)[0];
+  const nextReplayNeed = nextCohort ? `Recruit ${nextCohort.mode} ${nextCohort.rank.replaceAll("-", "–")} replays next (${nextCohort.count} currently).` : "Recruit the first consented replay.";
+  const activeReviewers = reviewers.filter(row => row.status === "active").length;
   const games = ["general", "league", "valorant", "rocket-league"];
   const gameStats = games.map(game => ({ game, views: uniqueFor("page_view", game), signups: uniqueFor("signup", game), leads: leads.filter(row => row.game === game).length }));
 
@@ -72,13 +88,21 @@ export default async function AdminPage() {
   const topSources = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
   return <main className="admin-shell">
-    <header className="admin-top"><div><span>↻</span><b>Replay Method operations</b></div><div><span>{user.email}</span><a href={chatGPTSignOutPath("/")}>Sign out</a></div></header>
+    <header className="admin-top"><div><span className="logo" aria-hidden="true" /><b>Replay Method operations</b></div><div><span>{user.email}</span><a href={chatGPTSignOutPath("/")}>Sign out</a></div></header>
     <section className="admin-heading"><div><span>MISSION CONTROL</span><h1>{analyses.length} match analyses</h1><p>Monitor automated ingestion, failures, coaching quality and the real improvement funnel from one place.</p></div><div className="admin-heading-actions"><Link className="export-button" href="/admin/rl-review">RL review lab →</Link><Link className="export-button" href="/api/admin/waitlist">Waitlist CSV ↓</Link></div></section>
-    <section className="admin-launch"><div><span>READY-TO-POST LINKS</span><b>Send TikTok traffic to a real free analysis—not only the waitlist.</b></div><Link href="/analyze?utm_source=tiktok&utm_campaign=free-analysis-01">Free analysis ↗</Link><Link href="/league?utm_source=tiktok&utm_campaign=league-01">League ↗</Link><Link href="/valorant?utm_source=tiktok&utm_campaign=valorant-01">VALORANT ↗</Link><Link href="/rocket-league?utm_source=tiktok&utm_campaign=rocketleague-01">Rocket League ↗</Link></section>
+    <section className="admin-launch"><div><span>READY-TO-POST LINKS</span><b>Use the calibration link for replay recruitment. It never promises analysis.</b></div><Link href="/rocket-league-beta?utm_source=community&utm_campaign=rl-calibration-01">Replay contribution ↗</Link><Link href="/climb-check?utm_source=tiktok&utm_campaign=climb-check-01">Free Climb Check ↗</Link><Link href="/league?utm_source=tiktok&utm_campaign=league-01">League ↗</Link><Link href="/valorant?utm_source=tiktok&utm_campaign=valorant-01">VALORANT ↗</Link></section>
     <section className="admin-stats"><article><span>Running / queued</span><b>{runningAnalyses}</b></article><article><span>Reports ready</span><b>{readyAnalyses}</b></article><article><span>Blocked</span><b>{blockedAnalyses}</b></article><article><span>Failed</span><b>{failedAnalyses}</b></article><article><span>Avg. processing</span><b>{averageDuration}</b></article><article><span>Estimated engine cost</span><b>${estimatedCost.toFixed(4)}</b></article><article><span>Avg. report rating</span><b>{averageRating}</b></article><article><span>Unique visits</span><b>{visitors}</b></article><article><span>Analysis submitted</span><b>{uniqueFor("analysis_submit")}</b></article></section>
 
-    <section className="admin-operations"><div className="admin-section-title"><div><span>SYSTEM STATE</span><h2>Operational truth</h2></div><small>Persisted records only. Counts are not forecasts or synthetic health scores.</small></div><div className="admin-operation-grid"><article><span>BILLING</span><b>{paidActive} active / trialing</b><small>{pastDue} past due · {canceling} canceling · {billingAttention} failed events</small></article><article><span>ENTITLEMENTS</span><b>{consumedUsage} consumed</b><small>{reservedUsage} reservations in flight</small></article><article><span>TRANSACTIONAL EMAIL</span><b>{acceptedEmails} accepted</b><small>{emailAttention} blocked, retrying or failed</small></article><article><span>PLAYER FOCUS</span><b>{activeFocuses} active</b><small>{completedFocuses} completed focuses retained</small></article><article><span>RL CALIBRATION</span><b>{unreviewedCandidates} unreviewed</b><small>{reviewCandidates.length - unreviewedCandidates} reviewer decisions saved</small><Link href="/admin/rl-review">Open review queue →</Link></article></div></section>
+    <section className="admin-operations"><div className="admin-section-title"><div><span>SYSTEM STATE</span><h2>Operational truth</h2></div><small>Persisted records only. Counts are not forecasts or synthetic health scores.</small></div><div className="admin-operation-grid"><article><span>BILLING</span><b>{paidActive} active / trialing</b><small>{pastDue} past due · {canceling} canceling · {billingAttention} failed events</small></article><article><span>ENTITLEMENTS</span><b>{consumedUsage} consumed</b><small>{reservedUsage} reservations in flight</small></article><article><span>TRANSACTIONAL EMAIL</span><b>{acceptedEmails} accepted</b><small>{emailAttention} blocked, retrying or failed</small></article><article><span>PLAYER FOCUS</span><b>{activeFocuses} active</b><small>{completedFocuses} completed focuses retained</small></article><article><span>RL REPLAY CORPUS</span><b>{betaReplays.length} total / {usableReplays} usable</b><small>{consentedReplays} consented · {betaContributors} contributors</small></article><article><span>RL CALIBRATION</span><b>{reviewLabels.length} label events</b><small>{activeReviewers}/2 active reviewers · {reviewedReplays} replays complete</small><Link href="/admin/rl-review">Open blind queue →</Link></article></div></section>
     <section className="admin-operations"><div className="admin-section-title"><div><span>EMERGENCY CONTROLS</span><h2>Independent kill switches</h2></div><small>Only the switch name and state are shown; secret values never enter this page.</small></div><div className="admin-operation-grid">{Object.entries(controls).map(([name, control]) => <article key={name}><span>{control.key}</span><b>{control.enabled ? "ENABLED" : "OFF / GATED"}</b><small>{control.enabled ? "Explicitly activated" : "Fail-closed default"}</small></article>)}</div></section>
+
+    <section className="admin-section-title waitlist-heading"><div><span>CONSENTED ROCKET LEAGUE CORPUS</span><h2>{betaReplays.length} private replays</h2></div><div className="admin-heading-actions"><small>{betaContributors} contributors · files are available only to configured admins.</small><Link className="export-button" href="/api/admin/rl-beta-submissions/manifest">Calibration manifest ↓</Link></div></section>
+    <section className="admin-corpus-command"><article><span>NEXT RECRUITMENT TARGET</span><b>{nextReplayNeed}</b></article><article><span>PARSER</span><b>{parserFailures} failed</b><small>{betaReplays.filter(row => row.parserStatus === "pending").length} pending</small></article><article><span>ATTRIBUTION</span><b>{attributionMismatches} mismatches</b><small>{betaReplays.filter(row => row.attributionStatus === "pending").length} pending</small></article><article><span>COHORT COVERAGE</span><b>{cohortCounts.filter(row => row.count > 0).length} / {cohortCounts.length}</b><small>{cohortCounts.map(row => `${row.mode} ${row.rank}: ${row.count}`).join(" · ")}</small></article></section>
+    <section className="admin-table-wrap"><div className="admin-table-head analytics"><span>Player</span><span>Cohort / usability</span><span>Pipeline</span><span>Received</span><span>Replay</span></div>{betaReplays.length === 0 ? <div className="admin-empty"><b>No consented replays yet.</b><p>Share the live Rocket League beta link to start the first cohort.</p></div> : betaReplays.map(row => <div className="admin-row analytics" key={row.id}><span><a className="admin-email" href={`mailto:${row.email}`}>{row.email}</a><br /><small>{row.playerName}</small></span><span><i>{row.parsedMode || row.mode} · {row.rankCohort}</i><br /><small>{row.usabilityStatus}</small></span><div className="corpus-pipeline-cell">{row.parserStatus} / {row.attributionStatus}<br /><small>{row.reviewState} · {row.processingErrorCode || "no error"}</small><ReplayCorpusStatusForm replay={{ id: row.id, parserStatus: row.parserStatus, parserVersion: row.parserVersion, parsedMode: row.parsedMode, attributionStatus: row.attributionStatus, usabilityStatus: row.usabilityStatus, reviewState: row.reviewState, detectorSetVersion: row.detectorSetVersion, processingErrorCode: row.processingErrorCode }} /></div><span>{new Date(`${row.createdAt}Z`).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span><span><a href={`/api/admin/rl-beta-submissions/${row.id}/replay`}>Download .replay ↓</a></span></div>)}</section>
+
+    <section className="admin-section-title waitlist-heading"><div><span>QUALIFIED REVIEWERS</span><h2>{activeReviewers} active / 2 required</h2></div><small>Applicants receive no candidate data until approved. Revocation takes effect on the next request.</small></section>
+    <ReviewQueueImport />
+    <section className="admin-reviewer-list">{reviewers.length === 0 ? <div className="admin-empty"><b>No reviewer applications yet.</b><p>Ask each reviewer to sign in once at /admin/rl-review.</p></div> : reviewers.map(reviewer => <article key={reviewer.id}><div><b>{reviewer.displayName || reviewer.email}</b><span>{reviewer.email}</span><small>{reviewer.publicId.slice(0, 10).toUpperCase()} · {reviewer.status}</small></div><ReviewerAccessForm reviewer={{ id: reviewer.id, status: reviewer.status, qualification: reviewer.qualification, playlistQualificationsJson: reviewer.playlistQualificationsJson }} /></article>)}</section>
 
     <section className="admin-analysis-wrap"><div className="admin-section-title"><div><span>AUTOMATED ANALYSIS QUEUE</span><h2>Jobs and quality review</h2></div><small>Open an item to inspect evidence, engine versions, retry safely or apply a quality override.</small></div>{analyses.length === 0 ? <div className="admin-empty"><b>No match submissions yet.</b><p>Send someone to the free analysis link above.</p></div> : <div className="admin-analysis-list">{analyses.map(row => { const job = jobByRequest.get(row.id); return <Link href={`/admin/analyses/${row.id}`} key={row.id}><i className={row.status}>{row.status === "ready" ? "✓" : row.status === "failed" || row.status === "blocked" ? "!" : row.status === "analyzing" ? "↻" : "↓"}</i><div><span>{gameLabels[row.game] ?? row.game} · {row.currentRank}{row.targetRank ? ` → ${row.targetRank}` : ""}</span><b>{row.goal}</b><small>{job?.stageLabel || "Legacy quality-review workflow"} · {row.email} · {new Date(`${row.createdAt}Z`).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</small></div><em className={row.status}>{row.status} →</em></Link>; })}</div>}</section>
 

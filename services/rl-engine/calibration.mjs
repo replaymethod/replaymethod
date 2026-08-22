@@ -3,7 +3,7 @@ import { wilsonLowerBound } from "./quality-gates.mjs";
 import { createHash } from "node:crypto";
 
 export const CALIBRATION_REPORT_VERSION = "rocket-league-calibration-report.v1";
-export const REVIEW_QUEUE_VERSION = "rocket-league-review-queue.v1";
+export const REVIEW_QUEUE_VERSION = "rocket-league-review-queue.v2";
 
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
@@ -98,6 +98,7 @@ export function aggregateCalibrationRuns(entries, failures = []) {
   for (const entry of entries) {
     const calibrationEligible = entry.evidenceSource === "real_replay";
     for (const run of entry.shadowRuns ?? []) {
+      const applicable = run.status !== "not_applicable";
       const aggregate = detectors.get(run.detectorId) ?? {
         detectorId: run.detectorId,
         detectorVersion: run.detectorVersion,
@@ -106,9 +107,11 @@ export function aggregateCalibrationRuns(entries, failures = []) {
         replaysWithSignal: 0,
         candidateCount: 0,
         ineligibleReplayRuns: 0,
+        notApplicableRuns: 0,
       };
-      aggregate.replayRuns += calibrationEligible ? 1 : 0;
-      aggregate.ineligibleReplayRuns += calibrationEligible ? 0 : 1;
+      aggregate.replayRuns += calibrationEligible && applicable ? 1 : 0;
+      aggregate.ineligibleReplayRuns += !calibrationEligible && applicable ? 1 : 0;
+      aggregate.notApplicableRuns += applicable ? 0 : 1;
       aggregate.executionErrors += run.status === "error" ? 1 : 0;
       aggregate.replaysWithSignal += run.status === "observed" ? 1 : 0;
       aggregate.candidateCount += run.candidateCount ?? 0;
@@ -134,6 +137,8 @@ export function aggregateCalibrationRuns(entries, failures = []) {
       replayCount: entries.length,
       calibrationEligibleReplayCount: entries.filter((entry) => entry.evidenceSource === "real_replay").length,
       failureCount: failures.length,
+      modeMismatchCount: entries.filter((entry) => entry.modeMatchesManifest === false).length,
+      attributionVerifiedCount: entries.filter((entry) => entry.attributionState === "verified").length,
       modes,
       totalSampledFrames: entries.reduce((sum, entry) => sum + (entry.sampledFrames ?? 0), 0),
       totalParserEvents: entries.reduce((sum, entry) => sum + (entry.parserEvents ?? 0), 0),
@@ -157,7 +162,7 @@ export function buildReviewQueue(calibrationReport) {
     for (const run of replay.shadowRuns ?? []) {
       for (const [index, evidence] of (run.evidence ?? []).entries()) {
         candidates.push({
-          id: `${replay.replayFingerprint}:${run.detectorId}:${index + 1}`,
+          id: `${replay.replayFingerprint}:${run.detectorId}@${run.detectorVersion}:${index + 1}`,
           replayFingerprint: replay.replayFingerprint,
           evidenceSource: replay.evidenceSource ?? "unknown",
           mode: replay.mode ?? null,
