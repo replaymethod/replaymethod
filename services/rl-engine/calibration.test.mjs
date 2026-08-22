@@ -52,6 +52,22 @@ test("aggregates replay coverage while keeping public quality gates closed", () 
   assert.equal(metrics.timestampVerifiedRate, 1);
 });
 
+test("quality metrics count only decided examples and treat missing timestamp review as a failure", () => {
+  const queue = {
+    labelSetVersion: "test-labels@1",
+    candidates: [
+      { replayFingerprint: "reviewed-a", detectorId: "kickoff.speed", evidenceSource: "real_replay", mode: "1v1", rankCohort: "gold-platinum", cohortKey: "1v1:gold-platinum", label: "confirmed", timestampVerified: true },
+      { replayFingerprint: "reviewed-b", detectorId: "kickoff.speed", evidenceSource: "real_replay", mode: "2v2", rankCohort: "diamond-champion", cohortKey: "2v2:diamond-champion", label: "rejected", timestampVerified: null },
+      { replayFingerprint: "unreviewed", detectorId: "kickoff.speed", evidenceSource: "real_replay", mode: "3v3", rankCohort: "grand-champion-ssl", cohortKey: "3v3:grand-champion-ssl", label: null, timestampVerified: null },
+    ],
+  };
+  const metrics = calibrationMetricsFromLabels(queue, "kickoff.speed");
+  assert.equal(metrics.replayCount, 2);
+  assert.equal(metrics.rankModeCohorts, 2);
+  assert.deepEqual(metrics.cohortCounts, { "1v1:gold-platinum": 1, "2v2:diamond-champion": 1 });
+  assert.equal(metrics.timestampVerifiedRate, 0.5);
+});
+
 test("synthetic fixtures cannot count as calibration evidence", () => {
   const fixture = { replayFingerprint: "fixture", evidenceSource: "synthetic_fixture", shadowRuns: [{ detectorId: "test", detectorVersion: "1", status: "observed", candidateCount: 1 }] };
   const report = aggregateCalibrationRuns([fixture]);

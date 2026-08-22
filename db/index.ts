@@ -606,18 +606,25 @@ export async function ensureProductSchema(database: D1Database) {
       await ensureColumn(database, "rl_reviewers", "playlist_qualifications_json", "text DEFAULT '{}' NOT NULL");
       await database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_reviewer_candidate_idx ON rl_review_labels (reviewer_id, candidate_id)").run();
       const capabilityRows = [
-        ["1v1", "gold-platinum", "verified"], ["1v1", "diamond-champion", "verified"], ["1v1", "grand-champion-ssl", "verified"],
-        ["2v2", "gold-platinum", "verified"], ["2v2", "diamond-champion", "verified"], ["2v2", "grand-champion-ssl", "verified"],
-        ["3v3", "gold-platinum", "verified"], ["3v3", "diamond-champion", "verified"], ["3v3", "grand-champion-ssl", "verified"],
+        ["1v1", "gold-platinum", "verified", 3], ["1v1", "diamond-champion", "verified", 6], ["1v1", "grand-champion-ssl", "verified", 1],
+        ["2v2", "gold-platinum", "verified", 8], ["2v2", "diamond-champion", "verified", 7], ["2v2", "grand-champion-ssl", "verified", 2],
+        ["3v3", "gold-platinum", "verified", 8], ["3v3", "diamond-champion", "verified", 5], ["3v3", "grand-champion-ssl", "calibration-verified", 0],
       ];
-      await database.batch(capabilityRows.map(([mode, rankCohort, processingState]) => database.prepare(`INSERT INTO rl_capabilities (
+      await database.batch(capabilityRows.map(([mode, rankCohort, processingState, holdoutReplays]) => database.prepare(`INSERT INTO rl_capabilities (
           mode, rank_cohort, upload_state, parse_state, process_state, detector_state, coaching_state, reason, source_version, updated_at
-        ) VALUES (?, ?, 'enabled', ?, ?, 'shadow-only', 'abstention-only', 'Replay parsing and mode attribution passed the representative corpus and locked holdout. No exact detector scope has passed two-reviewer quality gates.', 'rl-parser-validation.2026-08-22', CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, 'enabled', ?, ?, 'shadow-only', 'abstention-only', ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(mode, rank_cohort) DO UPDATE SET upload_state = excluded.upload_state,
           parse_state = excluded.parse_state, process_state = excluded.process_state,
           detector_state = excluded.detector_state, coaching_state = excluded.coaching_state,
           reason = excluded.reason, source_version = excluded.source_version, updated_at = CURRENT_TIMESTAMP`)
-        .bind(mode, rankCohort, processingState, processingState)));
+        .bind(
+          mode,
+          rankCohort,
+          processingState,
+          processingState,
+          `Replay parsing and mode attribution passed calibration; this exact cell contains ${holdoutReplays} locked holdout replays. No exact detector scope has passed two-reviewer quality gates.`,
+          `rl-parser-validation.2026-08-22.holdout-${holdoutReplays}`,
+        )));
     }).catch((error) => {
       productSchemaReady = null;
       throw error;

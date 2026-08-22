@@ -34,6 +34,9 @@ test("quality gate counts only current qualified independent review history", as
   assert.match(quality, /reviewerAgreementMetrics\(qualifiedHistory\)/);
   assert.match(quality, /label\.labelSetVersion === RL_LABEL_SET_VERSION/);
   assert.match(quality, /labelProvenanceComplete/);
+  assert.match(quality, /reviewerAgreement: agreement\.rawAgreement/);
+  assert.match(quality, /replayCount: new Set\(decided\.map/);
+  assert.match(quality, /timestampVerified === true/);
   assert.match(reviewPage, /reviewerPlaylistScopes/);
   assert.match(reviewPage, /qualifiedModes\.has\(candidate\.mode\)/);
   assert.match(reviewPage, /privateMomentKeys/);

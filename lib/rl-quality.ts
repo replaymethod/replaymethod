@@ -89,9 +89,9 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
   const decided = consensus.filter(item => item.verdict != null);
   const confirmed = decided.filter(item => item.verdict === "confirmed").length;
   const rejected = decided.filter(item => item.verdict === "rejected").length;
-  const timestampReviewed = decided.filter(item => item.decisions.every(label => label.timestampVerified != null));
   const agreement = reviewerAgreementMetrics(qualifiedHistory);
-  const cohortCounts = rows.reduce<Record<string, number>>((counts, row) => {
+  const cohortCounts = decided.reduce<Record<string, number>>((counts, item) => {
+    const row = item.row;
     const key = row.mode && row.rankCohort ? `${row.mode}:${row.rankCohort}` : "unknown:unranked-unknown";
     counts[key] = (counts[key] ?? 0) + 1;
     return counts;
@@ -100,19 +100,19 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
     .filter(([key]) => !key.startsWith("unknown:") && !key.endsWith(":unranked-unknown"))
     .map(([, count]) => count);
   const metrics = {
-    replayCount: new Set(rows.map((row) => row.replayFingerprint)).size,
+    replayCount: new Set(decided.map((item) => item.row.replayFingerprint)).size,
     reviewedPositives: confirmed,
     reviewedNegatives: rejected,
     precision: decided.length ? confirmed / decided.length : null,
     precisionLowerBound: wilsonLowerBound(confirmed, decided.length),
     falsePositiveRate: decided.length ? rejected / decided.length : null,
-    timestampVerifiedRate: timestampReviewed.length
-      ? timestampReviewed.filter((item) => item.decisions.every(label => label.timestampVerified === true)).length / timestampReviewed.length
+    timestampVerifiedRate: decided.length
+      ? decided.filter((item) => item.decisions.every(label => label.timestampVerified === true)).length / decided.length
       : null,
     rankModeCohorts: coveredCohortCounts.length,
     minimumCohortSamples: coveredCohortCounts.length ? Math.min(...coveredCohortCounts) : 0,
     independentReviewers: agreement.independentReviewers,
-    reviewerAgreement: agreement.kappa,
+    reviewerAgreement: agreement.rawAgreement,
     reviewerRawAgreement: agreement.rawAgreement,
     doubleReviewedCandidates: agreement.doubleReviewedCandidates,
     labelProvenanceComplete: decided.length > 0 && decided.every(item => item.decisions.length >= 2 && new Set(item.decisions.map(label => label.reviewerId)).size >= 2),
