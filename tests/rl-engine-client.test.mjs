@@ -56,14 +56,14 @@ test("supports replay-first parsing without a pre-entered player or rank", async
   assert.equal(captured.headers["X-Replay-Method-Rank"], "");
 });
 
-test("keeps retryable blocks pollable and releases terminal reservations", () => {
+test("keeps retryable blocks pollable while releasing every failed attempt", () => {
   const retry = blockedRetryDisposition({ retryable: true, attempts: 1, maxAttempts: 3, now: 0 });
   assert.deepEqual(retry, {
     jobStatus: "retry",
     jobStage: "blocked",
     requestStatus: "analyzing",
     nextRetryAt: "1970-01-01T00:01:00.000Z",
-    releaseUsage: false,
+    releaseUsage: true,
   });
   assert.equal(blockedRetryDisposition({ retryable: true, attempts: 3, maxAttempts: 3 }).jobStatus, "failed");
   assert.equal(blockedRetryDisposition({ retryable: false, attempts: 1, maxAttempts: 3 }).jobStatus, "blocked");

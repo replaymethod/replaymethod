@@ -1,15 +1,21 @@
 import { eq } from "drizzle-orm";
-import { getDb } from "../../../../db";
+import { getDatabase, getDb } from "../../../../db";
 import { analysisJobs, analysisRequests } from "../../../../db/schema";
 import { publicIdPattern } from "../../../../lib/analysis";
 import { loadPublicReport } from "../../../../lib/report-data";
 import { decodePlayerResolutionContext } from "../../../../lib/player-resolution.mjs";
 import { declaredBodyTooLarge, isSameOriginRequest } from "../../../../lib/request-security.mjs";
+import { reserveExistingAnalysisUsage } from "../../../../lib/analysis-usage-state.mjs";
+import { canAccessAnalysis, reportAccessToken } from "../../../../lib/report-access.mjs";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_: Request, { params }: { params: Promise<{ publicId: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
   const { publicId } = await params;
+  const database = await getDatabase();
+  if (!await canAccessAnalysis(database, publicId, reportAccessToken(request), request.headers.get("cookie") || "")) {
+    return Response.json({ error: "Not found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
+  }
   const report = await loadPublicReport(publicId);
   if (!report) return Response.json({ error: "Not found" }, { status: 404 });
   return Response.json(report, { headers: { "Cache-Control": "no-store" } });
@@ -24,6 +30,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   }
   const { publicId } = await params;
   if (!publicIdPattern.test(publicId)) return Response.json({ error: "Not found" }, { status: 404 });
+  const database = await getDatabase();
+  if (!await canAccessAnalysis(database, publicId, reportAccessToken(request), request.headers.get("cookie") || "")) {
+    return Response.json({ error: "Not found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
+  }
 
   let selectedPlayer = "";
   let selectedRank = "";
@@ -44,6 +54,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   const canonicalPlayer = candidates.find(candidate => candidate.localeCompare(selectedPlayer, undefined, { sensitivity: "accent" }) === 0);
   if (!job || !analysis.fileKey || !resolvableCode || !["blocked", "failed"].includes(job.status) || !canonicalPlayer || selectedRank.length < 2) {
     return Response.json({ error: "This saved replay cannot be retried with that player." }, { status: 409, headers: { "Cache-Control": "no-store" } });
+  }
+
+  if (!await reserveExistingAnalysisUsage(database, analysis.id)) {
+    return Response.json({ error: "This replay was preserved, but its released analysis allowance is now in use. Finish that analysis before retrying this replay." }, { status: 409, headers: { "Cache-Control": "no-store" } });
   }
 
   const now = new Date().toISOString();

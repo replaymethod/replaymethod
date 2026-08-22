@@ -3,6 +3,7 @@
 import { DragEvent, FormEvent, useRef, useState } from "react";
 import Link from "next/link";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
+import { readApiResponse, uploadReplayInChunks, type StagedReplay } from "../../lib/client-replay-upload";
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 const DEFAULT_GOAL = "Find the highest-impact recurring mistake in this match.";
@@ -64,6 +65,7 @@ function fileSizeLabel(bytes: number) {
 
 export default function QuickReplayStart({ placement }: { placement: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const stagedReplayRef = useRef<StagedReplay | null>(null);
   const [platform, setPlatform] = useState<Platform>("pc");
   const [replay, setReplay] = useState<File | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -88,6 +90,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
+    stagedReplayRef.current = null;
     setReplay(file);
     setDetailsOpen(true);
     setStatus("idle");
@@ -142,12 +145,20 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     const attribution = getAttribution();
     data.set("source", attribution.source);
     data.set("campaign", attribution.campaign);
-    data.set("replay", replay);
 
+    let replaySaved = Boolean(stagedReplayRef.current);
     try {
       track("upload_started", placement);
+      const staged = stagedReplayRef.current || await uploadReplayInChunks(replay, email, dataConsent, percent => {
+        setMessage(`Saving replay securely… ${percent}%`);
+      });
+      stagedReplayRef.current = staged;
+      replaySaved = true;
+      data.set("uploadId", staged.uploadId);
+      data.set("uploadToken", staged.uploadToken);
+      setMessage("Replay saved securely. Starting the private analysis…");
       const response = await fetch("/api/analyses", { method: "POST", body: data });
-      const result = await response.json() as { publicId?: string; emailSent?: boolean; error?: string };
+      const result = await readApiResponse(response) as { publicId?: string; accessToken?: string; url?: string; emailSent?: boolean; error?: string };
       if (!response.ok || !result.publicId) throw new Error(result.error || "We couldn’t start the analysis.");
       track("upload_complete", placement);
       track("identity_captured", `${placement}_private_delivery`);
@@ -155,12 +166,17 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       try {
         const stored = JSON.parse(localStorage.getItem("replaymethod-report-ids") || "[]") as string[];
         localStorage.setItem("replaymethod-report-ids", JSON.stringify([result.publicId, ...stored.filter(id => id !== result.publicId)].slice(0, 20)));
+        if (result.accessToken) {
+          const access = JSON.parse(localStorage.getItem("replaymethod-report-access") || "{}") as Record<string, string>;
+          localStorage.setItem("replaymethod-report-access", JSON.stringify({ ...access, [result.publicId]: result.accessToken }));
+        }
       } catch { /* the private link still works if storage is unavailable */ }
       track("analysis_submit", placement);
-      location.href = `/report/${result.publicId}?delivery=${result.emailSent ? "email" : "link"}`;
+      location.href = result.url ? `${result.url}&delivery=${result.emailSent ? "email" : "link"}` : `/report/${result.publicId}`;
     } catch (error) {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "We couldn’t start the analysis.");
+      const detail = error instanceof Error ? error.message : "We couldn’t start the analysis.";
+      setMessage(replaySaved ? `Your replay was saved securely, but the analysis did not start. Retry to reuse the saved file. ${detail}` : detail);
       track("analysis_failed", placement);
     }
   }
@@ -188,7 +204,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     </div>}
 
     {replay && detailsOpen && <div className="quick-details" id="quick-replay-details">
-      <label className="quick-email"><span>Where should we send your result?</span><input id="quick-replay-email" type="email" autoComplete="email" inputMode="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@email.com" required /></label>
+      <label className="quick-email"><span>Where should we send your result?</span><input id="quick-replay-email" type="email" autoComplete="email" inputMode="email" value={email} onChange={event => { setEmail(event.target.value); stagedReplayRef.current = null; }} placeholder="you@email.com" required /></label>
       <p className="quick-email-note">Private delivery and recovery only. Marketing stays off unless you choose it below.</p>
       <label className="quick-check"><input type="checkbox" checked={dataConsent} onChange={event => setDataConsent(event.target.checked)} required /><span>Process this replay and email to deliver my private beta analysis. <a href="/privacy" target="_blank">Privacy</a></span></label>
       <button className="quick-submit" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "ANALYZE THIS REPLAY — FREE →"}</span></button>

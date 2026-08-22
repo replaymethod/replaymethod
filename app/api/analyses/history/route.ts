@@ -1,9 +1,10 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
-import { getDb } from "../../../../db";
+import { getDatabase, getDb } from "../../../../db";
 import { analysisJobs, analysisRequests, playerSessions } from "../../../../db/schema";
 import { gameLabels, isAnalysisGame, publicIdPattern } from "../../../../lib/analysis";
 import { hashPlayerToken, PLAYER_SESSION_COOKIE, playerTokenPattern, readCookie } from "../../../../lib/player-identity.mjs";
 import { isSameOriginRequest } from "../../../../lib/request-security.mjs";
+import { canAccessAnalysis } from "../../../../lib/report-access.mjs";
 
 const fields = {
   publicId: analysisRequests.publicId,
@@ -55,8 +56,18 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     if (!isSameOriginRequest(request)) return Response.json({ reports: [] }, { status: 403, headers: { "Cache-Control": "no-store" } });
-    const payload = await request.json() as { ids?: unknown[] };
-    const ids = (payload.ids || []).filter((id): id is string => typeof id === "string" && publicIdPattern.test(id)).slice(0, 20);
+    const payload = await request.json() as { reports?: unknown[] };
+    const candidates = (payload.reports || []).flatMap(item => {
+      if (!item || typeof item !== "object") return [];
+      const row = item as { publicId?: unknown; accessToken?: unknown };
+      return typeof row.publicId === "string" && publicIdPattern.test(row.publicId) && typeof row.accessToken === "string"
+        ? [{ publicId: row.publicId, accessToken: row.accessToken }]
+        : [];
+    }).slice(0, 20);
+    const database = await getDatabase();
+    const authorized = await Promise.all(candidates.map(async item =>
+      await canAccessAnalysis(database, item.publicId, item.accessToken, request.headers.get("cookie") || "") ? item : null));
+    const ids = authorized.filter((item): item is { publicId: string; accessToken: string } => Boolean(item)).map(item => item.publicId);
     if (!ids.length) return Response.json({ reports: [] });
     const db = await getDb();
     const rows = await db.select(fields).from(analysisRequests).where(inArray(analysisRequests.publicId, ids));

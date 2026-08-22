@@ -246,6 +246,57 @@ export const analysisUsage = sqliteTable("analysis_usage", {
   index("analysis_usage_request_idx").on(table.analysisRequestId)
 ]);
 
+export const replayUploadSessions = sqliteTable("replay_upload_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  email: text("email").notNull(),
+  fileName: text("file_name").notNull(),
+  fileSize: integer("file_size").notNull(),
+  chunkSize: integer("chunk_size").notNull(),
+  expectedParts: integer("expected_parts").notNull(),
+  status: text("status").notNull().default("pending"),
+  objectKey: text("object_key"),
+  fileSha256: text("file_sha256"),
+  analysisRequestId: integer("analysis_request_id").references(() => analysisRequests.id),
+  expiresAt: text("expires_at").notNull(),
+  completedAt: text("completed_at"),
+  claimedAt: text("claimed_at"),
+  errorCode: text("error_code"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("replay_upload_sessions_public_id_unique").on(table.publicId),
+  uniqueIndex("replay_upload_sessions_analysis_unique").on(table.analysisRequestId),
+  index("replay_upload_sessions_email_created_idx").on(table.email, table.createdAt),
+  index("replay_upload_sessions_status_expiry_idx").on(table.status, table.expiresAt)
+]);
+
+export const replayUploadParts = sqliteTable("replay_upload_parts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  uploadSessionId: integer("upload_session_id").notNull().references(() => replayUploadSessions.id, { onDelete: "cascade" }),
+  partNumber: integer("part_number").notNull(),
+  objectKey: text("object_key").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  sha256: text("sha256").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("replay_upload_parts_session_part_unique").on(table.uploadSessionId, table.partNumber),
+  index("replay_upload_parts_session_idx").on(table.uploadSessionId)
+]);
+
+export const analysisReportAccess = sqliteTable("analysis_report_access", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  tokenHash: text("token_hash").notNull(),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id, { onDelete: "cascade" }),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("analysis_report_access_token_unique").on(table.tokenHash),
+  index("analysis_report_access_request_idx").on(table.analysisRequestId),
+  index("analysis_report_access_expiry_idx").on(table.expiresAt)
+]);
+
 export const emailDeliveries = sqliteTable("email_deliveries", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   publicId: text("public_id").notNull(),

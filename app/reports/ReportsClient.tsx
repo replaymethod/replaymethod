@@ -13,6 +13,7 @@ type ReportSummary = {
   hasBillingAccount: boolean;
   createdAt: string;
   highestImpactMistake: string | null;
+  accessToken?: string;
 };
 
 type BillingSnapshot = {
@@ -55,16 +56,19 @@ export default function ReportsClient() {
 
       let ids: string[] = [];
       try { ids = JSON.parse(localStorage.getItem("replaymethod-report-ids") || "[]") as string[]; } catch { /* ignore malformed device storage */ }
+      let access: Record<string, string> = {};
+      try { access = JSON.parse(localStorage.getItem("replaymethod-report-access") || "{}") as Record<string, string>; } catch { /* ignore malformed device storage */ }
       setHistoryMode("device");
-      if (!ids.length) return setReports([]);
+      const savedReports = ids.flatMap(publicId => access[publicId] ? [{ publicId, accessToken: access[publicId] }] : []);
+      if (!savedReports.length) return setReports([]);
       try {
         const response = await fetch("/api/analyses/history", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids }),
+          body: JSON.stringify({ reports: savedReports }),
         });
         const data = await response.json() as { reports?: ReportSummary[] };
-        setReports((data.reports || []).sort((a, b) => ids.indexOf(a.publicId) - ids.indexOf(b.publicId)));
+        setReports((data.reports || []).map(report => ({ ...report, accessToken: access[report.publicId] })).sort((a, b) => ids.indexOf(a.publicId) - ids.indexOf(b.publicId)));
       } catch { setReports([]); }
     })();
   }, []);
@@ -97,6 +101,7 @@ export default function ReportsClient() {
       const result = await response.json() as { deleted?: boolean; error?: string };
       if (!response.ok || !result.deleted) throw new Error(result.error || "Account deletion could not be completed.");
       localStorage.removeItem("replaymethod-report-ids");
+      localStorage.removeItem("replaymethod-report-access");
       window.location.assign("/?account=deleted");
     } catch (error) {
       setPrivacyState("error");
@@ -156,7 +161,7 @@ export default function ReportsClient() {
         ) : (
           <div className="reports-list">
             {reports.map(report => (
-              <Link key={report.publicId} href={`/report/${report.publicId}`}>
+              <Link key={report.publicId} href={`/report/${report.publicId}${report.accessToken ? `?access=${encodeURIComponent(report.accessToken)}` : ""}`}>
                 <div><span>{report.gameLabel}</span><b>{statusTitle(report)}</b><small>{report.currentRank}{report.targetRank ? ` → ${report.targetRank}` : ""} · {new Date(`${report.createdAt}Z`).toLocaleDateString("en-GB", { dateStyle: "medium" })}</small></div>
                 <i className={report.status}>{report.status} →</i>
               </Link>
