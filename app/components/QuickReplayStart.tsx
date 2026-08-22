@@ -1,6 +1,6 @@
 "use client";
 
-import { DragEvent, FormEvent, useRef, useState } from "react";
+import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 import { readApiResponse, uploadReplayInChunks, type StagedReplay } from "../../lib/client-replay-upload";
@@ -65,6 +65,7 @@ function fileSizeLabel(bytes: number) {
 }
 
 export default function QuickReplayStart({ placement }: { placement: string }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const stagedReplayRef = useRef<StagedReplay | null>(null);
   const [platform, setPlatform] = useState<Platform>("pc");
@@ -78,6 +79,8 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
   const [handoffCopied, setHandoffCopied] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
+
+  useEffect(() => formRef.current?.setAttribute("data-hydrated", "true"), []);
 
   function selectFile(file: File | null) {
     if (!file) return;
@@ -188,7 +191,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     }
   }
 
-  return <form id="replay-upload" className={`quick-replay ${replay ? "has-file" : ""}`} aria-busy={status === "loading"} onSubmit={submit}>
+  return <form ref={formRef} id="replay-upload" data-hydrated="false" className={`quick-replay ${replay ? "has-file" : ""}`} aria-busy={status === "loading"} onSubmit={submit}>
     <div className="quick-replay-head"><div><span>ROCKET LEAGUE · FREE BETA</span><b>Drop a replay. Let the match fill in the rest.</b></div><i>FREE</i></div>
     {platform === "pc" ? <><label
       className={`quick-drop ${dragging ? "dragging" : ""}`}

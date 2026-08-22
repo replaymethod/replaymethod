@@ -33,11 +33,15 @@ function collectBrowserErrors(page: Page) {
   return errors;
 }
 
+async function expectQuickReplayHydrated(page: Page) {
+  await expect(page.locator('#replay-upload[data-hydrated="true"]')).toBeVisible();
+}
+
 test.describe("first-time visitor funnel", () => {
   for (const route of publicRoutes) {
     test(`${route} renders without overflow or browser errors`, async ({ page }) => {
       const errors = collectBrowserErrors(page);
-      const response = await page.goto(route, { waitUntil: "networkidle" });
+      const response = await page.goto(route, { waitUntil: "load" });
       expect(response?.status()).toBeLessThan(400);
       await expect(page.locator("main")).toBeVisible();
       await expectNoHorizontalOverflow(page);
@@ -58,7 +62,8 @@ test.describe("first-time visitor funnel", () => {
   });
 
   test("context appears only after an original replay is selected", async ({ page }) => {
-    await page.goto("/", { waitUntil: "networkidle" });
+    await page.goto("/", { waitUntil: "load" });
+    await expectQuickReplayHydrated(page);
     await page.locator('input[type="file"]').setInputFiles({
       name: "representative-match.replay",
       mimeType: "application/octet-stream",
@@ -81,7 +86,8 @@ test.describe("first-time visitor funnel", () => {
   });
 
   test("the free Climb Check gives a useful result without login or email", async ({ page }) => {
-    await page.goto("/climb-check", { waitUntil: "networkidle" });
+    await page.goto("/climb-check", { waitUntil: "load" });
+    await expect(page.locator('main.tool-page[data-hydrated="true"]')).toBeVisible();
     await page.getByRole("button", { name: /Rocket League/ }).click();
     await expect(page.getByRole("heading", { name: /Which one sounds most like your sessions/i })).toBeVisible();
     await page.getByRole("button", { name: /double committing/i }).click();
@@ -93,7 +99,7 @@ test.describe("first-time visitor funnel", () => {
 
 test.describe("truthful product boundaries", () => {
   test("Rocket League PC accepts original replays while console lanes stop before unusable evidence", async ({ page }) => {
-    await page.goto("/analyze?game=rocket-league&platform=pc", { waitUntil: "networkidle" });
+    await page.goto("/analyze?game=rocket-league&platform=pc", { waitUntil: "load" });
     await expect(page.getByText(/Original PC \.replay file when the public quality gate opens/i)).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(1);
     await page.getByRole("button", { name: /PS5/ }).click();
@@ -104,7 +110,8 @@ test.describe("truthful product boundaries", () => {
   });
 
   test("landing console cards describe research and route to the closed status lane", async ({ page }) => {
-    await page.goto("/", { waitUntil: "networkidle" });
+    await page.goto("/", { waitUntil: "load" });
+    await expectQuickReplayHydrated(page);
     await page.getByText("On console—or browsing on your phone?", { exact: true }).click();
     await page.getByRole("button", { name: "PS5 video path →" }).click();
     await expect(page.getByText("Capture research—not a live analysis.", { exact: true })).toBeVisible();
@@ -120,14 +127,15 @@ test.describe("truthful product boundaries", () => {
     const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     try {
       const mobilePage = await mobile.newPage();
-      await mobilePage.goto(`${baseURL}/?utm_source=community&utm_medium=social&utm_campaign=rl-phase3&token=private`, { waitUntil: "networkidle" });
+      await mobilePage.goto(`${baseURL}/?utm_source=community&utm_medium=social&utm_campaign=rl-phase3&token=private`, { waitUntil: "load" });
+      await expectQuickReplayHydrated(mobilePage);
       await mobilePage.getByText("On console—or browsing on your phone?", { exact: true }).click();
       await mobilePage.getByRole("button", { name: "Copy this page for your PC" }).click();
       await expect(mobilePage.getByRole("button", { name: "PC link copied ✓" })).toBeVisible();
       const handoff = await mobilePage.evaluate(() => navigator.clipboard.readText());
 
       const desktopPage = await desktop.newPage();
-      await desktopPage.goto(handoff, { waitUntil: "networkidle" });
+      await desktopPage.goto(handoff, { waitUntil: "load" });
       const transferred = new URL(desktopPage.url());
       expect(transferred.searchParams.get("utm_source")).toBe("community");
       expect(transferred.searchParams.get("utm_medium")).toBe("social");
@@ -195,7 +203,7 @@ test.describe("required responsive matrix", () => {
     test(`${viewport.width}x${viewport.height} keeps critical journeys inside the viewport`, async ({ page }) => {
       await page.setViewportSize(viewport);
       for (const route of ["/", "/rocket-league", "/analyze", "/climb-check"]) {
-        await page.goto(route, { waitUntil: "networkidle" });
+        await page.goto(route, { waitUntil: "load" });
         await expectNoHorizontalOverflow(page);
         const clipped = await page.evaluate(() => {
           const viewportWidth = document.documentElement.clientWidth;

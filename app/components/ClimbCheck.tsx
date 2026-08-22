@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-html-link-for-pages */
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { trackProductEvent } from "../../lib/client-analytics";
 
 type Game = "league" | "valorant" | "rocket-league";
@@ -97,11 +97,15 @@ function ResultSignup({ game, leak }: { game: Game; leak: Leak }) {
 }
 
 export default function ClimbCheck() {
+  const mainRef = useRef<HTMLElement>(null);
   const [game, setGame] = useState<Game | null>(null);
   const [leakId, setLeakId] = useState<string | null>(null);
   const result = useMemo(() => game && leakId ? leaks[game].find(item => item.id === leakId) ?? null : null, [game, leakId]);
 
-  useEffect(() => { sendEvent("page_view", "general", "climb_check"); }, []);
+  useEffect(() => {
+    mainRef.current?.setAttribute("data-hydrated", "true");
+    sendEvent("page_view", "general", "climb_check");
+  }, []);
 
   function chooseGame(next: Game) {
     setGame(next); setLeakId(null); sendEvent("tool_start", next, "climb_check_game");
@@ -111,7 +115,7 @@ export default function ClimbCheck() {
     setLeakId(id); if (game) sendEvent("tool_complete", game, "climb_check_result");
   }
 
-  return <main className="tool-page">
+  return <main ref={mainRef} className="tool-page" data-hydrated="false">
     <nav className="tool-nav shell"><a className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></a><a href="/guides">Free guides</a></nav>
     <section className="tool-hero shell"><span className="kicker">FREE CLIMB LEAK CHECK</span><h1>What keeps repeating<br /><em>when you lose?</em></h1><p>Get a focused self-review in under 60 seconds. No login, no email and no fake AI diagnosis. Your answer is a starting hypothesis to test in your next matches.</p><div className="tool-progress"><i className="done" /><i className={game ? "done" : ""} /><i className={result ? "done" : ""} /><span>{result ? "RESULT" : game ? "STEP 2 OF 2" : "STEP 1 OF 2"}</span></div></section>
 
