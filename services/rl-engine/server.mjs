@@ -9,7 +9,7 @@ export { PARSER_VERSION };
 export const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 export const ENGINE_VERSION = "rl-engine.v1";
 export const MINIMUM_TOKEN_LENGTH = 24;
-export const DEFAULT_JOB_TIMEOUT_MS = 80_000;
+export const DEFAULT_JOB_TIMEOUT_MS = 180_000;
 
 class RequestContractError extends Error {
   constructor(code, publicMessage) {
@@ -107,7 +107,7 @@ function maximumConcurrency(value) {
 
 function jobTimeout(value) {
   const parsed = Number(value ?? DEFAULT_JOB_TIMEOUT_MS);
-  return Number.isFinite(parsed) ? Math.min(115_000, Math.max(5_000, Math.round(parsed))) : DEFAULT_JOB_TIMEOUT_MS;
+  return Number.isFinite(parsed) ? Math.min(235_000, Math.max(5_000, Math.round(parsed))) : DEFAULT_JOB_TIMEOUT_MS;
 }
 
 function replayWorkerError(payload) {
