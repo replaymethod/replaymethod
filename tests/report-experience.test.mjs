@@ -16,6 +16,7 @@ test("keeps the private report centered on one evidence-backed finding", async (
 
 test("shows real time context only when structured evidence supplies it", async () => {
   const client = await readFile(clientPath, "utf8");
+  assert.match(client, /timeZone: "UTC"/);
   assert.match(client, /item\.timestamp != null \? `MATCH TIME/);
   assert.match(client, /item\.round != null \? `ROUND/);
   assert.match(client, /: item\.label/);

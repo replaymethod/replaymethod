@@ -198,8 +198,7 @@ export function calibrationMetricsFromLabels(reviewQueue, detectorId, labelHisto
   const confirmed = candidates.filter((candidate) => candidate.label === "confirmed");
   const rejected = candidates.filter((candidate) => candidate.label === "rejected");
   const reviewed = [...confirmed, ...rejected];
-  const timestampReviewed = reviewed.filter((candidate) => typeof candidate.timestampVerified === "boolean");
-  const cohortCounts = candidates.reduce((counts, candidate) => {
+  const cohortCounts = reviewed.reduce((counts, candidate) => {
     const key = candidate.cohortKey ?? `${candidate.mode ?? "unknown"}:${candidate.rankCohort ?? "unranked-unknown"}`;
     counts[key] = (counts[key] ?? 0) + 1;
     return counts;
@@ -211,20 +210,20 @@ export function calibrationMetricsFromLabels(reviewQueue, detectorId, labelHisto
     .filter(([key]) => !key.startsWith("unknown:") && !key.endsWith(":unranked-unknown"))
     .map(([, count]) => count);
   return {
-    replayCount: new Set(candidates.map((candidate) => candidate.replayFingerprint)).size,
+    replayCount: new Set(reviewed.map((candidate) => candidate.replayFingerprint)).size,
     reviewedPositives: confirmed.length,
     reviewedNegatives: rejected.length,
     precision: reviewed.length ? confirmed.length / reviewed.length : null,
     precisionLowerBound: wilsonLowerBound(confirmed.length, reviewed.length),
     falsePositiveRate: reviewed.length ? rejected.length / reviewed.length : null,
-    timestampVerifiedRate: timestampReviewed.length
-      ? timestampReviewed.filter((candidate) => candidate.timestampVerified).length / timestampReviewed.length
+    timestampVerifiedRate: reviewed.length
+      ? reviewed.filter((candidate) => candidate.timestampVerified === true).length / reviewed.length
       : null,
     rankModeCohorts: Object.keys(cohortCounts).filter((key) => !key.startsWith("unknown:") && !key.endsWith(":unranked-unknown")).length,
     cohortCounts,
     minimumCohortSamples: coveredCohortCounts.length ? Math.min(...coveredCohortCounts) : 0,
     independentReviewers: agreement.independentReviewers,
-    reviewerAgreement: agreement.kappa,
+    reviewerAgreement: agreement.rawAgreement,
     reviewerRawAgreement: agreement.rawAgreement,
     doubleReviewedCandidates: agreement.doubleReviewedCandidates,
     labelProvenanceComplete: decidedHistory.length > 0 && decidedHistory.every((label) => (
