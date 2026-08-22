@@ -52,6 +52,7 @@ test.describe("first-time visitor funnel", () => {
   test("the landing page explains one problem and exposes one immediate replay action", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /Stop grinding blind/i })).toBeVisible();
+    await expect(page.getByText("First analysis included · Private · No card", { exact: true })).toBeVisible();
     await expect(page.getByText("Drop a replay. Let the match fill in the rest.", { exact: true })).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(1);
     await expect(page.getByLabel("Exact in-game name")).toHaveCount(0);
@@ -59,6 +60,26 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.getByText("Drop the replay", { exact: true })).toBeVisible();
     await expect(page.getByText("Reveal one pattern", { exact: true })).toBeVisible();
     await expect(page.getByText("Play with one rule", { exact: true })).toBeVisible();
+  });
+
+  test("the illustrative product loop returns keyboard focus to the real uploader", async ({ page }) => {
+    await page.goto("/", { waitUntil: "load" });
+    await expectQuickReplayHydrated(page);
+    await expect(page.getByText("MATCH LOADED", { exact: true })).toBeVisible();
+    await expect(page.getByText("MOVEMENT PATH", { exact: true })).toBeVisible();
+    await expect(page.getByText("NOT A LIVE FINDING", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: /RUN THIS ON MY REPLAY/ }).click();
+    await expect(page.locator("#replay-upload")).toBeFocused();
+  });
+
+  test("reduced motion keeps the product loop legible without animated state", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/", { waitUntil: "load" });
+    await expectQuickReplayHydrated(page);
+    await expect(page.locator(".marcel-demo-stages li").first()).toHaveCSS("animation-name", "none");
+    await expect(page.locator(".marcel-demo .scan-line")).toHaveCSS("display", "none");
+    await page.getByRole("button", { name: /RUN THIS ON MY REPLAY/ }).click();
+    await expect(page.locator("#replay-upload")).toBeFocused();
   });
 
   test("context appears only after an original replay is selected", async ({ page }) => {
@@ -69,6 +90,8 @@ test.describe("first-time visitor funnel", () => {
       mimeType: "application/octet-stream",
       buffer: Buffer.from("playwright-calibration-fixture"),
     });
+    await expect(page.getByText("REPLAY READY ✓", { exact: true })).toBeVisible();
+    await expect(page.locator(".replay-value-facts")).toHaveCount(0);
     await expect(page.getByLabel("Where should we send your result?")).toBeVisible();
     await expect(page.locator('.quick-check input[type="checkbox"]')).toBeVisible();
     await expect(page.getByRole("button", { name: /Analyze this replay/i })).toBeVisible();

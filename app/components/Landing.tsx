@@ -33,19 +33,34 @@ function MethodStrip() {
 }
 
 function ProductMoment() {
+  function focusUploader() {
+    const uploader = document.getElementById("replay-upload");
+    if (!uploader) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    uploader.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+    uploader.focus({ preventScroll: true });
+    trackProductEvent("cta_click", "rocket-league", "product_loop_to_uploader");
+  }
+
   return <section className="marcel-moment shell" id="product">
     <div className="marcel-moment-copy">
-      <span>THE PRODUCT PROMISE</span>
-      <h2>Not more information.<br />One decision you can use.</h2>
-      <p>Replay Method is being built to turn a repeated match behavior into one focus, one next-match cue and a later proof check. If the evidence is not strong enough, it says so.</p>
+      <span>THE IMPROVEMENT LOOP</span>
+      <h2>See the moment.<br />Queue with one rule.</h2>
+      <p>Replay Method turns supported match evidence into one focus you can carry into the next game. If the evidence is not strong enough, it stops instead of filling the screen with guesses.</p>
       <div className="marcel-truth"><i>✓</i><span><b>Truth before hype</b>Public coaching stays off until real replay evidence and two independent qualified reviewers clear the detector gate.</span></div>
     </div>
-    <div className="marcel-result-card" aria-label="Illustration of the Replay Method result structure">
-      <header><span>RESULT STRUCTURE</span><em>ILLUSTRATION</em></header>
-      <div className="marcel-result-score"><span>YOUR NEXT MATCH</span><b>Protect the safe layer.</b></div>
-      <div className="marcel-field"><i className="ball" /><i className="car one" /><i className="car two" /><i className="path" /></div>
-      <p><b>The moment:</b> your teammate crosses the ball line while you follow the same channel.</p>
-      <footer><span>ONE CUE</span><b>Hold the second layer until possession is clear.</b></footer>
+    <div className="marcel-demo" aria-label="Illustrative Replay Method product loop">
+      <header><span>ILLUSTRATIVE FLOW</span><em>NOT A LIVE FINDING</em></header>
+      <ol className="marcel-demo-stages" aria-label="Product loop stages">
+        <li>MATCH LOADED</li><li>SCAN</li><li>MOMENT</li><li>MOVEMENT PATH</li><li>EVIDENCE</li><li>ONE FOCUS</li><li>NEXT-MATCH RULE</li>
+      </ol>
+      <div className="marcel-demo-screen">
+        <div className="marcel-demo-meta"><span>2V2 · 02:41</span><b>SUPPORTED MOMENT</b></div>
+        <div className="marcel-field" aria-hidden="true"><i className="scan-line" /><i className="ball" /><i className="car one" /><i className="car two" /><i className="path" /><i className="evidence-pin">01</i></div>
+        <p><b>EVIDENCE 01</b>Your teammate crosses the ball line while your path enters the same channel.</p>
+      </div>
+      <div className="marcel-demo-decision"><span>ONE FOCUS</span><b>Protect the safe layer.</b><small>NEXT-MATCH RULE · Hold one layer deeper until possession is clear.</small></div>
+      <button type="button" onClick={focusUploader}>RUN THIS ON MY REPLAY <span>→</span></button>
     </div>
   </section>;
 }
@@ -69,10 +84,10 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
 
     <section className="marcel-hero shell">
       <div className="marcel-hero-copy">
-        <span className="marcel-status"><i /> ROCKET LEAGUE · {engineOpen ? "FREE FUNCTIONAL BETA" : "PRIVATE BETA"}</span>
+        <span className="marcel-status"><i /> ROCKET LEAGUE · {engineOpen ? "PC REPLAY BETA" : "PRIVATE BETA"}</span>
         <h1>Stop grinding blind.<br /><em>Find the decision costing you games.</em></h1>
         <p>{engineOpen ? "Drop one original PC replay. The engine reads the playlist and players, then asks only which player is you. If evidence has not earned a coaching claim, it stops and tells you." : "Drop one original PC replay. Replay Method securely captures the match and the exact player to follow—so real evidence can replace generic advice."}</p>
-        <div className="marcel-trust-row"><span>FREE beta</span><span>Private</span><span>No card</span></div>
+        <div className="marcel-trust-row"><span>First analysis included · Private · No card</span></div>
       </div>
       <div className="marcel-upload-stage">
         {engineOpen ? <QuickReplayStart placement="marcel_hero" /> : <ReplayContribution intakeOpen={calibrationOpen} compact />}

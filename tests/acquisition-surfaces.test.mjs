@@ -42,7 +42,9 @@ test("distinguishes Riot access requests from evidence-gated replay outcomes", a
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
   assert.match(landing, /<QuickReplayStart placement="marcel_hero"/);
   assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
-  assert.match(quickReplay, /ANALYZE THIS REPLAY — FREE/);
+  assert.match(quickReplay, /ANALYZE THIS REPLAY →/);
+  assert.match(quickReplay, /REPLAY READY ✓/);
+  assert.doesNotMatch(quickReplay, /replay-value-facts/);
   assert.match(intake, /Automated League and VALORANT analysis is not live/);
   assert.match(quickReplay, /Capture research—not a live analysis/);
   assert.match(quickReplay, /CHECK CONSOLE STATUS/);

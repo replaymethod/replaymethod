@@ -156,7 +156,7 @@ export default function ReportsClient() {
           <div className="reports-empty">
             <b>No reports available here yet.</b>
             <p>Submit one real match and the private report will appear here. Email verification connects later reports on this device.</p>
-            <Link href="/analyze" onClick={trackNewAnalysis}>Start my free analysis →</Link>
+            <Link href="/analyze" onClick={trackNewAnalysis}>Start my first analysis →</Link>
           </div>
         ) : (
           <div className="reports-list">
