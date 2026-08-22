@@ -26,8 +26,10 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     checkoutOpen = paidCheckoutReadiness(runtime).ready;
   } catch { /* Only the local E2E server defines this fail-closed binding. */ }
   const query = await searchParams;
-  const accessToken = typeof query.access === "string" ? query.access : "";
   const requestHeaders = await headers();
+  const accessToken = typeof query.access === "string" && query.access
+    ? query.access
+    : requestHeaders.get("x-report-access") || "";
   const authorized = e2eFixturesEnabled && Boolean(loadE2eReportFixture(publicId))
     ? true
     : await canAccessAnalysis(await getDatabase(), publicId, accessToken, requestHeaders.get("cookie") || "");

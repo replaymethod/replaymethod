@@ -117,7 +117,22 @@ const worker = {
       return withSecurityHeaders(imageResponse, url);
     }
 
-    const response = await handler.fetch(request, env, ctx);
+    // vinext's server-component dispatch can omit page search parameters from
+    // the page props. Carry the private report credential into the internal
+    // request headers as well so the server page enforces the same ownership
+    // check as the JSON API. The value is still validated and hashed by
+    // canAccessAnalysis before any report data is loaded.
+    let appRequest = request;
+    if (request.method === "GET" && /^\/report\/[a-f0-9]{32}$/.test(url.pathname)) {
+      const accessToken = (url.searchParams.get("access") || "").trim().slice(0, 128);
+      if (accessToken) {
+        const headers = new Headers(request.headers);
+        headers.set("X-Report-Access", accessToken);
+        appRequest = new Request(request, { headers });
+      }
+    }
+
+    const response = await handler.fetch(appRequest, env, ctx);
 
     // Keep the customer request alive while the analysis worker is running.
     // Cloudflare only gives waitUntil work a short grace period after the

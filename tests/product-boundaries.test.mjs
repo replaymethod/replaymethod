@@ -58,9 +58,10 @@ test("private bearer identifiers stay out of object keys and engine logs", async
 });
 
 test("runtime recovery and response headers fail closed without blocking healthy work", async () => {
-  const [worker, reportClient] = await Promise.all([
+  const [worker, reportClient, reportPage] = await Promise.all([
     source("../worker/index.ts"),
     source("../app/report/[publicId]/ReportClient.tsx"),
+    source("../app/report/[publicId]/page.tsx"),
   ]);
   assert.match(worker, /stale_running_lease/);
   assert.doesNotMatch(worker, /updated_at <= datetime\('now', '-10 minutes'\)/);
@@ -72,6 +73,8 @@ test("runtime recovery and response headers fail closed without blocking healthy
   assert.match(worker, /if \(body\.jobPublicId\) await processAnalysisJob\(body\.jobPublicId, env\)/);
   assert.doesNotMatch(worker, /ctx\.waitUntil\(processAnalysisJob/);
   assert.match(worker, /valid replay parse can exceed that window/);
+  assert.match(worker, /headers\.set\("X-Report-Access", accessToken\)/);
+  assert.match(reportPage, /requestHeaders\.get\("x-report-access"\)/);
   assert.match(reportClient, /void refresh\(\)/);
   assert.match(reportClient, /window\.setInterval\(refresh, 10000\)/);
   assert.match(reportClient, /AUTOMATIC RECOVERY STARTED/);
