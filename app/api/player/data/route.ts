@@ -81,8 +81,10 @@ export async function DELETE(request: Request) {
 
     const storedObjects = await database.prepare(`SELECT file_key AS object_key FROM analysis_requests WHERE email = ? AND file_key IS NOT NULL
       UNION SELECT raw_object_key AS object_key FROM matches WHERE player_id = ? AND raw_object_key IS NOT NULL
-      UNION SELECT normalized_object_key AS object_key FROM matches WHERE player_id = ? AND normalized_object_key IS NOT NULL`)
-      .bind(player.email, player.id, player.id).all<{ object_key: string }>();
+      UNION SELECT normalized_object_key AS object_key FROM matches WHERE player_id = ? AND normalized_object_key IS NOT NULL
+      UNION SELECT object_key FROM replay_upload_sessions WHERE email = ? AND object_key IS NOT NULL
+      UNION SELECT p.object_key FROM replay_upload_parts p JOIN replay_upload_sessions s ON s.id = p.upload_session_id WHERE s.email = ?`)
+      .bind(player.email, player.id, player.id, player.email, player.email).all<{ object_key: string }>();
     const objectKeys = [...new Set((storedObjects.results || []).map((row: { object_key: string }) => row.object_key).filter(Boolean))];
     if (objectKeys.length) {
       const { env } = await import("cloudflare:workers");
@@ -101,7 +103,10 @@ export async function DELETE(request: Request) {
       database.prepare(`DELETE FROM analysis_findings WHERE analysis_request_id IN (${requestIds}) OR player_id = ?`).bind(player.email, player.id),
       database.prepare(`DELETE FROM matches WHERE analysis_request_id IN (${requestIds}) OR player_id = ?`).bind(player.email, player.id),
       database.prepare(`DELETE FROM email_deliveries WHERE analysis_request_id IN (${requestIds})`).bind(player.email),
+      database.prepare(`DELETE FROM analysis_report_access WHERE analysis_request_id IN (${requestIds})`).bind(player.email),
       database.prepare("DELETE FROM analysis_usage WHERE player_id = ?").bind(player.id),
+      database.prepare("DELETE FROM replay_upload_parts WHERE upload_session_id IN (SELECT id FROM replay_upload_sessions WHERE email = ?)").bind(player.email),
+      database.prepare("DELETE FROM replay_upload_sessions WHERE email = ?").bind(player.email),
       database.prepare("DELETE FROM analysis_jobs WHERE player_id = ?").bind(player.id),
       database.prepare("DELETE FROM player_claims WHERE player_id = ?").bind(player.id),
       database.prepare("DELETE FROM billing_subscriptions WHERE player_id = ?").bind(player.id),

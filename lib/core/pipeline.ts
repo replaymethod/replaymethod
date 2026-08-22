@@ -4,6 +4,7 @@ import { isAnalysisGame, reportUrl } from "../analysis";
 import { sendAnalysisReady } from "../email";
 import { advancePlayerFocus, type PersistedFocusFinding } from "../player-focus";
 import { operationalErrorCode } from "../request-security.mjs";
+import { releaseExistingAnalysisUsage, reserveExistingAnalysisUsage } from "../analysis-usage-state.mjs";
 import { blockedRetryDisposition } from "../retry-policy.mjs";
 import { subsystemEnabled } from "../subsystem-controls.mjs";
 import { encodePlayerResolutionContext } from "../player-resolution.mjs";
@@ -99,6 +100,15 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
   await ensureProductSchema(env.DB);
   const job = await loadAndClaim(publicId, env.DB);
   if (!job) return;
+  if (!await reserveExistingAnalysisUsage(env.DB, job.requestId)) {
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE analysis_jobs SET status = 'blocked', stage = 'blocked', stage_label = 'Analysis allowance is no longer available',
+        error_code = 'analysis_entitlement_unavailable', error_message = 'The previously released allowance is now occupied by another analysis.',
+        next_retry_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(job.jobId),
+      env.DB.prepare("UPDATE analysis_requests SET status = 'blocked', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(job.requestId),
+    ]);
+    return;
+  }
   const started = Date.now();
   await env.DB.prepare("UPDATE analysis_requests SET status = 'analyzing', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(job.requestId).run();
 
@@ -116,10 +126,7 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
         env.DB.prepare("UPDATE analysis_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
           .bind(disposition.requestStatus, job.requestId)
       ]);
-      if (disposition.releaseUsage && !result.userResolvable) {
-        await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(job.requestId).run();
-      }
+      if (disposition.releaseUsage) await releaseExistingAnalysisUsage(env.DB, job.requestId);
       return;
     }
 
@@ -193,23 +200,38 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     const readyAt = new Date().toISOString();
     const durationMs = Date.now() - started;
 
+    // A stale-worker recovery or timeout may release the allowance while this
+    // attempt is still completing. Reacquire the same usage row before any
+    // customer-visible report can be delivered.
+    if (!await reserveExistingAnalysisUsage(env.DB, job.requestId)) {
+      await env.DB.batch([
+        env.DB.prepare("UPDATE analysis_requests SET status = 'blocked', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(job.requestId),
+        env.DB.prepare(`UPDATE analysis_jobs SET status = 'blocked', stage = 'blocked', stage_label = 'Analysis allowance is no longer available',
+          error_code = 'analysis_entitlement_unavailable', error_message = 'A late completion could not reacquire the released allowance.',
+          next_retry_at = NULL, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(durationMs, job.jobId),
+      ]);
+      return;
+    }
+
     await setStage(env.DB, job.jobId, "persisting", "Saving your private report");
-    await env.DB.batch([
+    const completion = await env.DB.batch([
+      env.DB.prepare(`UPDATE analysis_usage SET status = 'consumed', consumed_at = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE analysis_request_id = ? AND status = 'reserved'`).bind(readyAt, job.requestId),
       env.DB.prepare(`UPDATE analysis_requests SET status = 'ready', highest_impact_mistake = ?, why_it_costs = ?,
         evidence_moments = ?, next_queue_rule = ?, practice_plan = ?, coach_note = ?, ready_at = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?`).bind(
+        WHERE id = ? AND EXISTS (SELECT 1 FROM analysis_usage WHERE analysis_request_id = ? AND status = 'consumed')`).bind(
           report.highestImpactMistake, report.whyItCosts, report.evidenceMoments.join("\n"), report.nextQueueRule,
-          report.practicePlan.join("\n"), report.coachNote, readyAt, job.requestId
+          report.practicePlan.join("\n"), report.coachNote, readyAt, job.requestId, job.requestId
         ),
       env.DB.prepare(`UPDATE analysis_jobs SET status = 'completed', stage = 'completed', stage_label = 'Report ready',
         parser_version = ?, analyzer_version = ?, detector_version = ?, coaching_version = ?, schema_version = ?,
-        estimated_cost_micros = ?, duration_ms = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+        estimated_cost_micros = ?, duration_ms = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+        AND EXISTS (SELECT 1 FROM analysis_usage WHERE analysis_request_id = ? AND status = 'consumed')`)
         .bind(result.versions.parser, result.versions.analyzer, result.versions.detector,
           `${result.versions.coaching}+${synthesis.model}`, result.versions.schema,
-          result.estimatedCostMicros + synthesis.costMicros, durationMs, readyAt, job.jobId),
-      env.DB.prepare(`UPDATE analysis_usage SET status = 'consumed', consumed_at = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE analysis_request_id = ? AND status = 'reserved'`).bind(readyAt, job.requestId)
+          result.estimatedCostMicros + synthesis.costMicros, durationMs, readyAt, job.jobId, job.requestId),
     ]);
+    if (!completion[0].meta.changes) return;
 
     if (job.playerId) {
       try {
@@ -254,10 +276,7 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
       env.DB.prepare("UPDATE analysis_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
         .bind(retry ? "analyzing" : "failed", job.requestId)
     ]);
-    if (!retry) {
-      await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
-        updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(job.requestId).run();
-    }
+    await releaseExistingAnalysisUsage(env.DB, job.requestId);
     console.error("analysis job failed", { jobId: publicId, code: operationalErrorCode(error) });
   }
 }

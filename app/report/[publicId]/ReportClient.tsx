@@ -78,7 +78,7 @@ function stopCopy(data: PublicReportData) {
   };
 }
 
-export default function ReportClient({ initial, delivery, checkoutOpen }: { initial: PublicReportData; delivery: "email" | "link"; checkoutOpen: boolean }) {
+export default function ReportClient({ initial, accessToken, delivery, checkoutOpen }: { initial: PublicReportData; accessToken: string; delivery: "email" | "link"; checkoutOpen: boolean }) {
   const [data, setData] = useState(initial);
   const [feedbackScore, setFeedbackScore] = useState(initial.feedbackScore || 0);
   const [feedbackText, setFeedbackText] = useState("");
@@ -105,6 +105,10 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("replaymethod-report-ids") || "[]") as string[];
     localStorage.setItem("replaymethod-report-ids", JSON.stringify([data.publicId, ...stored.filter(id => id !== data.publicId)].slice(0, 20)));
+    if (accessToken) {
+      const access = JSON.parse(localStorage.getItem("replaymethod-report-access") || "{}") as Record<string, string>;
+      localStorage.setItem("replaymethod-report-access", JSON.stringify({ ...access, [data.publicId]: accessToken }));
+    }
     const eventKey = `replaymethod-report-view-${data.publicId}`;
     if (!sessionStorage.getItem(eventKey)) {
       sessionStorage.setItem(eventKey, "1");
@@ -134,14 +138,14 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
         trackProductEvent("abstention", data.game as "league" | "valorant" | "rocket-league", stopCode);
       }
     }
-  }, [data.game, data.processing?.errorCode, data.processing?.replayContext.mode, data.publicId, data.status]);
+  }, [accessToken, data.game, data.processing?.errorCode, data.processing?.replayContext.mode, data.publicId, data.status]);
 
   useEffect(() => {
     if (["ready", "blocked", "failed"].includes(data.status)) return;
     let cancelled = false;
     const refresh = async () => {
       try {
-        const response = await fetch(`/api/analyses/${data.publicId}`, { cache: "no-store" });
+        const response = await fetch(`/api/analyses/${data.publicId}`, { cache: "no-store", headers: accessToken ? { "X-Report-Access": accessToken } : undefined });
         if (response.ok && !cancelled) setData(await response.json() as PublicReportData);
       } catch { /* next poll retries */ }
     };
@@ -151,11 +155,11 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [data.publicId, data.status]);
+  }, [accessToken, data.publicId, data.status]);
 
   const copyLink = async () => {
     trackProductEvent("share_started", data.game as "league" | "valorant" | "rocket-league", "private_link");
-    await navigator.clipboard.writeText(location.href.split("?")[0]);
+    await navigator.clipboard.writeText(location.href);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   };
@@ -163,7 +167,7 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
   const saveFeedback = async () => {
     if (!feedbackScore) return;
     setFeedbackState("saving");
-    const response = await fetch(`/api/analyses/${data.publicId}/feedback`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ score: feedbackScore, text: feedbackText, caseStudyConsent }) });
+    const response = await fetch(`/api/analyses/${data.publicId}/feedback`, { method: "POST", headers: { "Content-Type": "application/json", ...(accessToken ? { "X-Report-Access": accessToken } : {}) }, body: JSON.stringify({ score: feedbackScore, text: feedbackText, caseStudyConsent }) });
     setFeedbackState(response.ok ? "saved" : "error");
     if (response.ok) {
       trackProductEvent("feedback", data.game as "league" | "valorant" | "rocket-league", `score_${feedbackScore}`);
@@ -181,7 +185,7 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
       trackProductEvent("player_pick", data.game as "league" | "valorant" | "rocket-league", data.processing?.replayContext.mode || "unknown_mode");
       const response = await fetch(`/api/analyses/${data.publicId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(accessToken ? { "X-Report-Access": accessToken } : {}) },
         body: JSON.stringify({ player: selectedPlayer, rank: selectedRank }),
       });
       if (!response.ok) {

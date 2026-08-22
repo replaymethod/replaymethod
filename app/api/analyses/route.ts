@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { getDb } from "../../../db";
+import { getDatabase, getDb } from "../../../db";
 import { analysisJobs, analysisRequests, gameAccounts, playerClaims, players, waitlist } from "../../../db/schema";
 import { cleanText, emailPattern, isAnalysisGame, reportUrl } from "../../../lib/analysis";
 import { attachAnalysisUsage, EntitlementError, releaseAnalysisUsage, reserveAnalysisAccess } from "../../../lib/analysis-entitlements";
@@ -7,6 +7,8 @@ import { coarseAnalyticsValue } from "../../../lib/analytics-policy.mjs";
 import { sendAnalysisReceived } from "../../../lib/email";
 import { createPlayerToken, expiresAt, hashPlayerToken, PLAYER_CLAIM_SECONDS } from "../../../lib/player-identity.mjs";
 import { declaredBodyTooLarge, isSameOriginRequest, operationalErrorCode } from "../../../lib/request-security.mjs";
+import { replayUploadToken, sha256Hex } from "../../../lib/replay-upload.mjs";
+import { REPORT_ACCESS_SECONDS } from "../../../lib/report-access.mjs";
 import { subsystemEnabled } from "../../../lib/subsystem-controls.mjs";
 
 export const runtime = "edge";
@@ -17,6 +19,7 @@ const MAX_INTAKE_BYTES = 98 * 1024 * 1024;
 const RL_PLATFORMS = new Set(["pc", "ps5", "xbox", "switch"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".webm", ".mpeg", ".mpg", ".m4v"]);
 const VIDEO_TYPES = new Set(["video/mp4", "video/quicktime", "video/webm", "video/mpeg", "video/x-m4v"]);
+type StagedReplayRow = { id: number; objectKey: string; fileName: string; fileSize: number; status: string; analysisRequestId: number | null; updatedAt: string };
 
 function validEvidenceUrl(raw: string) {
   if (!raw) return "";
@@ -38,9 +41,18 @@ function isSupportedVideo(file: File) {
   return Boolean(extension && (!file.type || VIDEO_TYPES.has(file.type)));
 }
 
+function privateReportUrl(requestUrl: string, publicId: string, accessToken: string) {
+  const url = new URL(reportUrl(requestUrl, publicId));
+  url.searchParams.set("access", accessToken);
+  return url.toString();
+}
+
 export async function POST(request: Request) {
   let uploadedKey: string | null = null;
+  let deleteUploadedKeyOnFailure = false;
   let reservedPublicId: string | null = null;
+  let stagedSessionId: number | null = null;
+  let stagedAnalysisRequestId: number | null = null;
   try {
     if (!isSameOriginRequest(request)) {
       return Response.json({ error: "Invalid analysis request." }, { status: 403, headers: { "Cache-Control": "no-store" } });
@@ -71,9 +83,13 @@ export async function POST(request: Request) {
     const updatesConsent = form.get("updatesConsent") === "true";
     const replay = form.get("replay");
     const video = form.get("video");
+    const uploadId = cleanText(form.get("uploadId"), 64);
+    const uploadToken = cleanText(form.get("uploadToken"), 128) || replayUploadToken(request);
     const hasReplay = replay instanceof File && replay.size > 0;
     const hasVideo = video instanceof File && video.size > 0;
-    const replayFirstRocketLeague = game === "rocket-league" && platform === "pc" && hasReplay;
+    const hasStagedReplay = Boolean(uploadId && uploadToken);
+    const hasReplayEvidence = hasReplay || hasStagedReplay;
+    const replayFirstRocketLeague = game === "rocket-league" && platform === "pc" && hasReplayEvidence;
 
     if (!emailPattern.test(email)) return Response.json({ error: "Enter a valid email address." }, { status: 400 });
     if (!isAnalysisGame(game)) return Response.json({ error: "Choose a supported game." }, { status: 400 });
@@ -85,7 +101,8 @@ export async function POST(request: Request) {
 
     const hasVideoEvidence = hasVideo || Boolean(evidenceUrl);
 
-    if (game === "rocket-league" && platform === "pc" && hasReplay) {
+    if (hasReplay && hasStagedReplay) return Response.json({ error: "Submit either the saved replay upload or a direct file, not both." }, { status: 400 });
+    if (game === "rocket-league" && platform === "pc" && hasReplayEvidence) {
       const { env } = await import("cloudflare:workers");
       const runtime = env as unknown as { RL_ENGINE_ENABLED?: string };
       if (!subsystemEnabled(runtime.RL_ENGINE_ENABLED)) {
@@ -100,26 +117,27 @@ export async function POST(request: Request) {
       }
     }
 
-    if ((hasReplay || hasVideo) && game !== "rocket-league") return Response.json({ error: "File uploads are currently for Rocket League. Use a match or VOD link for this game." }, { status: 400 });
+    if ((hasReplayEvidence || hasVideo) && game !== "rocket-league") return Response.json({ error: "File uploads are currently for Rocket League. Use a match or VOD link for this game." }, { status: 400 });
     if (hasReplay && (!replay.name.toLowerCase().endsWith(".replay") || replay.size > MAX_REPLAY_BYTES)) {
       return Response.json({ error: "Upload a Rocket League .replay file no larger than 16 MB." }, { status: 400 });
     }
     if (hasVideo && (!isSupportedVideo(video) || video.size > MAX_VIDEO_BYTES)) {
       return Response.json({ error: "Upload an MP4, MOV, WebM or MPEG gameplay video no larger than 95 MB." }, { status: 400 });
     }
-    if (hasReplay && platform !== "pc") return Response.json({ error: "Console submissions use gameplay video or a VOD link, not a PC .replay file." }, { status: 400 });
+    if (hasReplayEvidence && platform !== "pc") return Response.json({ error: "Console submissions use gameplay video or a VOD link, not a PC .replay file." }, { status: 400 });
     if (hasVideo && platform === "pc") return Response.json({ error: "Choose PS5, Xbox or Switch for video evidence, or upload the original PC .replay file." }, { status: 400 });
-    if (game === "rocket-league" && platform === "pc" && !hasReplay) return Response.json({ error: "PC deep analysis requires the original .replay file." }, { status: 400 });
+    if (game === "rocket-league" && platform === "pc" && !hasReplayEvidence) return Response.json({ error: "PC deep analysis requires the original .replay file." }, { status: 400 });
     if (game === "rocket-league" && platform !== "pc" && !hasVideoEvidence) return Response.json({ error: "Add a gameplay video or private/public VOD link for the console video beta." }, { status: 400 });
-    if (!hasReplay && !hasVideo && !evidenceUrl) return Response.json({ error: "Add a match, replay, gameplay video or VOD link." }, { status: 400 });
+    if (!hasReplayEvidence && !hasVideo && !evidenceUrl) return Response.json({ error: "Add a match, replay, gameplay video or VOD link." }, { status: 400 });
 
     let bucket: R2Bucket | undefined;
-    if (hasReplay || hasVideo) {
+    if (hasReplayEvidence || hasVideo) {
       const { env } = await import("cloudflare:workers");
       bucket = (env as unknown as { BUCKET?: R2Bucket }).BUCKET;
       if (!bucket) return Response.json({ error: "Replay uploads are temporarily unavailable. Paste a Ballchasing or VOD link instead." }, { status: 503 });
     }
 
+    const database = await getDatabase();
     const db = await getDb();
     const recent = await db.select({ count: sql<number>`count(*)` }).from(analysisRequests).where(and(
       eq(analysisRequests.email, email),
@@ -127,6 +145,38 @@ export async function POST(request: Request) {
     )).get();
     if (Number(recent?.count || 0) >= 5) {
       return Response.json({ error: "You have reached the five-analysis daily beta limit. Try again tomorrow or contact us if a retry is needed." }, { status: 429 });
+    }
+
+    let stagedReplay: StagedReplayRow | null = null;
+    if (hasStagedReplay) {
+      if (!/^[a-f0-9]{32}$/.test(uploadId)) return Response.json({ error: "The saved replay upload is invalid. Start the upload again." }, { status: 400, headers: { "Cache-Control": "no-store" } });
+      stagedReplay = await database.prepare(`SELECT id, object_key AS objectKey, file_name AS fileName, file_size AS fileSize,
+        status, analysis_request_id AS analysisRequestId, updated_at AS updatedAt FROM replay_upload_sessions
+        WHERE public_id = ? AND token_hash = ? AND email = ? AND expires_at > CURRENT_TIMESTAMP`)
+        .bind(uploadId, await sha256Hex(uploadToken), email).first<StagedReplayRow>();
+      if (!stagedReplay?.objectKey) return Response.json({ error: "The saved replay upload was not found or expired. Start the upload again." }, { status: 404, headers: { "Cache-Control": "no-store" } });
+      if (stagedReplay.status === "claimed" && stagedReplay.analysisRequestId) {
+        const existing = await database.prepare(`SELECT r.public_id AS publicId, j.public_id AS jobPublicId
+          FROM analysis_requests r JOIN analysis_jobs j ON j.analysis_request_id = r.id WHERE r.id = ?`)
+          .bind(stagedReplay.analysisRequestId).first<{ publicId: string; jobPublicId: string }>();
+        if (existing) return Response.json({ ...existing, accessToken: uploadToken, url: privateReportUrl(request.url, existing.publicId, uploadToken), emailSent: false, idempotent: true }, { status: 201, headers: { "Cache-Control": "no-store" } });
+      }
+      const stagedUpdatedAt = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(stagedReplay.updatedAt)
+        ? new Date(stagedReplay.updatedAt).getTime()
+        : new Date(`${stagedReplay.updatedAt.replace(" ", "T")}Z`).getTime();
+      if (stagedReplay.status === "submitting" && Date.now() - stagedUpdatedAt >= 180_000) {
+        const recovered = await database.prepare(`UPDATE replay_upload_sessions SET status = 'complete', analysis_request_id = NULL,
+          updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'submitting' AND updated_at <= datetime('now', '-3 minutes')`)
+          .bind(stagedReplay.id).run();
+        if (recovered.meta.changes) stagedReplay.status = "complete";
+      }
+      if (stagedReplay.status !== "complete") {
+        return Response.json({ error: "The saved replay is already being submitted. Retry in a moment; do not upload the file again." }, { status: 409, headers: { "Cache-Control": "no-store", "Retry-After": "2" } });
+      }
+      const claimed = await database.prepare(`UPDATE replay_upload_sessions SET status = 'submitting', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND status = 'complete'`).bind(stagedReplay.id).run();
+      if (!claimed.meta.changes) return Response.json({ error: "The saved replay is already being submitted. Retry in a moment; do not upload the file again." }, { status: 409, headers: { "Cache-Control": "no-store", "Retry-After": "2" } });
+      stagedSessionId = stagedReplay.id;
     }
 
     const publicId = crypto.randomUUID().replaceAll("-", "");
@@ -146,13 +196,19 @@ export async function POST(request: Request) {
     let fileSize: number | null = null;
     let evidenceType = "link";
 
-    if (hasReplay || hasVideo) {
+    if (stagedReplay) {
+      originalFileName = safeFileName(stagedReplay.fileName);
+      fileSize = stagedReplay.fileSize;
+      evidenceType = "replay_file";
+      uploadedKey = stagedReplay.objectKey;
+    } else if (hasReplay || hasVideo) {
       const file = hasReplay ? replay : video;
       originalFileName = safeFileName(file.name);
       fileSize = file.size;
       evidenceType = hasReplay ? "replay_file" : "gameplay_video";
       const storageId = crypto.randomUUID().replaceAll("-", "");
       uploadedKey = `analyses/${storageId}/${originalFileName}`;
+      deleteUploadedKeyOnFailure = true;
       await bucket.put(uploadedKey, file.stream(), {
         httpMetadata: { contentType: hasReplay ? "application/octet-stream" : (file.type || "video/mp4") },
         customMetadata: { game, platform, evidenceType, objectId: storageId }
@@ -179,6 +235,7 @@ export async function POST(request: Request) {
       source,
       campaign
     }).returning({ id: analysisRequests.id }).get();
+    if (stagedSessionId != null) stagedAnalysisRequestId = inserted.id;
     await attachAnalysisUsage(publicId, inserted.id);
 
     if (game === "rocket-league" && playerContext) {
@@ -210,6 +267,19 @@ export async function POST(request: Request) {
       schemaVersion: "coaching.v1"
     });
 
+    const accessToken = hasStagedReplay ? uploadToken : createPlayerToken();
+    await database.prepare(`INSERT INTO analysis_report_access (token_hash, analysis_request_id, expires_at)
+      VALUES (?, ?, ?)`).bind(await hashPlayerToken(accessToken), inserted.id, expiresAt(REPORT_ACCESS_SECONDS)).run();
+
+    if (stagedSessionId != null) {
+      const claimed = await database.prepare(`UPDATE replay_upload_sessions SET status = 'claimed', analysis_request_id = ?,
+        claimed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'submitting'`)
+        .bind(inserted.id, stagedSessionId).run();
+      if (!claimed.meta.changes) throw new Error("Could not attach the saved replay upload to its analysis.");
+      stagedSessionId = null;
+      stagedAnalysisRequestId = null;
+    }
+
     if (updatesConsent) {
       try {
         await db.insert(waitlist).values({ email, game, source, campaign, privacyVersion: "2026-08-16-beta" }).onConflictDoNothing();
@@ -219,7 +289,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const url = reportUrl(request.url, publicId);
+    const url = privateReportUrl(request.url, publicId, accessToken);
     let emailSent = false;
     try {
       const claimToken = createPlayerToken();
@@ -241,9 +311,9 @@ export async function POST(request: Request) {
       console.warn("analysis ownership delivery unavailable", { code: operationalErrorCode(error) });
     }
 
-    return Response.json({ publicId, jobPublicId, url, emailSent }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    return Response.json({ publicId, jobPublicId, accessToken, url, emailSent }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    if (uploadedKey) {
+    if (uploadedKey && deleteUploadedKeyOnFailure) {
       try {
         const { env } = await import("cloudflare:workers");
         await (env as unknown as { BUCKET?: R2Bucket }).BUCKET?.delete(uploadedKey);
@@ -253,6 +323,23 @@ export async function POST(request: Request) {
     const detail = error instanceof Error ? error.message : "Unknown server error";
     if (reservedPublicId) {
       try { await releaseAnalysisUsage(reservedPublicId); } catch (releaseError) { console.error("analysis usage release failed", { code: operationalErrorCode(releaseError) }); }
+    }
+    if (stagedSessionId != null) {
+      try {
+        const database = await getDatabase();
+        if (stagedAnalysisRequestId != null) {
+          await database.batch([
+            database.prepare("DELETE FROM analysis_report_access WHERE analysis_request_id = ?").bind(stagedAnalysisRequestId),
+            database.prepare("DELETE FROM analysis_jobs WHERE analysis_request_id = ?").bind(stagedAnalysisRequestId),
+            database.prepare("DELETE FROM player_claims WHERE analysis_request_id = ?").bind(stagedAnalysisRequestId),
+            database.prepare("DELETE FROM email_deliveries WHERE analysis_request_id = ?").bind(stagedAnalysisRequestId),
+            database.prepare("DELETE FROM analysis_usage WHERE analysis_request_id = ?").bind(stagedAnalysisRequestId),
+            database.prepare("DELETE FROM analysis_requests WHERE id = ?").bind(stagedAnalysisRequestId),
+          ]);
+        }
+        await database.prepare(`UPDATE replay_upload_sessions SET status = 'complete', updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND status = 'submitting'`).bind(stagedSessionId).run();
+      } catch (releaseError) { console.error("staged replay release failed", { code: operationalErrorCode(releaseError) }); }
     }
     if (error instanceof EntitlementError) {
       return Response.json({ error: error.message }, { status: error.status, headers: { "Cache-Control": "no-store" } });

@@ -38,10 +38,11 @@ interface ExecutionContext {
 
 async function processDueRetries(env: Env, limit = 5) {
   await env.DB.batch([
+    env.DB.prepare("DELETE FROM analysis_report_access WHERE expires_at <= CURRENT_TIMESTAMP"),
     env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
       updated_at = CURRENT_TIMESTAMP WHERE status = 'reserved' AND analysis_request_id IN (
         SELECT analysis_request_id FROM analysis_jobs WHERE status = 'running'
-          AND updated_at <= datetime('now', '-3 minutes') AND attempts >= max_attempts
+          AND updated_at <= datetime('now', '-3 minutes')
       )`),
     env.DB.prepare(`UPDATE analysis_requests SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id IN (
       SELECT analysis_request_id FROM analysis_jobs WHERE status = 'running'
@@ -64,6 +65,22 @@ async function processDueRetries(env: Env, limit = 5) {
   await Promise.all((due.results || []).map((job) => processAnalysisJob(job.public_id, env)));
 }
 
+async function cleanupExpiredReplayUploads(env: Env, limit = 10) {
+  const expired = await env.DB.prepare(`SELECT id, object_key AS objectKey FROM replay_upload_sessions
+    WHERE expires_at <= CURRENT_TIMESTAMP AND status != 'claimed' ORDER BY expires_at LIMIT ?`)
+    .bind(limit).all<{ id: number; objectKey: string | null }>();
+  for (const session of expired.results || []) {
+    const parts = await env.DB.prepare("SELECT object_key AS objectKey FROM replay_upload_parts WHERE upload_session_id = ?")
+      .bind(session.id).all<{ objectKey: string }>();
+    const keys = [...(parts.results || []).map(part => part.objectKey), session.objectKey].filter((key): key is string => Boolean(key));
+    if (keys.length) await env.BUCKET.delete(keys);
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM replay_upload_parts WHERE upload_session_id = ?").bind(session.id),
+      env.DB.prepare("DELETE FROM replay_upload_sessions WHERE id = ? AND status != 'claimed'").bind(session.id),
+    ]);
+  }
+}
+
 function withSecurityHeaders(response: Response, url: URL) {
   const headers = new Headers(response.headers);
   headers.set("Content-Security-Policy", "base-uri 'self'; frame-ancestors 'none'; object-src 'none'");
@@ -71,7 +88,7 @@ function withSecurityHeaders(response: Response, url: URL) {
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
-  if (/^\/(?:access|admin|report|reports)(?:\/|$)/.test(url.pathname) || /^\/api\/(?:admin|analyses|billing|player)(?:\/|$)/.test(url.pathname)) {
+  if (/^\/(?:access|admin|report|reports)(?:\/|$)/.test(url.pathname) || /^\/api\/(?:admin|analyses|billing|player|replay-uploads)(?:\/|$)/.test(url.pathname)) {
     headers.set("Cache-Control", "private, no-store");
     headers.set("Referrer-Policy", "no-referrer");
   }
@@ -154,7 +171,13 @@ const worker = {
               error_message = 'The prior worker stopped before completing this analysis.', next_retry_at = CURRENT_TIMESTAMP,
               updated_at = CURRENT_TIMESTAMP WHERE public_id = ? AND status = 'running'
               AND updated_at <= datetime('now', '-3 minutes') AND attempts < max_attempts`).bind(processing.jobPublicId).run();
-            if (recovered.meta.changes) await processAnalysisJob(processing.jobPublicId, env);
+            if (recovered.meta.changes) {
+              await env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP WHERE status = 'reserved' AND analysis_request_id IN (
+                  SELECT analysis_request_id FROM analysis_jobs WHERE public_id = ?
+                )`).bind(processing.jobPublicId).run();
+              await processAnalysisJob(processing.jobPublicId, env);
+            }
           })());
         }
       } catch (error) {
@@ -166,7 +189,7 @@ const worker = {
   },
 
   async scheduled(_: unknown, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(Promise.all([processDueRetries(env), processDueEmailDeliveries(env.DB)]));
+    ctx.waitUntil(Promise.all([processDueRetries(env), processDueEmailDeliveries(env.DB), cleanupExpiredReplayUploads(env)]));
   },
 };
 
