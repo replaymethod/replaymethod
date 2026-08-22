@@ -69,6 +69,9 @@ test("runtime recovery and response headers fail closed without blocking healthy
   assert.match(worker, /Analysis engine did not respond/);
   assert.match(worker, /attempts >= max_attempts/);
   assert.match(worker, /status = 'queued' AND updated_at <= datetime\('now', '-1 minute'\)/);
+  assert.match(worker, /if \(body\.jobPublicId\) await processAnalysisJob\(body\.jobPublicId, env\)/);
+  assert.doesNotMatch(worker, /ctx\.waitUntil\(processAnalysisJob/);
+  assert.match(worker, /valid replay parse can exceed that window/);
   assert.match(reportClient, /void refresh\(\)/);
   assert.match(reportClient, /window\.setInterval\(refresh, 10000\)/);
   assert.match(reportClient, /AUTOMATIC RECOVERY STARTED/);

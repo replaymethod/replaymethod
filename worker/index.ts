@@ -119,9 +119,13 @@ const worker = {
 
     const response = await handler.fetch(request, env, ctx);
 
-    // The request returns its private status URL immediately. Heavy ingestion,
-    // parsing and coaching continue out of band and are idempotently claimed
-    // from the persistent analysis_jobs table.
+    // Keep the customer request alive while the analysis worker is running.
+    // Cloudflare only gives waitUntil work a short grace period after the
+    // response is returned; a valid replay parse can exceed that window on a
+    // cold or CPU-constrained engine. Awaiting here lets the engine response be
+    // durably persisted instead of leaving the job in a stale `running` state.
+    // Concurrent/idempotent submissions remain safe because loadAndClaim only
+    // transitions one queued/retry row to running.
     const schedulesAnalysis = request.method === "POST" && (
       (url.pathname === "/api/analyses" && response.status === 201) ||
       (/^\/api\/analyses\/[a-f0-9]{32}$/.test(url.pathname) && response.ok) ||
@@ -130,7 +134,7 @@ const worker = {
     if (schedulesAnalysis) {
       try {
         const body = await response.clone().json() as { jobPublicId?: string };
-        if (body.jobPublicId) ctx.waitUntil(processAnalysisJob(body.jobPublicId, env));
+        if (body.jobPublicId) await processAnalysisJob(body.jobPublicId, env);
       } catch (error) {
         console.error("could not schedule analysis job", { code: error instanceof Error ? error.name : "unknown_error" });
       }
@@ -146,9 +150,9 @@ const worker = {
         };
         const processing = body.processing;
         if (processing?.status === "retry" && processing.jobPublicId && processing.nextRetryAt && new Date(processing.nextRetryAt) <= new Date()) {
-          ctx.waitUntil(processAnalysisJob(processing.jobPublicId, env));
+          await processAnalysisJob(processing.jobPublicId, env);
         } else if (processing?.status === "running" && processing.jobPublicId && processing.updatedAt && Date.now() - new Date(`${processing.updatedAt}Z`).getTime() >= 180_000) {
-          ctx.waitUntil((async () => {
+          await (async () => {
             const exhausted = await env.DB.prepare(`UPDATE analysis_jobs SET status = 'failed', stage = 'failed',
               stage_label = 'Analysis engine did not respond', error_code = 'stale_running_lease',
               error_message = 'The analysis engine did not complete within the recovery window.', next_retry_at = NULL,
@@ -178,7 +182,7 @@ const worker = {
                 )`).bind(processing.jobPublicId).run();
               await processAnalysisJob(processing.jobPublicId, env);
             }
-          })());
+          })();
         }
       } catch (error) {
         console.error("could not wake analysis retry", { code: error instanceof Error ? error.name : "unknown_error" });
