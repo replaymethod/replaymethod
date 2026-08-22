@@ -473,6 +473,8 @@ export async function ensureProductSchema(database: D1Database) {
         frame integer,
         observation_json text NOT NULL,
         moment_object_key text,
+        review_set_id text,
+        active integer DEFAULT 0 NOT NULL,
         verdict text DEFAULT 'unreviewed' NOT NULL,
         timestamp_verified integer,
         notes text,
@@ -494,6 +496,9 @@ export async function ensureProductSchema(database: D1Database) {
         display_name text,
         qualification text NOT NULL,
         playlist_qualifications_json text DEFAULT '{}' NOT NULL,
+        platform text,
+        qualification_notes text,
+        identity_verified_at text,
         status text DEFAULT 'pending' NOT NULL,
         approved_by text,
         approved_at text,
@@ -514,6 +519,9 @@ export async function ensureProductSchema(database: D1Database) {
         reviewer_scope_json text DEFAULT '{}' NOT NULL,
         verdict text NOT NULL,
         timestamp_verified integer,
+        gameplay_truth text,
+        context_correct integer,
+        coaching_relevance text,
         notes text,
         label_set_version text NOT NULL,
         created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -522,6 +530,26 @@ export async function ensureProductSchema(database: D1Database) {
       )`),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_candidate_idx ON rl_review_labels (candidate_id)"),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_created_at_idx ON rl_review_labels (created_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS rl_review_imports (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        import_id text NOT NULL,
+        review_set_id text NOT NULL,
+        queue_sha256 text NOT NULL,
+        moments_sha256 text NOT NULL,
+        corpus_manifest_sha256 text NOT NULL,
+        holdout_report_sha256 text NOT NULL,
+        holdout_reproducibility_fingerprint text NOT NULL,
+        candidate_count integer NOT NULL,
+        replay_count integer NOT NULL,
+        holdout_overlap_count integer DEFAULT 0 NOT NULL,
+        object_prefix text NOT NULL,
+        imported_by text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS rl_review_imports_import_id_unique ON rl_review_imports (import_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS rl_review_imports_set_id_unique ON rl_review_imports (review_set_id)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS rl_review_imports_created_at_idx ON rl_review_imports (created_at)"),
       database.prepare(`CREATE TABLE IF NOT EXISTS detector_quality_snapshots (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         public_id text NOT NULL,
@@ -588,7 +616,10 @@ export async function ensureProductSchema(database: D1Database) {
       await ensureColumn(database, "rl_review_candidates", "context_key", "text");
       await ensureColumn(database, "rl_review_candidates", "metadata_provenance", "text");
       await ensureColumn(database, "rl_review_candidates", "moment_object_key", "text");
+      await ensureColumn(database, "rl_review_candidates", "review_set_id", "text");
+      await ensureColumn(database, "rl_review_candidates", "active", "integer DEFAULT 0 NOT NULL");
       await database.prepare("CREATE INDEX IF NOT EXISTS rl_review_candidates_moment_key_idx ON rl_review_candidates (moment_object_key)").run();
+      await database.prepare("CREATE INDEX IF NOT EXISTS rl_review_candidates_set_active_idx ON rl_review_candidates (review_set_id, active)").run();
       await ensureColumn(database, "rl_beta_submissions", "parser_status", "text DEFAULT 'pending' NOT NULL");
       await ensureColumn(database, "rl_beta_submissions", "parser_version", "text");
       await ensureColumn(database, "rl_beta_submissions", "parsed_mode", "text");
@@ -603,7 +634,13 @@ export async function ensureProductSchema(database: D1Database) {
       await ensureColumn(database, "rl_review_labels", "reviewer_qualification", "text DEFAULT 'unverified' NOT NULL");
       await ensureColumn(database, "rl_review_labels", "reviewer_id", "integer");
       await ensureColumn(database, "rl_review_labels", "reviewer_scope_json", "text DEFAULT '{}' NOT NULL");
+      await ensureColumn(database, "rl_review_labels", "gameplay_truth", "text");
+      await ensureColumn(database, "rl_review_labels", "context_correct", "integer");
+      await ensureColumn(database, "rl_review_labels", "coaching_relevance", "text");
       await ensureColumn(database, "rl_reviewers", "playlist_qualifications_json", "text DEFAULT '{}' NOT NULL");
+      await ensureColumn(database, "rl_reviewers", "platform", "text");
+      await ensureColumn(database, "rl_reviewers", "qualification_notes", "text");
+      await ensureColumn(database, "rl_reviewers", "identity_verified_at", "text");
       await database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_reviewer_candidate_idx ON rl_review_labels (reviewer_id, candidate_id)").run();
       const capabilityRows = [
         ["1v1", "gold-platinum", "verified", 3], ["1v1", "diamond-champion", "verified", 6], ["1v1", "grand-champion-ssl", "verified", 1],

@@ -1,14 +1,15 @@
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { requireChatGPTUser, chatGPTSignOutPath } from "../chatgpt-auth";
 import { getDb } from "../../db";
-import { analysisJobs, analysisRequests, analysisUsage, billingEvents, billingSubscriptions, emailDeliveries, funnelEvents, playerFocuses, rlBetaSubmissions, rlReviewLabels, rlReviewers, waitlist } from "../../db/schema";
+import { analysisJobs, analysisRequests, analysisUsage, billingEvents, billingSubscriptions, emailDeliveries, funnelEvents, playerFocuses, rlBetaSubmissions, rlReviewCandidates, rlReviewImports, rlReviewLabels, rlReviewers, waitlist } from "../../db/schema";
 import { isConfiguredSiteAdmin } from "../../lib/admin";
 import DeleteLeadButton from "./DeleteLeadButton";
 import { subsystemState } from "../../lib/subsystem-controls.mjs";
 import ReviewerAccessForm from "./ReviewerAccessForm";
 import ReviewQueueImport from "./ReviewQueueImport";
 import ReplayCorpusStatusForm from "./ReplayCorpusStatusForm";
+import { percentage, reviewerOperationsSummary } from "../../lib/rl-quality";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function AdminPage() {
   const db = await getDb();
   const { env } = await import("cloudflare:workers");
   const controls = subsystemState(env as unknown as Record<string, unknown>);
-  const [leads, events, analyses, jobs, subscriptions, usage, deliveries, focuses, billingEventRows, reviewLabels, reviewers, betaReplays] = await Promise.all([
+  const [leads, events, analyses, jobs, subscriptions, usage, deliveries, focuses, billingEventRows, reviewLabels, reviewers, betaReplays, reviewCandidates, reviewImports] = await Promise.all([
     db.select().from(waitlist).orderBy(desc(waitlist.createdAt), desc(waitlist.id)).limit(5000),
     db.select().from(funnelEvents).orderBy(desc(funnelEvents.createdAt), desc(funnelEvents.id)).limit(20000),
     db.select().from(analysisRequests).orderBy(desc(analysisRequests.createdAt), desc(analysisRequests.id)).limit(1000),
@@ -38,7 +39,9 @@ export default async function AdminPage() {
     db.select().from(billingEvents).orderBy(desc(billingEvents.updatedAt), desc(billingEvents.id)).limit(5000),
     db.select().from(rlReviewLabels).orderBy(desc(rlReviewLabels.createdAt), desc(rlReviewLabels.id)).limit(10000),
     db.select().from(rlReviewers).orderBy(desc(rlReviewers.updatedAt), desc(rlReviewers.id)).limit(100),
-    db.select().from(rlBetaSubmissions).orderBy(desc(rlBetaSubmissions.createdAt), desc(rlBetaSubmissions.id)).limit(1000)
+    db.select().from(rlBetaSubmissions).orderBy(desc(rlBetaSubmissions.createdAt), desc(rlBetaSubmissions.id)).limit(1000),
+    db.select().from(rlReviewCandidates).where(eq(rlReviewCandidates.active, true)).orderBy(desc(rlReviewCandidates.id)).limit(1000),
+    db.select().from(rlReviewImports).orderBy(desc(rlReviewImports.updatedAt), desc(rlReviewImports.id)).limit(10)
   ]);
 
   const uniqueFor = (event: string, game?: string) => new Set(events.filter(row => row.event === event && (!game || row.game === game)).map(row => row.visitorId)).size;
@@ -75,7 +78,9 @@ export default async function AdminPage() {
   const cohortCounts = playlistModes.flatMap(mode => rankCohorts.map(rank => ({ mode, rank, count: betaReplays.filter(row => row.rankCohort === rank && (row.parsedMode || row.mode) === mode && row.usabilityStatus !== "rejected").length })));
   const nextCohort = [...cohortCounts].sort((a, b) => a.count - b.count)[0];
   const nextReplayNeed = nextCohort ? `Recruit ${nextCohort.mode} ${nextCohort.rank.replaceAll("-", "–")} replays next (${nextCohort.count} currently).` : "Recruit the first consented replay.";
-  const activeReviewers = reviewers.filter(row => row.status === "active").length;
+  const activeReviewers = reviewers.filter(row => row.status === "active" && ["competitive_player", "rocket_league_coach", "replay_analyst"].includes(row.qualification)).length;
+  const reviewSummary = reviewerOperationsSummary(reviewCandidates, reviewLabels);
+  const latestReviewImport = reviewImports[0];
   const games = ["general", "league", "valorant", "rocket-league"];
   const gameStats = games.map(game => ({ game, views: uniqueFor("page_view", game), signups: uniqueFor("signup", game), leads: leads.filter(row => row.game === game).length }));
 
@@ -102,7 +107,9 @@ export default async function AdminPage() {
 
     <section className="admin-section-title waitlist-heading"><div><span>QUALIFIED REVIEWERS</span><h2>{activeReviewers} active / 2 required</h2></div><small>Applicants receive no candidate data until approved. Revocation takes effect on the next request.</small></section>
     <ReviewQueueImport />
-    <section className="admin-reviewer-list">{reviewers.length === 0 ? <div className="admin-empty"><b>No reviewer applications yet.</b><p>Ask each reviewer to sign in once at /admin/rl-review.</p></div> : reviewers.map(reviewer => <article key={reviewer.id}><div><b>{reviewer.displayName || reviewer.email}</b><span>{reviewer.email}</span><small>{reviewer.publicId.slice(0, 10).toUpperCase()} · {reviewer.status}</small></div><ReviewerAccessForm reviewer={{ id: reviewer.id, status: reviewer.status, qualification: reviewer.qualification, playlistQualificationsJson: reviewer.playlistQualificationsJson }} /></article>)}</section>
+    <section className="admin-review-audit"><article><span>ACTIVE PRIVATE SET</span><b>{reviewSummary.candidates} candidates</b><small>{latestReviewImport ? `${latestReviewImport.replayCount} replays · 0 holdout overlap · ${latestReviewImport.reviewSetId}` : "No locked private import recorded"}</small></article><article><span>INDEPENDENT COVERAGE</span><b>{reviewSummary.doubleReviewed} / {reviewSummary.candidates}</b><small>{reviewSummary.independentReviewers} qualified reviewers · agreement {percentage(reviewSummary.agreement, 1)}</small></article><article><span>CONSENSUS</span><b>{reviewSummary.confirmed} positive · {reviewSummary.rejected} negative</b><small>{reviewSummary.falsePositives} false positives · {reviewSummary.unresolved} unresolved</small></article><article><span>EXCLUSIONS</span><b>{reviewSummary.exclusions.insufficientIndependentLabels} insufficient</b><small>{reviewSummary.exclusions.uncertain} uncertain · {reviewSummary.exclusions.oneToOneDisagreement} 1–1 disagreement · {reviewSummary.exclusions.unqualifiedOrWrongVersionLabels} ineligible labels</small></article><article><span>TIMESTAMPS</span><b>{reviewSummary.timestampVerifiedLabels} / {reviewSummary.timestampDenominator}</b><small>Verified among qualified locked labels</small></article></section>
+    {reviewSummary.cohorts.length > 0 && <section className="admin-review-cohorts"><div><span>COHORT</span><b>CANDIDATES</b><b>DOUBLE</b><b>POSITIVE</b><b>NEGATIVE</b><b>UNRESOLVED</b></div>{reviewSummary.cohorts.map(cohort => <div key={cohort.cohort}><span>{cohort.cohort}</span><b>{cohort.candidates}</b><b>{cohort.doubleReviewed}</b><b>{cohort.confirmed}</b><b>{cohort.rejected}</b><b>{cohort.unresolved}</b></div>)}</section>}
+    <section className="admin-reviewer-list">{reviewers.length === 0 ? <div className="admin-empty"><b>No reviewer applications yet.</b><p>Ask each reviewer to sign in once at /admin/rl-review.</p></div> : reviewers.map(reviewer => <article key={reviewer.id}><div><b>{reviewer.displayName || reviewer.email}</b><span>{reviewer.email}</span><small>{reviewer.publicId.slice(0, 10).toUpperCase()} · {reviewer.status} · {reviewer.platform ?? "platform unverified"}</small></div><ReviewerAccessForm reviewer={{ id: reviewer.id, status: reviewer.status, qualification: reviewer.qualification, playlistQualificationsJson: reviewer.playlistQualificationsJson, platform: reviewer.platform, qualificationNotes: reviewer.qualificationNotes }} /></article>)}</section>
 
     <section className="admin-analysis-wrap"><div className="admin-section-title"><div><span>AUTOMATED ANALYSIS QUEUE</span><h2>Jobs and quality review</h2></div><small>Open an item to inspect evidence, engine versions, retry safely or apply a quality override.</small></div>{analyses.length === 0 ? <div className="admin-empty"><b>No match submissions yet.</b><p>Send someone to the free analysis link above.</p></div> : <div className="admin-analysis-list">{analyses.map(row => { const job = jobByRequest.get(row.id); return <Link href={`/admin/analyses/${row.id}`} key={row.id}><i className={row.status}>{row.status === "ready" ? "✓" : row.status === "failed" || row.status === "blocked" ? "!" : row.status === "analyzing" ? "↻" : "↓"}</i><div><span>{gameLabels[row.game] ?? row.game} · {row.currentRank}{row.targetRank ? ` → ${row.targetRank}` : ""}</span><b>{row.goal}</b><small>{job?.stageLabel || "Legacy quality-review workflow"} · {row.email} · {new Date(`${row.createdAt}Z`).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</small></div><em className={row.status}>{row.status} →</em></Link>; })}</div>}</section>
 
