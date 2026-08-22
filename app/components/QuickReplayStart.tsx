@@ -4,6 +4,7 @@ import { DragEvent, FormEvent, useRef, useState } from "react";
 import Link from "next/link";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 import { readApiResponse, uploadReplayInChunks, type StagedReplay } from "../../lib/client-replay-upload";
+import { desktopHandoffUrl } from "../../lib/desktop-handoff.mjs";
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 const DEFAULT_GOAL = "Find the highest-impact recurring mistake in this match.";
@@ -110,10 +111,16 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
   }
 
   async function copyPcLink() {
-    await navigator.clipboard.writeText(location.href);
-    setHandoffCopied(true);
-    track("cta_click", `${placement}_pc_handoff`);
-    window.setTimeout(() => setHandoffCopied(false), 1800);
+    const link = desktopHandoffUrl(location.href);
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      setHandoffCopied(true);
+      track("cta_click", `${placement}_pc_handoff`);
+      window.setTimeout(() => setHandoffCopied(false), 1800);
+    } catch {
+      setMessage("Copy this page’s address from your browser to continue on your PC.");
+    }
   }
 
   function drop(event: DragEvent<HTMLLabelElement>) {
@@ -212,10 +219,10 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     </div>}
 
     </> : <div className="console-path">
-      <div className="console-path-top"><i>{platform === "ps5" ? "△○×□" : platform === "xbox" ? "X" : "◫"}</i><div><span>{consolePaths[platform].label.toUpperCase()} PATH</span><b>Video evidence—not a fake PC upload.</b></div><em>VIDEO BETA</em></div>
-      <ol><li><i>1</i><div><b>Save the clearest clip or match</b><span>{consolePaths[platform].capture}</span></div></li><li><i>2</i><div><b>Keep the HUD visible</b><span>Do not crop the scoreboard, clock, boost meter or player view.</span></div></li><li><i>3</i><div><b>Upload or paste a VOD</b><span>Video findings stay separate from frame-exact PC telemetry.</span></div></li></ol>
+      <div className="console-path-top"><i>{platform === "ps5" ? "△○×□" : platform === "xbox" ? "X" : "◫"}</i><div><span>{consolePaths[platform].label.toUpperCase()} PATH</span><b>Capture research—not a live analysis.</b></div><em>NOT LIVE</em></div>
+      <ol><li><i>1</i><div><b>Save the clearest clip or match</b><span>{consolePaths[platform].capture}</span></div></li><li><i>2</i><div><b>Keep the HUD visible</b><span>Do not crop the scoreboard, clock, boost meter or player view.</span></div></li><li><i>3</i><div><b>Keep the file for now</b><span>Replay Method will not collect it until the video lane can return a validated result.</span></div></li></ol>
       <p>{consolePaths[platform].limitation}</p>
-      <div><Link className="console-primary" href={`/analyze?game=rocket-league&platform=${platform}`} onClick={() => track("cta_click", `${placement}_console_beta`)}>START CONSOLE VIDEO BETA <span>→</span></Link><a className="console-guide" href={consolePaths[platform].guide} target="_blank" rel="noreferrer">Official capture guide ↗</a></div><button className="console-back" type="button" onClick={() => choosePlatform("pc")}>← Use an original PC replay instead</button>
+      <div><Link className="console-primary" href={`/analyze?game=rocket-league&platform=${platform}`} onClick={() => track("cta_click", `${placement}_console_status`)}>CHECK CONSOLE STATUS <span>→</span></Link><a className="console-guide" href={consolePaths[platform].guide} target="_blank" rel="noreferrer">Official capture guide ↗</a></div><button className="console-back" type="button" onClick={() => choosePlatform("pc")}>← Use an original PC replay instead</button>
     </div>}
 
     {message && platform === "pc" && <p className={`quick-message ${status}`} role="alert">{message}</p>}

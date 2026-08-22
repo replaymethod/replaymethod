@@ -3,6 +3,7 @@
 import { ChangeEvent, DragEvent, FormEvent, useRef, useState } from "react";
 import Link from "next/link";
 import { analyticsAttribution, trackProductEvent } from "../../lib/client-analytics";
+import { desktopHandoffUrl } from "../../lib/desktop-handoff.mjs";
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 
@@ -84,9 +85,12 @@ export default function ReplayContribution({ intakeOpen, compact = false }: { in
   }
 
   async function copyPcLink() {
+    const link = desktopHandoffUrl(location.href);
+    if (!link) return setCopyStatus("Copy this page’s address");
     try {
-      await navigator.clipboard.writeText(location.href);
+      await navigator.clipboard.writeText(link);
       setCopyStatus("Link copied");
+      trackProductEvent("cta_click", "rocket-league", "beta_pc_handoff");
     } catch {
       setCopyStatus("Copy this page’s address");
     }

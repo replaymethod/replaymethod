@@ -103,6 +103,44 @@ test.describe("truthful product boundaries", () => {
     await expect(page.getByLabel("Current rank *")).toHaveCount(0);
   });
 
+  test("landing console cards describe research and route to the closed status lane", async ({ page }) => {
+    await page.goto("/", { waitUntil: "networkidle" });
+    await page.getByText("On console—or browsing on your phone?", { exact: true }).click();
+    await page.getByRole("button", { name: "PS5 video path →" }).click();
+    await expect(page.getByText("Capture research—not a live analysis.", { exact: true })).toBeVisible();
+    await expect(page.getByText("NOT LIVE", { exact: true })).toHaveCount(1);
+    await expect(page.getByRole("link", { name: /CHECK CONSOLE STATUS/ })).toBeVisible();
+  });
+
+  test("mobile-to-PC handoff survives an isolated desktop session without leaking private query data", async ({ browser, baseURL }) => {
+    const mobile = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
+    const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    try {
+      const mobilePage = await mobile.newPage();
+      await mobilePage.goto(`${baseURL}/?utm_source=community&utm_medium=social&utm_campaign=rl-phase3&token=private`, { waitUntil: "networkidle" });
+      await mobilePage.getByText("On console—or browsing on your phone?", { exact: true }).click();
+      await mobilePage.getByRole("button", { name: "Copy this page for your PC" }).click();
+      await expect(mobilePage.getByRole("button", { name: "PC link copied ✓" })).toBeVisible();
+      const handoff = await mobilePage.evaluate(() => navigator.clipboard.readText());
+
+      const desktopPage = await desktop.newPage();
+      await desktopPage.goto(handoff, { waitUntil: "networkidle" });
+      const transferred = new URL(desktopPage.url());
+      expect(transferred.searchParams.get("utm_source")).toBe("community");
+      expect(transferred.searchParams.get("utm_medium")).toBe("social");
+      expect(transferred.searchParams.get("utm_campaign")).toBe("rl-phase3");
+      expect(transferred.searchParams.get("handoff")).toBe("mobile_to_pc");
+      expect(transferred.searchParams.has("token")).toBe(false);
+      await expect(desktopPage.getByText("Drop a replay. Let the match fill in the rest.", { exact: true })).toBeVisible();
+    } finally {
+      await mobile.close();
+      await desktop.close();
+    }
+  });
+
   test("League and VALORANT are described as official-access requests, not live analysis", async ({ page }) => {
     for (const game of ["league", "valorant"] as const) {
       await page.goto(`/analyze?game=${game}`);

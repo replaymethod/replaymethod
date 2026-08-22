@@ -44,6 +44,9 @@ test("distinguishes Riot access requests from evidence-gated replay outcomes", a
   assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
   assert.match(quickReplay, /ANALYZE THIS REPLAY — FREE/);
   assert.match(intake, /Automated League and VALORANT analysis is not live/);
+  assert.match(quickReplay, /Capture research—not a live analysis/);
+  assert.match(quickReplay, /CHECK CONSOLE STATUS/);
+  assert.doesNotMatch(quickReplay, /START CONSOLE VIDEO BETA/);
   assert.doesNotMatch(quickReplay, /Get one priority|START FREE ANALYSIS/);
   assert.doesNotMatch(metadata, /get one focused Replay Method diagnosis/i);
 });
