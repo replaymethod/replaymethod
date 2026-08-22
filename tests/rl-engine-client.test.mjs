@@ -17,7 +17,7 @@ test("requires a bounded private engine configuration", () => {
   assert.equal(local.timeoutMs, 5_000);
   const production = resolveRocketLeagueEngine({ RL_ENGINE_URL: "https://engine.example/base", RL_ENGINE_TOKEN: token, RL_ENGINE_TIMEOUT_MS: "999999" });
   assert.equal(production.endpoint.toString(), "https://engine.example/v1/analyze/rocket-league");
-  assert.equal(production.timeoutMs, 120_000);
+  assert.equal(production.timeoutMs, 240_000);
 });
 
 test("sends an HTTP-safe exact player identity through the versioned authenticated contract", async () => {

@@ -84,6 +84,17 @@ test("runtime recovery and response headers fail closed without blocking healthy
   assert.match(worker, /X-Content-Type-Options/);
 });
 
+test("the real-replay engine budget covers the largest calibration files without becoming unbounded", async () => {
+  const [engine, client] = await Promise.all([
+    source("../services/rl-engine/server.mjs"),
+    source("../lib/rl-engine-client.mjs"),
+  ]);
+  assert.match(engine, /DEFAULT_JOB_TIMEOUT_MS = 180_000/);
+  assert.match(engine, /Math\.min\(235_000/);
+  assert.match(client, /RL_ENGINE_TIMEOUT_MS \|\| 180_000/);
+  assert.match(client, /Math\.min\(240_000/);
+});
+
 test("admin exports and replay downloads neutralize active content", async () => {
   const [waitlist, evidence, override] = await Promise.all([
     source("../app/api/admin/waitlist/route.ts"),
