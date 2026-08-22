@@ -158,7 +158,13 @@ export type AdapterBlocked = {
   userResolvable?: boolean;
 };
 
-export type AdapterResult = AdapterSuccess | AdapterBlocked;
+export type AdapterPending = {
+  kind: "pending";
+  publicMessage: string;
+  retryAfterMs: number;
+};
+
+export type AdapterResult = AdapterSuccess | AdapterBlocked | AdapterPending;
 
 export type CoachingReport = {
   primaryFindingId: string;

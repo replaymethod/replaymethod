@@ -126,7 +126,7 @@ test("analysis rejects empty replay safely", async () => withServer(async (base)
 }));
 
 test("analysis rejects invalid replay safely", async () => withServer(async (base) => {
-  const response = await fetch(`${base}/v1/analyze/rocket-league`, {
+  const accepted = await fetch(`${base}/v1/analyze/rocket-league`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -136,11 +136,55 @@ test("analysis rejects invalid replay safely", async () => withServer(async (bas
     },
     body: new Uint8Array([1, 2, 3, 4]),
   });
+  assert.equal(accepted.status, 202);
+  let response;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    response = await fetch(`${base}/v1/jobs/${requestId}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (response.status !== 202) break;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
   assert.equal(response.status, 422);
   const body = await response.json();
   assert.equal(body.code, "invalid_replay");
   assert.equal(body.kind, "blocked");
 }));
+
+test("long analysis is accepted once and polled idempotently", async () => {
+  let finish;
+  let calls = 0;
+  const result = new Promise((resolve) => { finish = resolve; });
+  await withServer(async (base) => {
+    const accepted = await fetch(`${base}/v1/analyze/rocket-league`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/octet-stream",
+        "X-Replay-Method-Request": requestId,
+        "X-Replay-Method-Player": "Player",
+      },
+      body: new Uint8Array([1]),
+    });
+    assert.equal(accepted.status, 202);
+    assert.equal((await accepted.json()).kind, "processing");
+    assert.equal((await fetch(`${base}/v1/jobs/${requestId}`, { headers: { Authorization: `Bearer ${token}` } })).status, 202);
+    finish({ kind: "success", normalized: { game: "rocket-league" }, findings: [], versions: {}, estimatedCostMicros: 0 });
+    let completed;
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      completed = await fetch(`${base}/v1/jobs/${requestId}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (completed.status === 200) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    assert.equal(completed.status, 200);
+    assert.equal((await completed.json()).kind, "success");
+    assert.equal(calls, 1);
+  }, {
+    token,
+    processReplay: async () => {
+      calls += 1;
+      return result;
+    },
+  });
+});
 
 test("player identity errors return the parsed roster as structured recovery data", async () => withServer(async (base) => {
   const response = await fetch(`${base}/v1/inspect/rocket-league`, {

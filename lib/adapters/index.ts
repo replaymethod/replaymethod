@@ -99,6 +99,18 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
       true,
     );
   }
+  if (response.status === 202) {
+    let detail: Partial<{ kind: string; jobPublicId: string; retryAfterMs: number }> = {};
+    try { detail = await response.json(); } catch { /* fail closed below */ }
+    if (detail.kind !== "processing" || detail.jobPublicId !== input.jobPublicId) {
+      return blocked("rl_engine_contract_failed", "The replay worker configuration needs operator attention. Your upload is preserved.", "RL engine returned an invalid asynchronous job contract.");
+    }
+    return {
+      kind: "pending",
+      publicMessage: "Replay analysis is still running",
+      retryAfterMs: Math.min(15_000, Math.max(2_000, Number(detail.retryAfterMs) || 3_000)),
+    };
+  }
   if (response.status === 422) {
     let detail: Partial<{
       code: string;
