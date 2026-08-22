@@ -26,6 +26,7 @@ test("expands every capability cell across detector, mode, cohort, evidence and 
     { mode: "2v2", rankCohort: "gold-platinum", upload: "enabled", parse: "verified", process: "verified" },
   ];
   const matrix = buildRocketLeagueCapabilityMatrix(rows);
+  assert.equal(matrix.schemaVersion, "rocket-league-capability-matrix.v2.1");
   assert.deepEqual(matrix.dimensions, ["detectorId", "detectorVersion", "mode", "rankCohort", "evidenceType", "platform", "validationState"]);
   assert.ok(matrix.cells.length > rows.length);
   assert.equal(matrix.summary.publicFindingCells, 0);
