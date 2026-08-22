@@ -40,8 +40,9 @@ test("distinguishes Riot access requests from evidence-gated replay outcomes", a
   assert.match(landing, /if \(game === "league" \|\| game === "valorant"\) return <FutureGame/);
   assert.match(landing, /authorized match evidence can support the same standard/);
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
+  assert.match(landing, /<QuickReplayStart placement="marcel_hero"/);
   assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
-  assert.match(intake, /START REPLAY EVIDENCE CHECK/);
+  assert.match(quickReplay, /ANALYZE THIS REPLAY — FREE/);
   assert.match(intake, /Automated League and VALORANT analysis is not live/);
   assert.doesNotMatch(quickReplay, /Get one priority|START FREE ANALYSIS/);
   assert.doesNotMatch(metadata, /get one focused Replay Method diagnosis/i);
@@ -54,6 +55,7 @@ test("puts the product action before explanatory browsing", async () => {
   ]);
   assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
+  assert.match(landing, /engineOpen \? <QuickReplayStart/);
   assert.match(landing, /Stop grinding blind/);
   assert.match(landing, /Drop the replay/);
   assert.match(contribution, /replay && <section className="rl-intake-context"/);

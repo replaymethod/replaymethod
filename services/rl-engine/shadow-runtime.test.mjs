@@ -107,3 +107,13 @@ test("groups adjacent supersonic boost samples into one reviewable decision", ()
   assert.equal(boost.evidence[0].startFrame, 1);
   assert.equal(boost.evidence[0].endFrame, 4);
 });
+
+test("marks teammate detectors not applicable in ranked 1v1", () => {
+  const evidence = evidenceFixture();
+  evidence.normalized.mode = "Ranked Duel";
+  const result = runShadowDetectors(evidence);
+  assert.equal(result.runs.find((run) => run.detectorId === "rotation.spacing_too_close").status, "not_applicable");
+  assert.equal(result.runs.find((run) => run.detectorId === "teamplay.double_commit").status, "not_applicable");
+  assert.equal(result.summary.notApplicable, 2);
+  assert.equal(result.summary.executed, 6);
+});

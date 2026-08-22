@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 
-export const STRIPE_API_VERSION = "2026-06-24.dahlia" as const;
+export const STRIPE_API_VERSION = "2026-07-29.dahlia" as const;
 export type PaidPlan = "monthly" | "quarterly" | "semiannual";
 export type PriceMap = Partial<Record<PaidPlan, string>>;
 

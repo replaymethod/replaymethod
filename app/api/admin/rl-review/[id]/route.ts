@@ -27,8 +27,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       database.prepare(`UPDATE rl_review_candidates SET updated_at = ? WHERE id = ?`).bind(
         now, id
       ),
-      database.prepare(`INSERT INTO rl_review_labels (candidate_id, reviewer_id, reviewer_email, reviewer_qualification, verdict, timestamp_verified, notes, label_set_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(
-        id, access.reviewer.id, access.reviewer.email, access.reviewer.qualification, payload.verdict, timestampVerified, notes || null, RL_LABEL_SET_VERSION
+      database.prepare(`INSERT INTO rl_review_labels (candidate_id, reviewer_id, reviewer_email, reviewer_qualification, reviewer_scope_json, verdict, timestamp_verified, notes, label_set_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+        id, access.reviewer.id, access.reviewer.email, access.reviewer.qualification, access.reviewer.playlistQualificationsJson, payload.verdict, timestampVerified, notes || null, RL_LABEL_SET_VERSION
       )
     ]);
     return Response.json({ saved: true, labelSetVersion: RL_LABEL_SET_VERSION });

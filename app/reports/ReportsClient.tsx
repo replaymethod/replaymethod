@@ -116,7 +116,7 @@ export default function ReportsClient() {
   return (
     <main className="reports-page">
       <nav className="tool-nav shell">
-        <Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link>
+        <Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link>
         <Link href="/analyze" onClick={trackNewAnalysis}>New analysis</Link>
       </nav>
       <section className="reports-shell shell">

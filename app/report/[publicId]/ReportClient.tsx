@@ -25,6 +25,14 @@ const stageOrder: Record<string, number> = {
   completed: 5
 };
 
+const rocketLeagueRanks = [
+  "Gold I", "Gold II", "Gold III",
+  "Platinum I", "Platinum II", "Platinum III",
+  "Diamond I", "Diamond II", "Diamond III",
+  "Champion I", "Champion II", "Champion III",
+  "Grand Champion I", "Grand Champion II", "Grand Champion III",
+];
+
 function utcTimestamp(value: string) {
   const normalized = value.includes("T") ? value : value.replace(" ", "T");
   return new Date(/[zZ]$|[+-]\d{2}:?\d{2}$/.test(normalized) ? normalized : `${normalized}Z`).getTime();
@@ -52,9 +60,9 @@ function stopCopy(data: PublicReportData) {
     title: "The replay engine worked. It stopped before inventing advice.",
     body: `${data.processing?.stageLabel || "The player and match data were identified successfully."} This submission can be reprocessed when a validated detector set is enabled.`
   };
-  if (code === "subject_player_not_found" || code === "subject_player_ambiguous" || code === "replay_players_missing") return {
+  if (code === "subject_player_required" || code === "subject_player_not_found" || code === "subject_player_ambiguous" || code === "replay_players_missing") return {
     kicker: "PLAYER IDENTITY NEEDED",
-    title: "The replay parsed, but we could not safely identify which player is you.",
+    title: "Replay read. Now choose yourself.",
     body: data.processing?.candidatePlayers.length
       ? "Choose your exact in-game name below. Your original private replay is preserved and will be retried without another upload."
       : "Use the exact in-game player name shown in that replay. Your original file is preserved, so support can retry it without another upload."
@@ -79,6 +87,7 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
   const [copied, setCopied] = useState(false);
   const [clock, setClock] = useState<number | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState("");
+  const [selectedRank, setSelectedRank] = useState("");
   const [identityRetryState, setIdentityRetryState] = useState<"idle" | "saving" | "queued" | "error">("idle");
   const [interactive, setInteractive] = useState(false);
 
@@ -106,9 +115,26 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
       if (!sessionStorage.getItem(completionKey)) {
         sessionStorage.setItem(completionKey, "1");
         trackProductEvent("analysis_completed", data.game as "league" | "valorant" | "rocket-league", "report_ready");
+        trackProductEvent("evidence_viewed", data.game as "league" | "valorant" | "rocket-league", "report_reveal");
       }
     }
-  }, [data.game, data.publicId, data.status]);
+    const stopCode = data.processing?.errorCode || "";
+    if (["subject_player_required", "subject_player_not_found", "subject_player_ambiguous", "detectors_not_calibrated", "public_output_disabled"].includes(stopCode)) {
+      const parseKey = `replaymethod-parse-complete-${data.publicId}`;
+      if (!sessionStorage.getItem(parseKey)) {
+        sessionStorage.setItem(parseKey, "1");
+        trackProductEvent("parse_complete", data.game as "league" | "valorant" | "rocket-league", "replay_verified");
+        if (data.processing?.replayContext.mode) trackProductEvent("mode_detected", data.game as "league" | "valorant" | "rocket-league", data.processing.replayContext.mode);
+      }
+    }
+    if (["detectors_not_calibrated", "public_output_disabled"].includes(stopCode)) {
+      const abstentionKey = `replaymethod-abstention-${data.publicId}`;
+      if (!sessionStorage.getItem(abstentionKey)) {
+        sessionStorage.setItem(abstentionKey, "1");
+        trackProductEvent("abstention", data.game as "league" | "valorant" | "rocket-league", stopCode);
+      }
+    }
+  }, [data.game, data.processing?.errorCode, data.processing?.replayContext.mode, data.publicId, data.status]);
 
   useEffect(() => {
     if (["ready", "blocked", "failed"].includes(data.status)) return;
@@ -152,10 +178,11 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
     if (!selectedPlayer) return;
     setIdentityRetryState("saving");
     try {
+      trackProductEvent("player_pick", data.game as "league" | "valorant" | "rocket-league", data.processing?.replayContext.mode || "unknown_mode");
       const response = await fetch(`/api/analyses/${data.publicId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ player: selectedPlayer }),
+        body: JSON.stringify({ player: selectedPlayer, rank: selectedRank }),
       });
       if (!response.ok) {
         setIdentityRetryState("error");
@@ -191,7 +218,7 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
     title: "This analysis took too long. We are restarting it safely.",
     body: "You do not need to upload the replay again. Keep this private link open; the next status check will either continue the analysis or show a concrete reason it stopped."
   } : stopped ? stopCopy(data) : null;
-  const identityResolvable = stopped && ["subject_player_not_found", "subject_player_ambiguous"].includes(data.processing?.errorCode || "") && Boolean(data.processing?.candidatePlayers.length);
+  const identityResolvable = stopped && ["subject_player_required", "subject_player_not_found", "subject_player_ambiguous"].includes(data.processing?.errorCode || "") && Boolean(data.processing?.candidatePlayers.length);
   const evidence = data.report?.evidenceDetails.length
     ? data.report.evidenceDetails.map(item => ({
       label: item.round != null ? `ROUND · ${item.round}` : item.timestamp != null ? `MATCH TIME · ${Math.floor(item.timestamp / 60)}:${String(Math.floor(item.timestamp % 60)).padStart(2, "0")}` : item.label,
@@ -201,11 +228,11 @@ export default function ReportClient({ initial, delivery, checkoutOpen }: { init
   const confidence = data.report?.confidence == null ? null : Math.round(data.report.confidence * 100);
 
   return <main className="report-page">
-    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><button type="button" onClick={copyLink}>{copied ? "Copied ✓" : "Copy private link"}</button></div></nav>
+    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><button type="button" onClick={copyLink}>{copied ? "Copied ✓" : "Copy private link"}</button></div></nav>
     <section className="report-shell shell">
-      <header className="report-top"><div><span>PRIVATE PLAYER REPORT</span><h1>{data.gameLabel}</h1><p>{data.currentRank}{data.targetRank ? ` → ${data.targetRank}` : ""} · Submitted {new Date(`${data.createdAt}Z`).toLocaleDateString("en-GB", { dateStyle: "medium" })}</p></div><i className={data.status}>{data.status === "ready" ? "READY" : stopped ? "PAUSED" : "PROCESSING"}</i></header>
+      <header className="report-top"><div><span>PRIVATE PLAYER REPORT</span><h1>{data.gameLabel}</h1><p>{data.currentRank.startsWith("Pending") ? (data.processing?.replayContext.mode || "Playlist reading") : data.currentRank}{data.targetRank ? ` → ${data.targetRank}` : ""} · Submitted {new Date(`${data.createdAt}Z`).toLocaleDateString("en-GB", { dateStyle: "medium" })}</p></div><i className={data.status}>{data.status === "ready" ? "READY" : stopped ? "PAUSED" : "PROCESSING"}</i></header>
 
-      {data.status !== "ready" ? <div className={`report-pending ${stopped ? "stopped" : ""}`}><div className="scan-orb"><i /><b>{stopped ? "!" : "↻"}</b></div><span>{stoppedCopy?.kicker || (data.processing?.stageLabel ? "AUTOMATED MATCH ANALYSIS" : "MATCH SECURED")}</span><h2>{stoppedCopy?.title || data.processing?.stageLabel || "Your match is queued."}</h2><p>{stoppedCopy?.body || "Replay Method is reading the submitted match, measuring repeated patterns and selecting one evidence-backed coaching focus."}</p>{identityResolvable && <section className="player-resolution" aria-labelledby="player-resolution-title"><div><span>PLAYERS FOUND IN THIS REPLAY</span><h3 id="player-resolution-title">Which one is you?</h3><p>Choose the exact name below. We will reuse the original private replay file.</p></div><div className="player-resolution-options" role="radiogroup" aria-label="Players identified in the replay">{data.processing?.candidatePlayers.map(player => <button type="button" role="radio" disabled={!interactive} aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} key={player} onClick={() => { setSelectedPlayer(player); setIdentityRetryState("idle"); }}>{player}</button>)}</div><button className="player-resolution-submit" type="button" disabled={!interactive || !selectedPlayer || identityRetryState === "saving"} onClick={retryWithPlayer}>{identityRetryState === "saving" ? "Starting…" : identityRetryState === "queued" ? "Retry queued ✓" : "Analyze this saved replay →"}</button>{identityRetryState === "error" && <p role="alert">The replay could not be queued. Refresh this private report and try again.</p>}</section>}<div className="status-track">{stages.map((stage, index) => <div className={index <= statusIndex && !stopped ? "active" : index < statusIndex ? "complete" : ""} key={stage.key}><i>{index < statusIndex ? "✓" : index + 1}</i><span>{stage.label}</span></div>)}</div><aside>{stopped ? <><b>No fake certainty.</b><span>We stop when the available data cannot support a reliable report.</span></> : delivery === "email" ? <><b>Confirmation sent.</b><span>We’ll send another email when the report is ready.</span></> : <><b>Keep this private link.</b><span>Your report will appear here automatically when it is ready.</span></>}</aside></div> : data.report && <>
+      {data.status !== "ready" ? <div className={`report-pending ${stopped ? "stopped" : ""}`}><div className="scan-orb"><i /><b>{stopped ? "!" : "↻"}</b></div><span>{stoppedCopy?.kicker || (data.processing?.stageLabel ? "AUTOMATED MATCH ANALYSIS" : "MATCH SECURED")}</span><h2>{stoppedCopy?.title || data.processing?.stageLabel || "Your match is queued."}</h2><p>{stoppedCopy?.body || "Replay Method is reading the submitted match, measuring repeated patterns and selecting one evidence-backed coaching focus."}</p>{identityResolvable && <section className="player-resolution" aria-labelledby="player-resolution-title"><div><span>{data.processing?.replayContext.mode ? `${data.processing.replayContext.mode.toUpperCase()} · PLAYERS FOUND` : "PLAYERS FOUND IN THIS REPLAY"}</span><h3 id="player-resolution-title">Which one is you?</h3><p>Choose your player and your current rank in this playlist. The original private replay is reused automatically.</p></div><div className="player-resolution-options" role="radiogroup" aria-label="Players identified in the replay">{data.processing?.candidatePlayers.map(player => <button type="button" role="radio" disabled={!interactive} aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} key={player} onClick={() => { setSelectedPlayer(player); setIdentityRetryState("idle"); }}>{player}</button>)}</div><label className="player-resolution-rank"><span>Your current {data.processing?.replayContext.mode || "playlist"} rank</span><select value={selectedRank} onChange={event => { setSelectedRank(event.target.value); setIdentityRetryState("idle"); }}><option value="">Choose rank</option>{rocketLeagueRanks.map(rank => <option value={rank} key={rank}>{rank}</option>)}</select></label><button className="player-resolution-submit" type="button" disabled={!interactive || !selectedPlayer || !selectedRank || identityRetryState === "saving"} onClick={retryWithPlayer}>{identityRetryState === "saving" ? "Starting…" : identityRetryState === "queued" ? "Analysis queued ✓" : "Analyze this saved replay →"}</button>{identityRetryState === "error" && <p role="alert">The replay could not be queued. Refresh this private report and try again.</p>}</section>}<div className="status-track">{stages.map((stage, index) => <div className={index <= statusIndex && !stopped ? "active" : index < statusIndex ? "complete" : ""} key={stage.key}><i>{index < statusIndex ? "✓" : index + 1}</i><span>{stage.label}</span></div>)}</div><aside>{stopped ? <><b>No fake certainty.</b><span>We stop when the available data cannot support a reliable report.</span></> : delivery === "email" ? <><b>Confirmation sent.</b><span>We’ll send another email when the report is ready.</span></> : <><b>Keep this private link.</b><span>Your report will appear here automatically when it is ready.</span></>}</aside></div> : data.report && <>
         <div className="report-hero"><div><span>YOUR PRIMARY LEAK</span><h2>{data.report.highestImpactMistake}</h2><div className="report-cost"><small>WHY IT COSTS</small><p>{data.report.whyItCosts}</p></div></div><aside><small>CONFIDENCE</small><b>{data.report.confidenceLabel ? `${data.report.confidenceLabel.toUpperCase()} CONFIDENCE` : "QUALITY REVIEWED"}</b><span>{confidence == null ? "Evidence checked before publishing" : `${confidence}% detector confidence · ${data.report.analysisSource === "automated" ? "automated" : "reviewed"}`}</span><em>Confidence in this finding for this match—not a rank-up probability.</em></aside></div>
 
         <section className="report-evidence"><header><span>01 · EVIDENCE</span><h2>Why Replay Method thinks this.</h2><p>Specific observations from the submitted match—not a generic personality score.</p></header><div>{evidence.map((moment, index) => <article key={`${moment.text}-${index}`}><b>{moment.label}</b><p>{moment.text}</p></article>)}</div></section>

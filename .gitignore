@@ -42,6 +42,8 @@ next-env.d.ts
 /.sites-runtime/
 /outputs/
 /work/
+/private-corpus/
+*.replay
 
 .projects/cache
 .projects/vault

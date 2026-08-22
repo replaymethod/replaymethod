@@ -32,6 +32,11 @@ export type PublicReportData = {
     nextRetryAt: string | null;
     updatedAt: string;
     candidatePlayers: string[];
+    replayContext: {
+      mode: string | null;
+      gameVersion: string | null;
+      occurredAt: string | null;
+    };
     versions: {
       parser: string | null;
       analyzer: string | null;
@@ -118,6 +123,7 @@ export async function loadPublicReport(publicId: string): Promise<PublicReportDa
       nextRetryAt: job.nextRetryAt,
       updatedAt: job.updatedAt,
       candidatePlayers: resolution.candidatePlayers,
+      replayContext: resolution.replayContext,
       versions: {
         parser: job.parserVersion,
         analyzer: job.analyzerVersion,

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return <main className="legal-shell">
-    <nav className="legal-nav"><Link className="brand" href="/" aria-label="Replay Method home"><span className="logo">↻</span><span>replay<span>method</span></span></Link><Link href="/">← Back to Replay Method</Link></nav>
+    <nav className="legal-nav"><Link className="brand" href="/" aria-label="Replay Method home"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><Link href="/">← Back to Replay Method</Link></nav>
     <header><span>SERVICE AND WAITLIST TERMS</span><h1>No card. No hidden purchase.</h1><p>These terms explain today&apos;s free beta request and the paid subscription terms that will apply only after checkout is separately opened.</p><small>Last updated: 20 August 2026</small></header>
     <div className="legal-grid">
       <aside><b>The deal today</b><p>You are joining a waitlist, not buying a subscription. Nothing is charged and no payment details are collected.</p><Link href="/privacy">Read our privacy notice →</Link></aside>

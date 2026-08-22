@@ -16,7 +16,7 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: externalBaseUrl ? undefined : {
-    command: "REPLAYMETHOD_E2E_FIXTURES=true RL_CALIBRATION_INTAKE_ENABLED=true npm run dev -- --host 127.0.0.1 --port 5175",
+    command: "REPLAYMETHOD_E2E_FIXTURES=true RL_ENGINE_ENABLED=true RL_CALIBRATION_INTAKE_ENABLED=true npm run dev -- --host 127.0.0.1 --port 5175",
     url: "http://127.0.0.1:5175",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

@@ -1,4 +1,5 @@
 import { assessPublicDetectorGate } from "./quality-gates.mjs";
+import { normalizeMode } from "./context.mjs";
 
 export const SHADOW_RUNTIME_VERSION = "rocket-league-shadow-runtime@0.2.0";
 
@@ -328,18 +329,33 @@ function subjectDiveCandidates(evidence) {
 }
 
 export const SHADOW_DETECTORS = Object.freeze([
-  Object.freeze({ id: "boost.zero_duration", version: "0.1.0", evaluate: zeroBoostExposure }),
-  Object.freeze({ id: "boost.supersonic_waste", version: "0.2.0", evaluate: supersonicBoostWaste }),
-  Object.freeze({ id: "kickoff.speed", version: "0.1.0", evaluate: subjectKickoffs }),
-  Object.freeze({ id: "possession.first_touch", version: "0.1.0", evaluate: subjectFirstTouches }),
-  Object.freeze({ id: "challenge.dive", version: "0.1.0", evaluate: subjectDiveCandidates }),
-  Object.freeze({ id: "rotation.spacing_too_close", version: "0.1.0", evaluate: tightTeammateSpacing }),
-  Object.freeze({ id: "teamplay.double_commit", version: "0.1.0", evaluate: doubleCommitCandidates }),
-  Object.freeze({ id: "recovery.momentum_loss", version: "0.1.0", evaluate: momentumLossCandidates }),
+  Object.freeze({ id: "boost.zero_duration", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: zeroBoostExposure }),
+  Object.freeze({ id: "boost.supersonic_waste", version: "0.2.0", modes: ["1v1", "2v2", "3v3"], evaluate: supersonicBoostWaste }),
+  Object.freeze({ id: "kickoff.speed", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: subjectKickoffs }),
+  Object.freeze({ id: "possession.first_touch", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: subjectFirstTouches }),
+  Object.freeze({ id: "challenge.dive", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: subjectDiveCandidates }),
+  Object.freeze({ id: "rotation.spacing_too_close", version: "0.1.0", modes: ["2v2", "3v3"], evaluate: tightTeammateSpacing }),
+  Object.freeze({ id: "teamplay.double_commit", version: "0.1.0", modes: ["2v2", "3v3"], evaluate: doubleCommitCandidates }),
+  Object.freeze({ id: "recovery.momentum_loss", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: momentumLossCandidates }),
 ]);
 
 export function runShadowDetectors(evidence, detectors = SHADOW_DETECTORS) {
+  const mode = normalizeMode(evidence.normalized.mode);
   const runs = detectors.map((detector) => {
+    if (mode !== "unknown" && Array.isArray(detector.modes) && !detector.modes.includes(mode)) {
+      return {
+        detectorId: detector.id,
+        detectorVersion: detector.version,
+        lifecycle: "shadow",
+        public: false,
+        status: "not_applicable",
+        applicableModes: detector.modes,
+        candidateCount: 0,
+        measurements: {},
+        evidence: [],
+        qualityGate: assessPublicDetectorGate(),
+      };
+    }
     try {
       const observation = detector.evaluate(evidence);
       return {
@@ -373,7 +389,8 @@ export function runShadowDetectors(evidence, detectors = SHADOW_DETECTORS) {
     runs,
     summary: {
       detectorCount: runs.length,
-      executed: runs.filter((run) => run.status !== "error").length,
+      executed: runs.filter((run) => !["error", "not_applicable"].includes(run.status)).length,
+      notApplicable: runs.filter((run) => run.status === "not_applicable").length,
       errors: runs.filter((run) => run.status === "error").length,
       observed: runs.filter((run) => run.status === "observed").length,
       candidateCount: runs.reduce((sum, run) => sum + run.candidateCount, 0),

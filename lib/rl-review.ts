@@ -80,3 +80,12 @@ export function detectorName(detectorId: string) {
     "recovery.momentum_loss": "Momentum loss"
   } as Record<string, string>)[detectorId] ?? detectorId;
 }
+
+export function reviewerPlaylistScopes(value: string | null | undefined) {
+  try {
+    const parsed = JSON.parse(value || "{}") as Record<string, unknown>;
+    return new Set(["1v1", "2v2", "3v3"].filter(mode => typeof parsed[mode] === "string" && parsed[mode] !== "unverified"));
+  } catch {
+    return new Set<string>();
+  }
+}

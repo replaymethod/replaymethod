@@ -40,6 +40,8 @@ test("accepts only coarse allowlisted product measurement fields", () => {
 test("covers the requested funnel without sending product payloads", async () => {
   for (const event of [
     "hardstuck_select", "replay_selected", "validation_failed", "upload_started",
+    "upload_complete", "parse_complete", "mode_detected", "player_pick", "identity_captured",
+    "processing_started", "abstention", "evidence_viewed",
     "calibration_start", "calibration_submit",
     "analysis_start", "analysis_submit", "analysis_completed", "feedback",
     "followup_started", "upgrade_intent", "checkout_started", "paid_activation",

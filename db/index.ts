@@ -19,7 +19,7 @@ export async function ensureProductSchema(database: D1Database) {
         email text NOT NULL,
         player_name text NOT NULL,
         rank_cohort text NOT NULL,
-        mode text DEFAULT '2v2' NOT NULL,
+        mode text DEFAULT 'unknown' NOT NULL,
         replay_fingerprint text NOT NULL,
         file_key text NOT NULL,
         original_file_name text NOT NULL,
@@ -47,6 +47,22 @@ export async function ensureProductSchema(database: D1Database) {
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS rl_beta_submissions_replay_email_unique ON rl_beta_submissions (replay_fingerprint, email)"),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_beta_submissions_email_created_idx ON rl_beta_submissions (email, created_at)"),
       database.prepare("CREATE INDEX IF NOT EXISTS rl_beta_submissions_status_created_idx ON rl_beta_submissions (status, created_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS rl_capabilities (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        mode text NOT NULL,
+        rank_cohort text NOT NULL,
+        upload_state text NOT NULL,
+        parse_state text NOT NULL,
+        process_state text NOT NULL,
+        detector_state text NOT NULL,
+        coaching_state text NOT NULL,
+        reason text NOT NULL,
+        source_version text NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS rl_capabilities_mode_cohort_unique ON rl_capabilities (mode, rank_cohort)"),
+      database.prepare("CREATE INDEX IF NOT EXISTS rl_capabilities_coaching_state_idx ON rl_capabilities (coaching_state)"),
       database.prepare(`CREATE TABLE IF NOT EXISTS analysis_requests (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         public_id text NOT NULL,
@@ -408,6 +424,7 @@ export async function ensureProductSchema(database: D1Database) {
         timestamp_seconds real,
         frame integer,
         observation_json text NOT NULL,
+        moment_object_key text,
         verdict text DEFAULT 'unreviewed' NOT NULL,
         timestamp_verified integer,
         notes text,
@@ -428,6 +445,7 @@ export async function ensureProductSchema(database: D1Database) {
         email text NOT NULL,
         display_name text,
         qualification text NOT NULL,
+        playlist_qualifications_json text DEFAULT '{}' NOT NULL,
         status text DEFAULT 'pending' NOT NULL,
         approved_by text,
         approved_at text,
@@ -445,6 +463,7 @@ export async function ensureProductSchema(database: D1Database) {
         reviewer_id integer,
         reviewer_email text NOT NULL,
         reviewer_qualification text DEFAULT 'unverified' NOT NULL,
+        reviewer_scope_json text DEFAULT '{}' NOT NULL,
         verdict text NOT NULL,
         timestamp_verified integer,
         notes text,
@@ -520,6 +539,8 @@ export async function ensureProductSchema(database: D1Database) {
       await ensureColumn(database, "rl_review_candidates", "rank_cohort", "text");
       await ensureColumn(database, "rl_review_candidates", "context_key", "text");
       await ensureColumn(database, "rl_review_candidates", "metadata_provenance", "text");
+      await ensureColumn(database, "rl_review_candidates", "moment_object_key", "text");
+      await database.prepare("CREATE INDEX IF NOT EXISTS rl_review_candidates_moment_key_idx ON rl_review_candidates (moment_object_key)").run();
       await ensureColumn(database, "rl_beta_submissions", "parser_status", "text DEFAULT 'pending' NOT NULL");
       await ensureColumn(database, "rl_beta_submissions", "parser_version", "text");
       await ensureColumn(database, "rl_beta_submissions", "parsed_mode", "text");
@@ -533,7 +554,22 @@ export async function ensureProductSchema(database: D1Database) {
       await ensureColumn(database, "rl_beta_submissions", "updates_consent_at", "text");
       await ensureColumn(database, "rl_review_labels", "reviewer_qualification", "text DEFAULT 'unverified' NOT NULL");
       await ensureColumn(database, "rl_review_labels", "reviewer_id", "integer");
+      await ensureColumn(database, "rl_review_labels", "reviewer_scope_json", "text DEFAULT '{}' NOT NULL");
+      await ensureColumn(database, "rl_reviewers", "playlist_qualifications_json", "text DEFAULT '{}' NOT NULL");
       await database.prepare("CREATE INDEX IF NOT EXISTS rl_review_labels_reviewer_candidate_idx ON rl_review_labels (reviewer_id, candidate_id)").run();
+      const capabilityRows = [
+        ["1v1", "gold-platinum", "verified"], ["1v1", "diamond-champion", "verified"], ["1v1", "grand-champion-ssl", "verified"],
+        ["2v2", "gold-platinum", "verified"], ["2v2", "diamond-champion", "verified"], ["2v2", "grand-champion-ssl", "verified"],
+        ["3v3", "gold-platinum", "verified"], ["3v3", "diamond-champion", "verified"], ["3v3", "grand-champion-ssl", "verified"],
+      ];
+      await database.batch(capabilityRows.map(([mode, rankCohort, processingState]) => database.prepare(`INSERT INTO rl_capabilities (
+          mode, rank_cohort, upload_state, parse_state, process_state, detector_state, coaching_state, reason, source_version, updated_at
+        ) VALUES (?, ?, 'enabled', ?, ?, 'shadow-only', 'abstention-only', 'Replay parsing and mode attribution passed the representative corpus and locked holdout. No exact detector scope has passed two-reviewer quality gates.', 'rl-parser-validation.2026-08-22', CURRENT_TIMESTAMP)
+        ON CONFLICT(mode, rank_cohort) DO UPDATE SET upload_state = excluded.upload_state,
+          parse_state = excluded.parse_state, process_state = excluded.process_state,
+          detector_state = excluded.detector_state, coaching_state = excluded.coaching_state,
+          reason = excluded.reason, source_version = excluded.source_version, updated_at = CURRENT_TIMESTAMP`)
+        .bind(mode, rankCohort, processingState, processingState)));
     }).catch((error) => {
       productSchemaReady = null;
       throw error;

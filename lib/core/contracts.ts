@@ -134,6 +134,11 @@ export type AdapterSuccess = {
   kind: "success";
   normalized: NormalizedMatch;
   findings: StructuredFinding[];
+  abstention?: {
+    code: string;
+    publicMessage: string;
+    internalMessage: string;
+  };
   versions: AnalyzerVersions;
   estimatedCostMicros: number;
 };
@@ -145,6 +150,11 @@ export type AdapterBlocked = {
   internalMessage: string;
   retryable: boolean;
   candidatePlayers?: string[];
+  replayContext?: {
+    mode?: string | null;
+    gameVersion?: string | null;
+    occurredAt?: string | null;
+  };
   userResolvable?: boolean;
 };
 

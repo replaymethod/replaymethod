@@ -61,6 +61,17 @@ test("synthetic fixtures cannot count as calibration evidence", () => {
   assert.equal(report.detectors[0].ineligibleReplayRuns, 1);
 });
 
+test("does not count a mode-inapplicable detector as an execution", () => {
+  const report = aggregateCalibrationRuns([{
+    replayFingerprint: "ones",
+    evidenceSource: "real_replay",
+    mode: "1v1",
+    shadowRuns: [{ detectorId: "teamplay.double_commit", detectorVersion: "0.1.0", status: "not_applicable", candidateCount: 0 }],
+  }]);
+  assert.equal(report.detectors[0].replayRuns, 0);
+  assert.equal(report.detectors[0].notApplicableRuns, 1);
+});
+
 test("reproducibility ignores timestamps but detects source or version drift", () => {
   const base = { schemaVersion: "test", generatedAt: "one", replays: [{ replayFingerprint: "a", evidenceSource: "real_replay", versions: { parser: "1" }, shadowRuns: [] }] };
   const same = { ...base, generatedAt: "two" };

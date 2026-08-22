@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Beta and calibration terms — Repla
 
 export default function BetaTermsPage() {
   return <main className="legal-shell">
-    <nav className="legal-nav"><Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link><Link href="/analyze">← Back to analysis</Link></nav>
+    <nav className="legal-nav"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><Link href="/analyze">← Back to analysis</Link></nav>
     <header><span>BETA ANALYSIS TERMS</span><h1>One real match. No fake promise.</h1><p>These terms explain private replay calibration, the free beta analysis, what you may submit and what Replay Method can—and cannot—promise.</p><small>Last updated: 21 August 2026</small></header>
     <div className="legal-grid"><aside><b>The deal today</b><p>Replay intake is free when open. No card is collected, and intake may remain closed during quality validation.</p><Link href="/privacy">Read our privacy notice →</Link></aside><article>
       <section><h2>1. Private calibration contributions</h2><p>When the dedicated Rocket League calibration intake is shown as open, you may contribute an original PC .replay so Replay Method can privately test, label and improve detector quality. A contribution is research input: it does not create or promise a player analysis, report, coaching result or response. You must give the separate calibration consent and identify the player whose evidence should be followed.</p></section>

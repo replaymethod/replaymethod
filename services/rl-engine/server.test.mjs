@@ -169,6 +169,35 @@ test("player identity errors return the parsed roster as structured recovery dat
   },
 }));
 
+test("replay-first requests may omit player metadata and receive roster plus mode", async () => withServer(async (base) => {
+  const response = await fetch(`${base}/v1/analyze/rocket-league`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/octet-stream",
+      "X-Replay-Method-Request": requestId,
+    },
+    body: new Uint8Array([1]),
+  });
+  assert.equal(response.status, 422);
+  const body = await response.json();
+  assert.equal(body.code, "subject_player_required");
+  assert.deepEqual(body.candidatePlayers, ["Player One", "Player Two"]);
+  assert.equal(body.replayContext.mode, "Ranked Duel");
+}, {
+  token,
+  processReplay: async ({ player }) => {
+    assert.equal(player, "");
+    throw new ReplayInputError(
+      "subject_player_required",
+      "Choose yourself.",
+      "Two replay players found.",
+      ["Player One", "Player Two"],
+      { mode: "Ranked Duel", gameVersion: "test-build" },
+    );
+  },
+}));
+
 test("declared oversized input is rejected before reading", async () => withServer(async (base) => {
   const result = await new Promise((resolve, reject) => {
     const request = httpRequest(`${base}/v1/analyze/rocket-league`, {

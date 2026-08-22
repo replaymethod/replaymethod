@@ -38,7 +38,14 @@ export type AdapterEnv = {
   RIOT_API_TIMEOUT_MS?: string;
 };
 
-function blocked(code: string, publicMessage: string, internalMessage: string, retryable = false, candidatePlayers: string[] = []): AdapterResult {
+function blocked(
+  code: string,
+  publicMessage: string,
+  internalMessage: string,
+  retryable = false,
+  candidatePlayers: string[] = [],
+  replayContext: { mode?: string | null; gameVersion?: string | null; occurredAt?: string | null } = {},
+): AdapterResult {
   return {
     kind: "blocked",
     code,
@@ -46,7 +53,8 @@ function blocked(code: string, publicMessage: string, internalMessage: string, r
     internalMessage,
     retryable,
     candidatePlayers,
-    userResolvable: ["subject_player_not_found", "subject_player_ambiguous"].includes(code) && candidatePlayers.length > 0,
+    replayContext,
+    userResolvable: ["subject_player_required", "subject_player_not_found", "subject_player_ambiguous"].includes(code) && candidatePlayers.length > 0,
   };
 }
 
@@ -98,6 +106,7 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
       internalMessage: string;
       retryable: boolean;
       candidatePlayers: string[];
+      replayContext: { mode?: string | null; gameVersion?: string | null; occurredAt?: string | null };
     }> = {};
     try { detail = await response.json(); } catch { /* a non-contract worker must still fail safely */ }
     return blocked(
@@ -106,6 +115,7 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
       detail.internalMessage || "RL engine returned HTTP 422 without a structured error.",
       detail.retryable === true,
       Array.isArray(detail.candidatePlayers) ? detail.candidatePlayers : [],
+      detail.replayContext ?? {},
     );
   }
   if (response.status === 401 || response.status === 403) {
@@ -126,8 +136,11 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
   if (payload.kind !== "success" || payload.normalized?.game !== "rocket-league" || !Array.isArray(payload.findings)) {
     return blocked("rl_engine_contract_failed", "The replay worker returned an unsupported result. Your upload is preserved.", "RL engine returned an invalid adapter contract.");
   }
-  if (!payload.findings.length) {
-    return blocked("insufficient_evidence", "The replay was read, but it did not support a reliable coaching finding.", "RL engine returned a successful normalized replay with no public findings.");
+  if (!payload.findings.length && (!payload.abstention?.code || !payload.abstention.publicMessage || !payload.abstention.internalMessage)) {
+    return blocked("rl_engine_contract_failed", "The replay worker returned an incomplete result. Your upload is preserved.", "RL engine returned no findings without a structured abstention.");
+  }
+  if (payload.findings.length && payload.abstention) {
+    return blocked("rl_engine_contract_failed", "The replay worker returned a contradictory result. Your upload is preserved.", "RL engine returned findings and an abstention in the same response.");
   }
   return payload;
 }

@@ -141,7 +141,7 @@ export default function ReplayContribution({ intakeOpen, compact = false }: { in
       <div className="rl-context-heading"><span>LAST STEP</span><h2>Who are you in this match?</h2><p>Three details keep the replay attributable and useful.</p></div>
       <div className="rl-context-grid">
         <label><span>Exact in-game name</span><input name="playerName" type="text" autoComplete="off" required minLength={1} maxLength={80} placeholder="Your name in this replay" /></label>
-        <label><span>Current 2v2 rank</span><select name="rankCohort" required defaultValue=""><option value="" disabled>Choose rank group</option><option value="bronze-silver">Bronze–Silver</option><option value="gold-platinum">Gold–Platinum</option><option value="diamond-champion">Diamond–Champion</option><option value="grand-champion-ssl">Grand Champion–SSL</option></select></label>
+        <label><span>Current rank in this replay&apos;s playlist</span><select name="rankCohort" required defaultValue=""><option value="" disabled>Choose rank group</option><option value="bronze-silver">Bronze–Silver</option><option value="gold-platinum">Gold–Platinum</option><option value="diamond-champion">Diamond–Champion</option><option value="grand-champion-ssl">Grand Champion–SSL</option></select></label>
         <label><span>Email for your receipt</span><input name="email" type="email" autoComplete="email" inputMode="email" required placeholder="you@email.com" /></label>
       </div>
       <input className="hp-field" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" />

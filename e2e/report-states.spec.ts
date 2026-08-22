@@ -48,6 +48,7 @@ test.describe("private report states", () => {
     await page.goto(reports.identity);
     await expect(page.getByRole("heading", { name: "Which one is you?" })).toBeVisible();
     await page.getByRole("radio", { name: "Turtle" }).click();
+    await page.locator(".player-resolution select").selectOption("Champion II");
     await page.getByRole("button", { name: /Analyze this saved replay/i }).click();
     await expect.poll(() => submittedPlayer).toBe("Turtle");
     await expect(page.getByRole("heading", { name: "Player selected · replay preserved" })).toBeVisible();

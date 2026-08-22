@@ -26,9 +26,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   if (!publicIdPattern.test(publicId)) return Response.json({ error: "Not found" }, { status: 404 });
 
   let selectedPlayer = "";
+  let selectedRank = "";
   try {
-    const body = await request.json() as { player?: unknown };
+    const body = await request.json() as { player?: unknown; rank?: unknown };
     selectedPlayer = typeof body.player === "string" ? body.player.trim() : "";
+    selectedRank = typeof body.rank === "string" ? body.rank.trim().slice(0, 80) : "";
   } catch {
     return Response.json({ error: "Choose one identified player." }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }
@@ -37,16 +39,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   const analysis = await db.select().from(analysisRequests).where(eq(analysisRequests.publicId, publicId)).get();
   if (!analysis) return Response.json({ error: "Not found" }, { status: 404 });
   const job = await db.select().from(analysisJobs).where(eq(analysisJobs.analysisRequestId, analysis.id)).get();
-  const resolvableCode = ["subject_player_not_found", "subject_player_ambiguous"].includes(job?.errorCode || "");
+  const resolvableCode = ["subject_player_required", "subject_player_not_found", "subject_player_ambiguous"].includes(job?.errorCode || "");
   const candidates = decodePlayerResolutionContext(job?.errorMessage).candidatePlayers;
   const canonicalPlayer = candidates.find(candidate => candidate.localeCompare(selectedPlayer, undefined, { sensitivity: "accent" }) === 0);
-  if (!job || !analysis.fileKey || !resolvableCode || !["blocked", "failed"].includes(job.status) || !canonicalPlayer) {
+  if (!job || !analysis.fileKey || !resolvableCode || !["blocked", "failed"].includes(job.status) || !canonicalPlayer || selectedRank.length < 2) {
     return Response.json({ error: "This saved replay cannot be retried with that player." }, { status: 409, headers: { "Cache-Control": "no-store" } });
   }
 
   const now = new Date().toISOString();
   await db.batch([
-    db.update(analysisRequests).set({ playerContext: canonicalPlayer, status: "received", updatedAt: now }).where(eq(analysisRequests.id, analysis.id)),
+    db.update(analysisRequests).set({ playerContext: canonicalPlayer, currentRank: selectedRank, status: "received", updatedAt: now }).where(eq(analysisRequests.id, analysis.id)),
     db.update(analysisJobs).set({
       status: "queued",
       stage: "queued",

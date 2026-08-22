@@ -4,7 +4,7 @@ import { getDb } from "../../../db";
 import { rlReviewCandidates, rlReviewLabels } from "../../../db/schema";
 import { requireChatGPTUser } from "../../chatgpt-auth";
 import { ensureRlReviewerApplicant } from "../../../lib/admin";
-import { detectorName, ensureRlReviewQueueSeeded, RL_LABEL_SET_VERSION, RL_REVIEW_CANDIDATE_KEYS } from "../../../lib/rl-review";
+import { detectorName, ensureRlReviewQueueSeeded, reviewerPlaylistScopes, RL_LABEL_SET_VERSION } from "../../../lib/rl-review";
 import reviewMoments from "../../../docs/RL_REVIEW_MOMENTS.json";
 import ReviewCandidateForm from "./ReviewCandidateForm";
 import ReplayMomentViewer, { type ReplayMoment } from "./ReplayMomentViewer";
@@ -26,7 +26,8 @@ export default async function RlReviewPage({ searchParams }: { searchParams: Pro
     db.select().from(rlReviewCandidates).orderBy(asc(rlReviewCandidates.detectorId), asc(rlReviewCandidates.id)),
     db.select().from(rlReviewLabels).where(eq(rlReviewLabels.reviewerId, reviewer.id)).orderBy(asc(rlReviewLabels.id))
   ]);
-  const candidates = storedCandidates.filter(candidate => RL_REVIEW_CANDIDATE_KEYS.has(candidate.candidateKey));
+  const qualifiedModes = reviewerPlaylistScopes(reviewer.playlistQualificationsJson);
+  const candidates = storedCandidates.filter(candidate => Boolean(candidate.mode && qualifiedModes.has(candidate.mode)));
   const latestLabels = new Map<number, typeof labelHistory[number]>();
   for (const label of labelHistory) latestLabels.set(label.candidateId, label);
   const params = await searchParams;
@@ -42,6 +43,22 @@ export default async function RlReviewPage({ searchParams }: { searchParams: Pro
   const currentPage = Math.min(requestedPage, pageCount);
   const pageRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const momentArtifact = reviewMoments as unknown as { moments: Record<string, ReplayMoment> };
+  const privateMoments: Record<string, ReplayMoment> = {};
+  const privateMomentKeys = [...new Set(pageRows.map(candidate => candidate.momentObjectKey).filter((value): value is string => Boolean(value)))];
+  if (privateMomentKeys.length) {
+    try {
+      const { env } = await import("cloudflare:workers");
+      const bucket = (env as unknown as { BUCKET?: R2Bucket }).BUCKET;
+      if (bucket) {
+        const chunks = await Promise.all(privateMomentKeys.map(key => bucket.get(key)));
+        for (const object of chunks) {
+          if (!object) continue;
+          const chunk = JSON.parse(await object.text()) as { moments?: Record<string, ReplayMoment> };
+          Object.assign(privateMoments, chunk.moments ?? {});
+        }
+      }
+    } catch { /* A missing private moment is shown explicitly and cannot be labeled by accident. */ }
+  }
   const pageUrl = (page: number) => {
     const query = new URLSearchParams();
     if (params.detector) query.set("detector", params.detector);
@@ -51,7 +68,7 @@ export default async function RlReviewPage({ searchParams }: { searchParams: Pro
   };
 
   return <main className="rl-review-page"><section className="rl-review-shell">
-    <nav className="rl-review-nav"><Link href="/">↻ Replay Method</Link><div><span>{reviewer.displayName || reviewer.email}</span><b>{reviewer.qualification.replaceAll("_", " ")}</b></div></nav>
+    <nav className="rl-review-nav"><Link href="/">Replay Method</Link><div><span>{reviewer.displayName || reviewer.email}</span><b>{reviewer.qualification.replaceAll("_", " ")} · {[...qualifiedModes].join(" / ")}</b></div></nav>
     <header className="rl-review-hero"><div><span>BLIND EXPERT REVIEW · {RL_LABEL_SET_VERSION}</span><h1>Judge the moment.<br />Not another reviewer.</h1><p>You see detector evidence and your own saved label only. Other reviewers’ decisions and aggregate verdicts remain hidden.</p></div><aside><span>YOUR PROGRESS</span><b>{reviewed} / {candidates.length}</b><small>Each candidate counts once for this stable identity</small></aside></header>
 
     <section className="rl-review-blind-note"><i>◉</i><div><b>Blindness is active</b><p>No consensus score, prior verdict or reviewer note is exposed in this queue.</p></div></section>
@@ -65,13 +82,13 @@ export default async function RlReviewPage({ searchParams }: { searchParams: Pro
     <section className="rl-review-list"><header><div><span>YOUR REVIEW QUEUE</span><h2>{filtered.length} candidates</h2></div><small>Page {currentPage} of {pageCount}</small></header>{pageRows.map(candidate => {
       const own = latestLabels.get(candidate.id);
       const observation = JSON.parse(candidate.observationJson) as Record<string, unknown>;
-      const moment = momentArtifact.moments[candidate.candidateKey];
+      const moment = privateMoments[candidate.candidateKey] ?? momentArtifact.moments[candidate.candidateKey];
       const verdict = own?.verdict ?? "unreviewed";
       return <article className={`rl-candidate ${verdict}`} key={candidate.id}>
         <div className="rl-candidate-head"><div><span>{detectorName(candidate.detectorId)} · v{candidate.detectorVersion}</span><h3>{candidate.reviewQuestion}</h3></div><i>{verdict === "unreviewed" ? "YOUR LABEL: OPEN" : `YOUR LABEL: ${verdict}`}</i></div>
-        {moment ? <ReplayMomentViewer moment={moment} /> : <div className="rl-moment-missing">Replay moment unavailable. Keep this candidate unreviewed until the source artifact is restored.</div>}
+        {moment ? <ReplayMomentViewer moment={moment} /> : <div className="rl-moment-missing">Replay moment unavailable. This candidate cannot be labeled until the private source artifact is restored.</div>}
         <div className="rl-evidence"><div><span>MOMENT</span><b>{candidate.timestampSeconds == null ? "Unknown" : `${candidate.timestampSeconds.toFixed(2)}s`}</b><small>frame {candidate.frame ?? "—"}</small></div><div><span>REPLAY</span><b>{candidate.replayFingerprint}</b><small>{candidate.mode ?? "Unknown mode"} · patch {candidate.gameVersion ?? "unknown"}</small></div><pre>{JSON.stringify(observation, null, 2)}</pre></div>
-        <ReviewCandidateForm candidate={{ id: candidate.id, verdict, timestampVerified: own?.timestampVerified ?? null, notes: own?.notes ?? null }} />
+        {moment && <ReviewCandidateForm candidate={{ id: candidate.id, verdict, timestampVerified: own?.timestampVerified ?? null, notes: own?.notes ?? null }} />}
       </article>;
     })}</section>
     <nav className="rl-pagination"><Link aria-disabled={currentPage === 1} href={pageUrl(Math.max(1, currentPage - 1))}>← Previous</Link><span>{filtered.length ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}</span><Link aria-disabled={currentPage === pageCount} href={pageUrl(Math.min(pageCount, currentPage + 1))}>Next →</Link></nav>

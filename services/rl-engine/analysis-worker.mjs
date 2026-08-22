@@ -24,6 +24,7 @@ parentPort.on("message", ({ jobId, operation, bytes, player, rank, publicOutputE
         code: error?.code,
         publicMessage: error?.publicMessage,
         candidatePlayers: error?.candidatePlayers,
+        replayContext: error?.replayContext,
         message: error instanceof Error ? error.message : "Unknown replay worker failure.",
       },
     });

@@ -1,4 +1,4 @@
-import { buildReplayEvidence, NORMALIZER_VERSION, PARSER_VERSION, ReplayInputError } from "./parser.mjs";
+import { buildReplayEvidence, NORMALIZER_VERSION, PARSER_VERSION } from "./parser.mjs";
 import { detectorCatalogSummary } from "./detector-catalog.mjs";
 import { runShadowDetectors, SHADOW_RUNTIME_VERSION } from "./shadow-runtime.mjs";
 
@@ -14,15 +14,11 @@ export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnab
   const playerCount = evidence.frameState.summary.playerCount;
   const verifiedSummary = `Verified ${normalized.mode || "Rocket League match"}: ${frameCount.toLocaleString("en-US")} sampled frames and ${playerCount} players.`;
 
-  // Deliberately no heuristic output here. The first public detectors require a
-  // representative fixture corpus, timestamp verification and expert-labelled
-  // precision. Parser success alone is not evidence that a coaching claim is true.
-  throw new ReplayInputError(
-    publicOutputEnabled ? "detectors_not_calibrated" : "public_output_disabled",
-    publicOutputEnabled
-      ? `${verifiedSummary} Coaching is paused until the evidence detectors pass the beta quality gate.`
-      : `${verifiedSummary} The player was identified, but public coaching output remains paused by the detector safety gate.`,
-    JSON.stringify({
+  const code = publicOutputEnabled ? "detectors_not_calibrated" : "public_output_disabled";
+  const publicMessage = publicOutputEnabled
+    ? `${verifiedSummary} Coaching is paused until the evidence detectors pass the beta quality gate.`
+    : `${verifiedSummary} The player was identified, but public coaching output remains paused by the detector safety gate.`;
+  const internalMessage = JSON.stringify({
       mode: normalized.mode ?? null,
       versions: {
         parser: PARSER_VERSION,
@@ -39,6 +35,31 @@ export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnab
         episodeTimeline: evidence.episodeTimeline.summary,
       },
       shadowRun: shadowRun.summary,
-    }),
-  );
+    });
+
+  // Parsing and normalization are still a successful product operation when
+  // no detector has earned a public claim. Return the verified match together
+  // with an explicit abstention so the application can persist real processing
+  // evidence and release the customer's free entitlement fairly.
+  return {
+    kind: "success",
+    normalized: {
+      ...normalized,
+      metadata: {
+        ...normalized.metadata,
+        shadowEvaluation: shadowRun.summary,
+      },
+    },
+    findings: [],
+    abstention: { code, publicMessage, internalMessage },
+    versions: {
+      parser: PARSER_VERSION,
+      normalizer: NORMALIZER_VERSION,
+      analyzer: ANALYZER_VERSION,
+      detector: DETECTOR_VERSION,
+      coaching: COACHING_VERSION,
+      schema: "coaching.v1",
+    },
+    estimatedCostMicros: 0,
+  };
 }

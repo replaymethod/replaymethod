@@ -48,7 +48,7 @@ test.describe("first-time visitor funnel", () => {
   test("the landing page explains one problem and exposes one immediate replay action", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /Stop grinding blind/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Drop your replay." })).toBeVisible();
+    await expect(page.getByText("Drop a replay. Let the match fill in the rest.", { exact: true })).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(1);
     await expect(page.getByLabel("Exact in-game name")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /League of Legends|VALORANT/i })).toHaveCount(0);
@@ -64,10 +64,9 @@ test.describe("first-time visitor funnel", () => {
       mimeType: "application/octet-stream",
       buffer: Buffer.from("playwright-calibration-fixture"),
     });
-    await expect(page.getByLabel("Exact in-game name")).toBeVisible();
-    await expect(page.getByLabel("Current 2v2 rank")).toBeVisible();
-    await expect(page.getByLabel("Email for your receipt")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Secure my replay" })).toBeVisible();
+    await expect(page.getByLabel("Where should we send your result?")).toBeVisible();
+    await expect(page.locator('.quick-check input[type="checkbox"]')).toBeVisible();
+    await expect(page.getByRole("button", { name: /Analyze this replay/i })).toBeVisible();
   });
 
   test("Rocket League is active while League and VALORANT are explicitly deferred", async ({ page }) => {
@@ -93,9 +92,10 @@ test.describe("first-time visitor funnel", () => {
 });
 
 test.describe("truthful product boundaries", () => {
-  test("Rocket League PC and console lanes stop before collecting unusable evidence", async ({ page }) => {
+  test("Rocket League PC accepts original replays while console lanes stop before unusable evidence", async ({ page }) => {
     await page.goto("/analyze?game=rocket-league&platform=pc", { waitUntil: "networkidle" });
-    await expect(page.getByText(/PC parser is online, but public coaching is still in quality validation/i)).toBeVisible();
+    await expect(page.getByText(/Original PC \.replay file when the public quality gate opens/i)).toBeVisible();
+    await expect(page.locator('input[type="file"]')).toHaveCount(1);
     await page.getByRole("button", { name: /PS5/ }).click();
     await expect(page.getByText(/Console video analysis is not live yet/i)).toBeVisible();
     await expect(page.getByText("This evidence lane is not open yet.", { exact: true })).toBeVisible();
@@ -118,7 +118,7 @@ test.describe("truthful product boundaries", () => {
     await expect(page.getByRole("button", { name: /buy|subscribe|checkout/i })).toHaveCount(0);
   });
 
-  test("closed analysis API rejects before storing a replay", async ({ request }) => {
+  test("invalid analysis API input rejects before storing a replay", async ({ request }) => {
     const response = await request.post("/api/analyses", {
       multipart: {
         game: "rocket-league",
@@ -137,8 +137,8 @@ test.describe("truthful product boundaries", () => {
       },
       headers: { Origin: "http://127.0.0.1:5175" },
     });
-    expect(response.status()).toBe(503);
-    await expect(response.json()).resolves.toMatchObject({ error: expect.stringMatching(/validation|closed|available/i) });
+    expect(response.status()).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: expect.stringMatching(/replay|invalid|original/i) });
   });
 });
 

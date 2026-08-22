@@ -82,6 +82,7 @@ function clientError(response, error) {
     publicMessage: known ? error.publicMessage : "The replay engine failed safely. Your upload was not converted into coaching.",
     internalMessage: (error instanceof Error ? error.message : "Unknown replay engine failure.").slice(0, 1800),
     candidatePlayers: inputError && Array.isArray(error.candidatePlayers) ? error.candidatePlayers : undefined,
+    replayContext: inputError && error.replayContext ? error.replayContext : undefined,
     retryable: transientError || !known,
   });
 }
@@ -116,6 +117,7 @@ function replayWorkerError(payload) {
       payload.publicMessage ?? "The replay could not be parsed safely.",
       payload.message,
       Array.isArray(payload.candidatePlayers) ? payload.candidatePlayers : [],
+      payload.replayContext ?? {},
     );
     return error;
   }
@@ -284,7 +286,7 @@ export function createServer(options = {}) {
     try {
       requestId = requiredHeader(request, "x-replay-method-request", 32, "request_id_required", "The analysis request identifier was missing.");
       if (!/^[a-f0-9]{32}$/.test(requestId)) throw new RequestContractError("request_id_invalid", "The analysis request identifier was invalid.");
-      const player = requiredHeader(request, "x-replay-method-player", 160, "subject_player_required", "Add the exact in-game player name before uploading.");
+      const player = requiredHeader(request, "x-replay-method-player", 160, "subject_player_required", "Choose one player from the parsed replay.", { optional: true });
       const rank = requiredHeader(request, "x-replay-method-rank", 80, "rank_invalid", "The submitted rank metadata was invalid.", { optional: true });
       activeRequests += 1;
       counted = true;

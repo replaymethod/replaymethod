@@ -22,7 +22,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   return <main className="guide-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-    <nav className="tool-nav shell"><a className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></a><div><a href="/climb-check">Free check</a><a href="/guides">All guides</a></div></nav>
+    <nav className="tool-nav shell"><a className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></a><div><a href="/climb-check">Free check</a><a href="/guides">All guides</a></div></nav>
     <article className="guide-article shell">
       <header><span>{guide.game} · {guide.readTime}</span><h1>{guide.title}</h1><p>{guide.opening}</p><div><a href={analysisHref}>Carry this rule into beta intake →</a><small>The intake states the current evidence and access limits</small></div></header>
       <section className="guide-scorecard"><span>THE FOUR-QUESTION SCORECARD</span>{guide.scorecard.map((item, index) => <div key={item.label}><b>0{index + 1}</b><small>{item.label}</small><p>{item.question}</p></div>)}</section>

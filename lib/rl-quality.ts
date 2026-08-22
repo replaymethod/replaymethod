@@ -23,6 +23,7 @@ type ReviewLabelRow = {
   reviewerId?: number | null;
   reviewerEmail: string;
   reviewerQualification: string;
+  reviewerScopeJson?: string | null;
   verdict: string;
   labelSetVersion: string;
   createdAt: string;
@@ -57,7 +58,10 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
   const candidateById = new Map(rows.map(row => [row.id, row]));
   const qualifiedHistoryAll = labelHistory.filter(label => {
     const candidate = candidateById.get(label.candidateId);
-    return candidate && label.reviewerId != null && qualifiedReviewerContexts.has(label.reviewerQualification) && label.labelSetVersion === RL_LABEL_SET_VERSION;
+    let scopes: Record<string, unknown> = {};
+    try { scopes = JSON.parse(label.reviewerScopeJson || "{}"); } catch { /* invalid scope never qualifies */ }
+    const playlistQualified = Boolean(candidate?.mode && typeof scopes[candidate.mode] === "string" && scopes[candidate.mode] !== "unverified");
+    return candidate && playlistQualified && label.reviewerId != null && qualifiedReviewerContexts.has(label.reviewerQualification) && label.labelSetVersion === RL_LABEL_SET_VERSION;
   }).map(label => ({
     ...label,
     candidateKey: candidateById.get(label.candidateId)!.candidateKey,

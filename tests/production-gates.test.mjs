@@ -14,13 +14,15 @@ test("Rocket League intake fails closed before upload storage", async () => {
   assert.ok(gate < storage, "engine gate must run before the replay is stored");
 });
 
-test("production landing defaults to the independently gated Rocket League intake", async () => {
+test("production landing opens replay processing independently from detector publication", async () => {
   const landing = await read("../app/components/Landing.tsx");
   const home = await read("../app/page.tsx");
   assert.match(home, /RL_ENGINE_ENABLED/);
-  assert.match(home, /RL_PUBLIC_DETECTORS_ENABLED/);
+  assert.doesNotMatch(home, /RL_PUBLIC_DETECTORS_ENABLED/);
   assert.match(home, /RL_CALIBRATION_INTAKE_ENABLED/);
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
+  assert.match(landing, /<QuickReplayStart placement="marcel_hero"/);
+  assert.match(landing, /engineOpen \? <QuickReplayStart/);
   assert.match(landing, /Stop grinding blind/);
   assert.doesNotMatch(landing, /Choose my game|Contribute one replay/);
 });

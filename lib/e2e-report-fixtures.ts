@@ -35,6 +35,7 @@ function base(publicId: string): PublicReportData {
       nextRetryAt: null,
       updatedAt: sqlTimestamp(now),
       candidatePlayers: [],
+      replayContext: { mode: "Ranked Doubles", gameVersion: "test", occurredAt: null },
       versions: {
         parser: "rl-parser.e2e",
         analyzer: "decision-engine.e2e",

@@ -11,7 +11,7 @@ const replayPath = String.raw`%USERPROFILE%\Documents\My Games\Rocket League\TAG
 
 export default function ReplayUploadPage() {
   return <main className="replay-upload-page">
-    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link><Link href="/rocket-league#replay-upload">Back to upload</Link></nav>
+    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><Link href="/rocket-league#replay-upload">Back to upload</Link></nav>
     <section className="replay-upload-hero shell">
       <div className="replay-upload-copy">
         <span className="kicker">ROCKET LEAGUE · WINDOWS PC</span>

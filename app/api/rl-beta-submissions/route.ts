@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     uploadedKey = `rl-calibration/${publicId}/${originalFileName}`;
     await runtime.BUCKET.put(uploadedKey, bytes, {
       httpMetadata: { contentType: "application/octet-stream" },
-      customMetadata: { objectId: publicId, purpose: "rl-calibration", mode: "2v2" }
+      customMetadata: { objectId: publicId, purpose: "rl-calibration", mode: "parser-pending" }
     });
 
     await db.insert(rlBetaSubmissions).values({
@@ -95,6 +95,7 @@ export async function POST(request: Request) {
       email,
       playerName,
       rankCohort,
+      mode: "unknown",
       replayFingerprint,
       fileKey: uploadedKey,
       originalFileName,

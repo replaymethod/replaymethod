@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import ReplayContribution from "../rocket-league-beta/ReplayContribution";
+import QuickReplayStart from "./QuickReplayStart";
+import PricingLadder from "./PricingLadder";
 import { trackProductEvent } from "../../lib/client-analytics";
 
 export type GameKey = "general" | "league" | "valorant" | "rocket-league";
@@ -12,7 +14,7 @@ const sentViews = new Set<string>();
 function FutureGame({ game }: { game: "league" | "valorant" }) {
   const label = game === "league" ? "League of Legends" : "VALORANT";
   return <main className="future-game-page">
-    <nav className="marcel-nav shell"><Link className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></Link><Link href="/">Rocket League beta</Link></nav>
+    <nav className="marcel-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><Link href="/">Rocket League beta</Link></nav>
     <section>
       <span>{label.toUpperCase()} · COMING LATER</span>
       <h1>One game at a time.<br />Evidence before expansion.</h1>
@@ -48,7 +50,7 @@ function ProductMoment() {
   </section>;
 }
 
-export default function Landing({ game = "general", calibrationOpen = false }: { game?: GameKey; checkoutOpen?: boolean; engineOpen?: boolean; calibrationOpen?: boolean }) {
+export default function Landing({ game = "general", checkoutOpen = false, engineOpen = false, calibrationOpen = false }: { game?: GameKey; checkoutOpen?: boolean; engineOpen?: boolean; calibrationOpen?: boolean }) {
   useEffect(() => {
     const key = `replaymethod-view-${location.pathname}`;
     if (!sentViews.has(key)) {
@@ -61,40 +63,41 @@ export default function Landing({ game = "general", calibrationOpen = false }: {
 
   return <main className="marcel-home">
     <nav className="marcel-nav shell">
-      <Link className="brand" href="/" aria-label="Replay Method home"><span className="logo">↻</span><span>replay<span>method</span></span></Link>
+      <Link className="brand" href="/" aria-label="Replay Method home"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link>
       <div><a href="#product">How it helps</a><Link href="/reports">My progress</Link></div>
     </nav>
 
     <section className="marcel-hero shell">
       <div className="marcel-hero-copy">
-        <span className="marcel-status"><i /> ROCKET LEAGUE · PRIVATE BETA</span>
+        <span className="marcel-status"><i /> ROCKET LEAGUE · {engineOpen ? "FREE FUNCTIONAL BETA" : "PRIVATE BETA"}</span>
         <h1>Stop grinding blind.<br /><em>Find the decision costing you games.</em></h1>
-        <p>Drop one original PC replay. Replay Method securely captures the match and the exact player to follow—so real evidence can replace generic advice.</p>
-        <div className="marcel-trust-row"><span>.replay file</span><span>Private</span><span>No card</span></div>
+        <p>{engineOpen ? "Drop one original PC replay. The engine reads the playlist and players, then asks only which player is you. If evidence has not earned a coaching claim, it stops and tells you." : "Drop one original PC replay. Replay Method securely captures the match and the exact player to follow—so real evidence can replace generic advice."}</p>
+        <div className="marcel-trust-row"><span>FREE beta</span><span>Private</span><span>No card</span></div>
       </div>
       <div className="marcel-upload-stage">
-        <ReplayContribution intakeOpen={calibrationOpen} compact />
+        {engineOpen ? <QuickReplayStart placement="marcel_hero" /> : <ReplayContribution intakeOpen={calibrationOpen} compact />}
       </div>
     </section>
 
     <MethodStrip />
     <ProductMoment />
+    {checkoutOpen && <PricingLadder analysisHref="#replay-upload" game="rocket-league" checkoutOpen replayReady />}
 
     <section className="marcel-beta-truth shell">
       <span>WHY THIS IS A PRIVATE BETA</span>
-      <h2>Your replay helps build the proof. It does not buy a promise.</h2>
-      <p>Uploads can open before coaching does. Every replay is stored with consent, player identity and rank context. Qualified reviewers then label detector moments independently. Only patterns that survive that process may appear in a future report.</p>
-      <Link href="/rocket-league-beta">See how replay validation works →</Link>
+      <h2>{engineOpen ? "The engine can read the match. Coaching still has to earn the right to speak." : "Your replay helps build the proof. It does not buy a promise."}</h2>
+      <p>{engineOpen ? "Every replay enters the real parser and evidence pipeline. Exact detector scopes stay private until qualified independent review and holdout performance pass. A safe stop is a product result—not a failed promise." : "Uploads can open before coaching does. Every replay is stored with consent, player identity and rank context. Qualified reviewers then label detector moments independently. Only patterns that survive that process may appear in a future report."}</p>
+      <Link href="/rocket-league-beta">{engineOpen ? "Contribute a calibration replay separately →" : "See how replay validation works →"}</Link>
     </section>
 
     <section className="marcel-faq shell">
       <details><summary>Where is my Rocket League replay?<b>+</b></summary><p>On Windows: Documents → My Games → Rocket League → TAGame → Demos. Choose the original file ending in .replay.</p></details>
-      <details><summary>Will I get an analysis now?<b>+</b></summary><p>Not yet. Intake is for the private validation corpus. You receive a secure reference immediately; public coaching remains off until the evidence gate passes.</p></details>
+      <details><summary>Will I get an analysis now?<b>+</b></summary><p>{engineOpen ? "The live engine parses the replay, identifies its playlist and lets you choose your player. You receive a real report only when a detector has passed its exact evidence gate; otherwise you receive an honest evidence-status result and your free successful analysis remains unused." : "Not yet. Intake is for the private validation corpus. You receive a secure reference immediately; public coaching remains off until the evidence gate passes."}</p></details>
       <details><summary>What happens to the file?<b>+</b></summary><p>It is stored privately for consented calibration, never used as public social proof and never treated as a validated result without review.</p></details>
     </section>
 
     <footer className="marcel-footer shell">
-      <div className="brand"><span className="logo">↻</span><span>replay<span>method</span></span></div>
+      <div className="brand"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></div>
       <p>Rocket League first. <Link href="/league">League</Link> and <Link href="/valorant">VALORANT</Link> later.</p>
       <div><Link href="/privacy">Privacy</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a></div>
       <small>Independent service. Not affiliated with or endorsed by Psyonix or Epic Games.</small>

@@ -18,8 +18,8 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
   let videoOpen = false;
   try {
     const { env } = await import("cloudflare:workers");
-    const runtime = env as unknown as { RL_ENGINE_ENABLED?: string; RL_PUBLIC_DETECTORS_ENABLED?: string; RL_VIDEO_ANALYSIS_ENABLED?: string };
-    engineOpen = subsystemEnabled(runtime.RL_ENGINE_ENABLED) && subsystemEnabled(runtime.RL_PUBLIC_DETECTORS_ENABLED);
+    const runtime = env as unknown as { RL_ENGINE_ENABLED?: string; RL_VIDEO_ANALYSIS_ENABLED?: string };
+    engineOpen = subsystemEnabled(runtime.RL_ENGINE_ENABLED);
     videoOpen = subsystemEnabled(runtime.RL_VIDEO_ANALYSIS_ENABLED);
   } catch { /* Local and static previews keep replay intake safely closed. */ }
   return <AnalyzeFlow initialGame={initialGame} initialHypothesis={initialHypothesis} initialPlatform={initialPlatform} engineOpen={engineOpen} videoOpen={videoOpen} />;

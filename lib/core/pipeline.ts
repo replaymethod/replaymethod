@@ -112,7 +112,7 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
           next_retry_at = ?, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
           .bind(disposition.jobStatus, disposition.jobStage,
             disposition.jobStatus === "retry" ? "Replay worker retry scheduled" : result.publicMessage,
-            result.code, encodePlayerResolutionContext(result.internalMessage, result.candidatePlayers), disposition.nextRetryAt, Date.now() - started, job.jobId),
+            result.code, encodePlayerResolutionContext(result.internalMessage, result.candidatePlayers, result.replayContext), disposition.nextRetryAt, Date.now() - started, job.jobId),
         env.DB.prepare("UPDATE analysis_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
           .bind(disposition.requestStatus, job.requestId)
       ]);
@@ -151,6 +151,40 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
       const persisted = await persistFinding(env.DB, job, matchResult.id, result.findings[index], index + 1);
       if (!persisted) throw new Error("Could not persist an analysis finding.");
       persistedFocusFindings.push({ finding: result.findings[index], findingId: persisted.id });
+    }
+
+    if (result.abstention) {
+      const completedAt = new Date().toISOString();
+      const durationMs = Date.now() - started;
+      await env.DB.batch([
+        env.DB.prepare("UPDATE analysis_requests SET status = 'blocked', updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+          .bind(job.requestId),
+        env.DB.prepare(`UPDATE analysis_jobs SET status = 'blocked', stage = 'completed', stage_label = ?,
+          error_code = ?, error_message = ?, parser_version = ?, analyzer_version = ?, detector_version = ?,
+          coaching_version = ?, schema_version = ?, estimated_cost_micros = ?, duration_ms = ?, completed_at = ?,
+          next_retry_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+          .bind(
+            result.abstention.publicMessage,
+            result.abstention.code,
+            encodePlayerResolutionContext(result.abstention.internalMessage, [], {
+              mode: result.normalized.mode ?? null,
+              gameVersion: result.normalized.gameVersion ?? null,
+              occurredAt: result.normalized.occurredAt ?? null,
+            }),
+            result.versions.parser,
+            result.versions.analyzer,
+            result.versions.detector,
+            result.versions.coaching,
+            result.versions.schema,
+            result.estimatedCostMicros,
+            durationMs,
+            completedAt,
+            job.jobId,
+          ),
+        env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE analysis_request_id = ? AND status = 'reserved'`).bind(completedAt, job.requestId),
+      ]);
+      return;
     }
 
     await setStage(env.DB, job.jobId, "coaching", "Prioritizing your coaching focus");

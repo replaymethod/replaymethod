@@ -112,7 +112,7 @@ export default function ClimbCheck() {
   }
 
   return <main className="tool-page">
-    <nav className="tool-nav shell"><a className="brand" href="/"><span className="logo">↻</span><span>replay<span>method</span></span></a><a href="/guides">Free guides</a></nav>
+    <nav className="tool-nav shell"><a className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></a><a href="/guides">Free guides</a></nav>
     <section className="tool-hero shell"><span className="kicker">FREE CLIMB LEAK CHECK</span><h1>What keeps repeating<br /><em>when you lose?</em></h1><p>Get a focused self-review in under 60 seconds. No login, no email and no fake AI diagnosis. Your answer is a starting hypothesis to test in your next matches.</p><div className="tool-progress"><i className="done" /><i className={game ? "done" : ""} /><i className={result ? "done" : ""} /><span>{result ? "RESULT" : game ? "STEP 2 OF 2" : "STEP 1 OF 2"}</span></div></section>
 
     <section className="tool-card shell">

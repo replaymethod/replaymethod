@@ -71,24 +71,25 @@ export async function POST(request: Request) {
     const updatesConsent = form.get("updatesConsent") === "true";
     const replay = form.get("replay");
     const video = form.get("video");
+    const hasReplay = replay instanceof File && replay.size > 0;
+    const hasVideo = video instanceof File && video.size > 0;
+    const replayFirstRocketLeague = game === "rocket-league" && platform === "pc" && hasReplay;
 
     if (!emailPattern.test(email)) return Response.json({ error: "Enter a valid email address." }, { status: 400 });
     if (!isAnalysisGame(game)) return Response.json({ error: "Choose a supported game." }, { status: 400 });
     if (game === "rocket-league" && !RL_PLATFORMS.has(platform)) return Response.json({ error: "Choose a supported Rocket League platform." }, { status: 400 });
-    if (currentRank.length < 2) return Response.json({ error: "Enter your current rank." }, { status: 400 });
-    if (playerContext == null) return Response.json({ error: "Add the player identity and mode or role." }, { status: 400 });
-    if (goal.length < 8) return Response.json({ error: "Tell us what you want to improve." }, { status: 400 });
+    if (!replayFirstRocketLeague && currentRank.length < 2) return Response.json({ error: "Enter your current rank." }, { status: 400 });
+    if (!replayFirstRocketLeague && playerContext == null) return Response.json({ error: "Add the player identity and mode or role." }, { status: 400 });
+    if (!replayFirstRocketLeague && goal.length < 8) return Response.json({ error: "Tell us what you want to improve." }, { status: 400 });
     if (!dataConsent) return Response.json({ error: "Confirm that we may process the submitted match data." }, { status: 400 });
 
-    const hasReplay = replay instanceof File && replay.size > 0;
-    const hasVideo = video instanceof File && video.size > 0;
     const hasVideoEvidence = hasVideo || Boolean(evidenceUrl);
 
     if (game === "rocket-league" && platform === "pc" && hasReplay) {
       const { env } = await import("cloudflare:workers");
-      const runtime = env as unknown as { RL_ENGINE_ENABLED?: string; RL_PUBLIC_DETECTORS_ENABLED?: string };
-      if (!subsystemEnabled(runtime.RL_ENGINE_ENABLED) || !subsystemEnabled(runtime.RL_PUBLIC_DETECTORS_ENABLED)) {
-        return Response.json({ error: "Rocket League replay intake is temporarily closed while the production quality gate is completed. Join the beta list for first access." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "86400" } });
+      const runtime = env as unknown as { RL_ENGINE_ENABLED?: string };
+      if (!subsystemEnabled(runtime.RL_ENGINE_ENABLED)) {
+        return Response.json({ error: "Rocket League replay processing is temporarily paused. Your file was not uploaded." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } });
       }
     }
 
@@ -165,7 +166,7 @@ export async function POST(request: Request) {
       email,
       game,
       platform,
-      currentRank,
+      currentRank: currentRank || "Pending replay context",
       targetRank,
       playerContext,
       evidenceType,
@@ -173,7 +174,7 @@ export async function POST(request: Request) {
       fileKey: uploadedKey,
       originalFileName,
       fileSize,
-      goal,
+      goal: goal || "Find the most useful evidence-backed focus in this replay.",
       notes,
       source,
       campaign

@@ -14,5 +14,19 @@ test("ordinary internal errors never become player choices", () => {
   assert.deepEqual(decodePlayerResolutionContext("engine unavailable"), {
     internalMessage: "engine unavailable",
     candidatePlayers: [],
+    replayContext: { mode: null, gameVersion: null, occurredAt: null },
+  });
+});
+
+test("structured replay context survives without exposing extra parser data", () => {
+  const decoded = decodePlayerResolutionContext(encodePlayerResolutionContext(
+    "verified match",
+    ["Player"],
+    { mode: "Ranked Standard", gameVersion: "build-1", occurredAt: "2026-08-22" },
+  ));
+  assert.deepEqual(decoded.replayContext, {
+    mode: "Ranked Standard",
+    gameVersion: "build-1",
+    occurredAt: "2026-08-22",
   });
 });
