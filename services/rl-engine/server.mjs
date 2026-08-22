@@ -10,6 +10,8 @@ export const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 export const ENGINE_VERSION = "rl-engine.v1";
 export const MINIMUM_TOKEN_LENGTH = 24;
 export const DEFAULT_JOB_TIMEOUT_MS = 180_000;
+const ASYNC_JOB_RETENTION_MS = 10 * 60_000;
+const MAX_ASYNC_JOBS = 32;
 
 class RequestContractError extends Error {
   constructor(code, publicMessage) {
@@ -29,13 +31,14 @@ class EngineTransientError extends Error {
   }
 }
 
-function json(response, status, payload) {
+function json(response, status, payload, extraHeaders = {}) {
   const body = JSON.stringify(payload);
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
+    ...extraHeaders,
   });
   response.end(body);
 }
@@ -71,12 +74,14 @@ async function readBody(request) {
   return new Uint8Array(Buffer.concat(chunks));
 }
 
-function clientError(response, error) {
+function errorResponse(error) {
   const inputError = error instanceof ReplayInputError;
   const contractError = error instanceof RequestContractError;
   const transientError = error instanceof EngineTransientError;
   const known = inputError || contractError || transientError;
-  json(response, contractError ? 400 : inputError ? 422 : transientError ? 503 : 500, {
+  return {
+    status: contractError ? 400 : inputError ? 422 : transientError ? 503 : 500,
+    payload: {
     kind: "blocked",
     code: known ? error.code : "rl_engine_failure",
     publicMessage: known ? error.publicMessage : "The replay engine failed safely. Your upload was not converted into coaching.",
@@ -84,7 +89,13 @@ function clientError(response, error) {
     candidatePlayers: inputError && Array.isArray(error.candidatePlayers) ? error.candidatePlayers : undefined,
     replayContext: inputError && error.replayContext ? error.replayContext : undefined,
     retryable: transientError || !known,
-  });
+    },
+  };
+}
+
+function clientError(response, error) {
+  const detail = errorResponse(error);
+  json(response, detail.status, detail.payload);
 }
 
 function requiredHeader(request, name, maximumLength, code, publicMessage, { optional = false } = {}) {
@@ -245,8 +256,27 @@ export function createServer(options = {}) {
     timeoutMs: options.jobTimeoutMs ?? process.env.RL_ENGINE_JOB_TIMEOUT_MS,
   });
   const processReplay = options.processReplay ?? processor.processReplay;
+  const asyncJobs = new Map();
   const configured = typeof token === "string" && token.length >= MINIMUM_TOKEN_LENGTH && token.length <= 512;
   let activeRequests = 0;
+
+  const pruneAsyncJobs = () => {
+    const cutoff = Date.now() - ASYNC_JOB_RETENTION_MS;
+    for (const [id, job] of asyncJobs) {
+      if (job.state !== "pending" && job.completedAt < cutoff) asyncJobs.delete(id);
+    }
+  };
+
+  const sendAsyncJob = (response, requestId, job) => {
+    if (!job) return json(response, 404, { error: "not_found" });
+    if (job.state === "pending") {
+      return json(response, 202, { kind: "processing", jobPublicId: requestId, retryAfterMs: 3_000 }, { "Retry-After": "3" });
+    }
+    if (job.state === "completed") return json(response, 200, job.result);
+    const detail = errorResponse(job.error);
+    return json(response, detail.status, detail.payload);
+  };
+
   const server = createHttpServer(async (request, response) => {
     const url = new URL(request.url ?? "/", "http://rl-engine.internal");
     if (request.method === "GET" && url.pathname === "/livez") {
@@ -263,6 +293,12 @@ export function createServer(options = {}) {
         activeRequests,
         maxConcurrency: concurrencyLimit,
       });
+    }
+    const asyncStatus = request.method === "GET" ? url.pathname.match(/^\/v1\/jobs\/([a-f0-9]{32})$/) : null;
+    if (asyncStatus) {
+      if (!authorized(request, token)) return json(response, 401, { error: "unauthorized" });
+      pruneAsyncJobs();
+      return sendAsyncJob(response, asyncStatus[1], asyncJobs.get(asyncStatus[1]));
     }
     if (request.method !== "POST" || !["/v1/analyze/rocket-league", "/v1/inspect/rocket-league"].includes(url.pathname)) {
       return json(response, 404, { error: "not_found" });
@@ -288,6 +324,45 @@ export function createServer(options = {}) {
       if (!/^[a-f0-9]{32}$/.test(requestId)) throw new RequestContractError("request_id_invalid", "The analysis request identifier was invalid.");
       const player = requiredHeader(request, "x-replay-method-player", 160, "subject_player_required", "Choose one player from the parsed replay.", { optional: true });
       const rank = requiredHeader(request, "x-replay-method-rank", 80, "rank_invalid", "The submitted rank metadata was invalid.", { optional: true });
+
+      if (url.pathname === "/v1/analyze/rocket-league" && player) {
+        pruneAsyncJobs();
+        const existing = asyncJobs.get(requestId);
+        if (existing) {
+          request.resume();
+          if (existing.player !== player || existing.rank !== rank) {
+            throw new RequestContractError("job_identity_mismatch", "The replay job metadata did not match its original request.");
+          }
+          return sendAsyncJob(response, requestId, existing);
+        }
+        if (asyncJobs.size >= MAX_ASYNC_JOBS) {
+          throw new EngineTransientError("rl_engine_job_capacity", "The replay worker is at capacity. Your upload is preserved for an automatic retry.");
+        }
+        const bytes = await readBody(request);
+        const job = { state: "pending", player, rank, completedAt: 0, result: null, error: null };
+        asyncJobs.set(requestId, job);
+        void processReplay({
+          operation: "analyze",
+          bytes,
+          player,
+          rank,
+          publicOutputEnabled,
+        }).then((result) => {
+          job.state = "completed";
+          job.result = result;
+          job.completedAt = Date.now();
+        }).catch((error) => {
+          job.state = "failed";
+          job.error = error;
+          job.completedAt = Date.now();
+          console.error("rocket league async job failed", {
+            requestId,
+            code: typeof error?.code === "string" ? error.code : "rl_engine_failure",
+          });
+        });
+        return sendAsyncJob(response, requestId, job);
+      }
+
       activeRequests += 1;
       counted = true;
       const bytes = await readBody(request);

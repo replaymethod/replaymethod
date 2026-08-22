@@ -115,6 +115,17 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
   try {
     await setStage(env.DB, job.jobId, "ingesting", "Reading match data");
     const result = await runGameAdapter(job, env);
+    if (result.kind === "pending") {
+      await env.DB.batch([
+        env.DB.prepare(`UPDATE analysis_jobs SET status = 'retry', stage = 'ingesting', stage_label = ?,
+          attempts = CASE WHEN attempts > 0 THEN attempts - 1 ELSE 0 END,
+          next_retry_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+          .bind(result.publicMessage, new Date(Date.now() + result.retryAfterMs).toISOString(), job.jobId),
+        env.DB.prepare("UPDATE analysis_requests SET status = 'analyzing', updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+          .bind(job.requestId),
+      ]);
+      return;
+    }
     if (result.kind === "blocked") {
       const disposition = blockedRetryDisposition({ retryable: result.retryable && subsystemEnabled(env.BACKGROUND_PROCESSING_ENABLED), attempts: job.attempts, maxAttempts: job.maxAttempts });
       await env.DB.batch([

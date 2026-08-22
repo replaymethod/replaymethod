@@ -29,6 +29,7 @@ test("sends an HTTP-safe exact player identity through the versioned authenticat
     playerContext: "Player Name 🚀 · Ranked Doubles",
     currentRank: "Diamond II",
   }, new Uint8Array([1, 2, 3]), async (url, init) => {
+    if (init.method === "GET") return new Response("{}", { status: 404 });
     captured = { url: url.toString(), init };
     return new Response("{}", { status: 200 });
   });
