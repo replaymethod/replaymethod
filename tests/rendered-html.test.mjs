@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const socialImageMeta =
-  /<meta(?=[^>]*\bproperty=["']og:image["'])(?=[^>]*\bcontent=["']https:\/\/replaymethod\.xyz\/og-takeover\.png["'])[^>]*>/i;
+  /<meta(?=[^>]*\bproperty=["']og:image["'])(?=[^>]*\bcontent=["']https:\/\/replaymethod\.xyz\/brand\/og-replay-method-v12-1200x630\.png["'])[^>]*>/i;
 
 test("renders production social metadata and the fail-closed product-first path", async () => {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
