@@ -126,6 +126,13 @@ test("upload chain is private, bounded, ownership-linked, idempotent and deletab
   assert.match(start, /fileSize > MAX_REPLAY_BYTES/);
   assert.match(start, /token_hash/);
   assert.match(start, /datetime\(expires_at\) <= CURRENT_TIMESTAMP/);
+  assert.match(start, /reserveAnalysisAccess\(request, player\.id, uploadId\)/);
+  assert.ok(
+    start.indexOf("reserveAnalysisAccess(request, player.id, uploadId)") < start.indexOf("INSERT INTO replay_upload_sessions"),
+    "allowance is checked and reserved before an upload resource is created",
+  );
+  assert.match(start, /error instanceof EntitlementError/);
+  assert.match(start, /UPDATE analysis_usage SET status = 'released'/, "expired upload reservations release their allowance");
   assert.match(part, /body\.byteLength !== expectedSize/);
   assert.match(part, /INSERT OR IGNORE INTO replay_upload_parts/);
   assert.match(complete, /failed integrity check/);
@@ -139,6 +146,7 @@ test("upload chain is private, bounded, ownership-linked, idempotent and deletab
   assert.match(intake, /status === "claimed"/);
   assert.match(intake, /idempotent: true/);
   assert.match(intake, /datetime\(expires_at\) > CURRENT_TIMESTAMP/);
+  assert.match(intake, /const publicId = stagedReplay \? uploadId/, "staged intake reuses the atomic pre-upload reservation");
   assert.match(client, /uploadReplayInChunks/);
   assert.match(client, /FINALIZE_RETRY_DELAYS_MS/);
   assert.match(client, /options\.onRecovery\?\.\(session\)/);
@@ -146,4 +154,6 @@ test("upload chain is private, bounded, ownership-linked, idempotent and deletab
   assert.match(pipeline, /if \(!completion\[0\]\.meta\.changes\) return/);
   assert.match(deletion, /replay_upload_sessions/);
   assert.match(worker, /replay-uploads/);
+  assert.match(worker, /public_id AS publicId/);
+  assert.match(worker, /analysis_public_id = \? AND status = 'reserved'/, "scheduled expiry also releases pre-upload allowance reservations");
 });

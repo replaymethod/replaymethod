@@ -14,7 +14,7 @@ type SubscriptionRow = {
 };
 
 export class EntitlementError extends Error {
-  constructor(message: string, readonly status: number) {
+  constructor(message: string, readonly status: number, readonly code: string) {
     super(message);
   }
 }
@@ -55,9 +55,9 @@ export async function reserveAnalysisAccess(request: Request, playerId: number, 
   }
 
   if (window.accessKind === "free") {
-    throw new EntitlementError("Your first completed diagnosis has already been used. Verify your report history, then choose a paid plan to continue.", 402);
+    throw new EntitlementError("Den här mejladressen har redan använt sin kostnadsfria analys.", 409, "free_analysis_used");
   }
-  throw new EntitlementError("You have used all four analyses in this 30-day window. Your next allowance opens automatically when the window resets.", 429);
+  throw new EntitlementError("You have used all four analyses in this 30-day window. Your next allowance opens automatically when the window resets.", 429, "analysis_allowance_used");
 }
 
 export async function attachAnalysisUsage(analysisPublicId: string, analysisRequestId: number) {

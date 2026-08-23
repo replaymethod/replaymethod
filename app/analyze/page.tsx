@@ -9,11 +9,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/analyze" }
 };
 
-export default async function AnalyzePage({ searchParams }: { searchParams: Promise<{ game?: string; hypothesis?: string; platform?: string }> }) {
+export default async function AnalyzePage({ searchParams }: { searchParams: Promise<{ game?: string; hypothesis?: string; platform?: string; freeAnalysisUsed?: string }> }) {
   const query = await searchParams;
   const initialGame = query.game && isAnalysisGame(query.game) ? query.game : null;
   const initialHypothesis = query.hypothesis?.trim().slice(0, 120) || "";
   const initialPlatform = ["pc", "ps5", "xbox", "switch"].includes(query.platform || "") ? query.platform as "pc" | "ps5" | "xbox" | "switch" : null;
+  const initialFreeAnalysisUsed = process.env.REPLAYMETHOD_E2E_FIXTURES === "true" && query.freeAnalysisUsed === "1";
   let engineOpen = false;
   let videoOpen = false;
   try {
@@ -22,5 +23,5 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
     engineOpen = subsystemEnabled(runtime.RL_ENGINE_ENABLED);
     videoOpen = subsystemEnabled(runtime.RL_VIDEO_ANALYSIS_ENABLED);
   } catch { /* Local and static previews keep replay intake safely closed. */ }
-  return <AnalyzeFlow initialGame={initialGame} initialHypothesis={initialHypothesis} initialPlatform={initialPlatform} engineOpen={engineOpen} videoOpen={videoOpen} />;
+  return <AnalyzeFlow initialGame={initialGame} initialHypothesis={initialHypothesis} initialPlatform={initialPlatform} engineOpen={engineOpen} videoOpen={videoOpen} initialFreeAnalysisUsed={initialFreeAnalysisUsed} />;
 }

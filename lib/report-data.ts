@@ -11,6 +11,40 @@ type EvidenceDetail = {
   round?: number | null;
 };
 
+export type PerformanceMetric = {
+  id: string;
+  category: string;
+  label: string;
+  displayValue: string;
+  value: number;
+  unit: string;
+  status: "strong" | "neutral" | "review" | "insufficient_evidence";
+  kind: "verified_fact" | "verified_telemetry" | "derived_metric";
+  whatHappened: string;
+  whyItMatters: string;
+  limitation: string;
+  source: string;
+  version: string;
+  sampleCount: number | null;
+};
+
+export type PerformanceMoment = {
+  id: string;
+  title: string;
+  context: string;
+  observation: string;
+  consequence: string;
+  betterAlternative: string | null;
+  limitation: string;
+  timestampSeconds: number;
+  gameClockSeconds: number | null;
+  frameStart: number | null;
+  frameEnd: number | null;
+  evidenceKind: "verified_telemetry" | "derived_metric";
+  source: string;
+  version: string;
+};
+
 export type PublicReportData = {
   publicId: string;
   game: string;
@@ -69,6 +103,25 @@ export type PublicReportData = {
     parserEvents: number | null;
     decisionEvents: number | null;
     parserVersion: string | null;
+    rankProvenance: "verified_replay" | "player_submitted" | "unknown";
+  };
+  performance: null | {
+    version: string;
+    match: {
+      teamScore: number | null;
+      opponentScore: number | null;
+      result: "win" | "loss" | "draw" | "unknown";
+      overtime: boolean;
+      durationSeconds: number | null;
+    };
+    sample: {
+      liveFrameCount: number;
+      liveSeconds: number;
+      frameCoverage: { ball: number | null; players: number | null };
+    };
+    strength: null | { title: string; detail: string; kind: "verified_fact" | "verified_telemetry"; limitation: string };
+    metrics: PerformanceMetric[];
+    moments: PerformanceMoment[];
   };
   earlyAccess: null | {
     badge: "EARLY ACCESS BETA";
@@ -123,6 +176,73 @@ function nullableNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function parsePerformanceMetric(value: unknown): PerformanceMetric | null {
+  const row = objectValue(value);
+  const status = ["strong", "neutral", "review", "insufficient_evidence"].includes(String(row.status))
+    ? row.status as PerformanceMetric["status"] : null;
+  const kind = ["verified_fact", "verified_telemetry", "derived_metric"].includes(String(row.kind))
+    ? row.kind as PerformanceMetric["kind"] : null;
+  const fields = ["id", "category", "label", "displayValue", "unit", "whatHappened", "whyItMatters", "limitation", "source", "version"]
+    .map(key => nullableString(row[key]));
+  const number = nullableNumber(row.value);
+  if (fields.some(field => !field) || number === null || !status || !kind) return null;
+  return {
+    id: fields[0]!, category: fields[1]!, label: fields[2]!, displayValue: fields[3]!, value: number,
+    unit: fields[4]!, status, kind, whatHappened: fields[5]!, whyItMatters: fields[6]!,
+    limitation: fields[7]!, source: fields[8]!, version: fields[9]!, sampleCount: nullableNumber(row.sampleCount),
+  };
+}
+
+function parsePerformanceMoment(value: unknown): PerformanceMoment | null {
+  const row = objectValue(value);
+  const evidenceKind = ["verified_telemetry", "derived_metric"].includes(String(row.evidenceKind))
+    ? row.evidenceKind as PerformanceMoment["evidenceKind"] : null;
+  const fields = ["id", "title", "context", "observation", "consequence", "limitation", "source", "version"]
+    .map(key => nullableString(row[key]));
+  const timestampSeconds = nullableNumber(row.timestampSeconds);
+  if (fields.some(field => !field) || timestampSeconds === null || !evidenceKind) return null;
+  return {
+    id: fields[0]!, title: fields[1]!, context: fields[2]!, observation: fields[3]!, consequence: fields[4]!,
+    betterAlternative: nullableString(row.betterAlternative), limitation: fields[5]!, timestampSeconds,
+    gameClockSeconds: nullableNumber(row.gameClockSeconds), frameStart: nullableNumber(row.frameStart),
+    frameEnd: nullableNumber(row.frameEnd), evidenceKind, source: fields[6]!, version: fields[7]!,
+  };
+}
+
+function parsePerformance(value: unknown): PublicReportData["performance"] {
+  const row = objectValue(value);
+  const version = nullableString(row.version);
+  const match = objectValue(row.match);
+  const sample = objectValue(row.sample);
+  const coverage = objectValue(sample.frameCoverage);
+  const result = ["win", "loss", "draw", "unknown"].includes(String(match.result))
+    ? match.result as "win" | "loss" | "draw" | "unknown" : "unknown";
+  const metrics = (Array.isArray(row.metrics) ? row.metrics : []).map(parsePerformanceMetric).filter((item): item is PerformanceMetric => Boolean(item)).slice(0, 12);
+  const moments = (Array.isArray(row.moments) ? row.moments : []).map(parsePerformanceMoment).filter((item): item is PerformanceMoment => Boolean(item)).slice(0, 5);
+  if (!version || metrics.length < 5 || new Set(metrics.map(metric => metric.category)).size < 3) return null;
+  const rawStrength = objectValue(row.strength);
+  const strengthKind = ["verified_fact", "verified_telemetry"].includes(String(rawStrength.kind))
+    ? rawStrength.kind as "verified_fact" | "verified_telemetry" : null;
+  const strength = nullableString(rawStrength.title) && nullableString(rawStrength.detail) && nullableString(rawStrength.limitation) && strengthKind
+    ? { title: String(rawStrength.title), detail: String(rawStrength.detail), limitation: String(rawStrength.limitation), kind: strengthKind }
+    : null;
+  return {
+    version,
+    match: {
+      teamScore: nullableNumber(match.teamScore), opponentScore: nullableNumber(match.opponentScore), result,
+      overtime: match.overtime === true, durationSeconds: nullableNumber(match.durationSeconds),
+    },
+    sample: {
+      liveFrameCount: nullableNumber(sample.liveFrameCount) ?? 0,
+      liveSeconds: nullableNumber(sample.liveSeconds) ?? 0,
+      frameCoverage: { ball: nullableNumber(coverage.ball), players: nullableNumber(coverage.players) },
+    },
+    strength,
+    metrics,
+    moments,
+  };
+}
+
 export async function loadPublicReport(publicId: string, options: { earlyAccessOutputEnabled?: boolean } = {}): Promise<PublicReportData | null> {
   if (!publicIdPattern.test(publicId)) return null;
   const db = await getDb();
@@ -139,6 +259,7 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
   try { matchMetadata = objectValue(match?.metadataJson ? JSON.parse(match.metadataJson) : {}); } catch { /* malformed private metadata must fail closed */ }
   const earlyAccessMetadata = objectValue(matchMetadata.earlyAccess);
   const verifiedMetadata = objectValue(earlyAccessMetadata.verifiedFacts);
+  const performance = parsePerformance(matchMetadata.performanceSnapshot);
   const rawAssessments = Array.isArray(earlyAccessMetadata.assessments) ? earlyAccessMetadata.assessments : [];
   const persistedEarlyAccess = earlyAccessMetadata.formalValidationStatus === "not_validated" ? {
     badge: "EARLY ACCESS BETA" as const,
@@ -219,7 +340,10 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
       parserEvents: nullableNumber(verifiedMetadata.parserEvents) ?? nullableNumber(objectValue(objectValue(matchMetadata.evidenceEngine).episodeTimeline).rawEventCount),
       decisionEvents: nullableNumber(verifiedMetadata.decisionEvents) ?? nullableNumber(objectValue(objectValue(matchMetadata.evidenceEngine).episodeTimeline).decisionEventCount),
       parserVersion: match.parserVersion,
+      rankProvenance: nullableString(verifiedMetadata.rankProvenance) === "verified_replay"
+        ? "verified_replay" : match.rank ? "player_submitted" : "unknown",
     } : null,
+    performance,
     earlyAccess,
     feedbackScore: row.feedbackScore
   };

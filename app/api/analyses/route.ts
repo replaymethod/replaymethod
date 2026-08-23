@@ -179,7 +179,9 @@ export async function POST(request: Request) {
       stagedSessionId = stagedReplay.id;
     }
 
-    const publicId = crypto.randomUUID().replaceAll("-", "");
+    // A staged upload reserves its allowance before any file bytes are accepted.
+    // Reusing that opaque ID makes the second check atomic and idempotent.
+    const publicId = stagedReplay ? uploadId : crypto.randomUUID().replaceAll("-", "");
     await db.insert(players).values({
       publicId: crypto.randomUUID().replaceAll("-", ""),
       email
@@ -344,7 +346,7 @@ export async function POST(request: Request) {
       } catch (releaseError) { console.error("staged replay release failed", { code: operationalErrorCode(releaseError) }); }
     }
     if (error instanceof EntitlementError) {
-      return Response.json({ error: error.message }, { status: error.status, headers: { "Cache-Control": "no-store" } });
+      return Response.json({ error: error.message, code: error.code }, { status: error.status, headers: { "Cache-Control": "no-store" } });
     }
     console.error("analysis submission failed", { code: operationalErrorCode(error) });
     return Response.json({

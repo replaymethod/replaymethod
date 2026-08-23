@@ -125,10 +125,10 @@ export default function ReportsClient() {
         <Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link>
         <Link href="/analyze" onClick={trackNewAnalysis}>New analysis</Link>
       </nav>
-      <section className="reports-shell shell">
+      <section className="reports-shell shell" id="report-history">
         <span>{historyMode === "verified" ? "EMAIL-VERIFIED HISTORY" : "DEVICE-SAVED HISTORY"}</span>
         <h1>Your reports.</h1>
-        <p>{historyMode === "verified" ? "This device has secure access to the reports owned by your verified email. No password or public profile is required." : "These private links were started on this device. Open the one-time verification link emailed with an analysis to securely connect your history."}</p>
+        <p id="verification">{historyMode === "verified" ? "This device has secure access to the reports owned by your verified email. No password or public profile is required." : "These private links were started on this device. Open the one-time verification link emailed with an analysis to securely connect your history."}</p>
 
         {historyMode === "verified" && billing && (
           <aside className="billing-summary" aria-label="Analysis allowance and subscription">
@@ -142,7 +142,7 @@ export default function ReportsClient() {
                   ? `${billing.cancelAtPeriodEnd ? "Access ends" : "Current billing period ends"} ${new Date(billing.currentPeriodEnd || billing.windowEnd || "").toLocaleDateString("en-GB", { dateStyle: "medium" })}`
                   : billing.hasBillingAccount
                     ? "Paid access is inactive. Your completed reports remain readable."
-                    : "Your first completed diagnosis is free. No card or renewal."}
+                    : "Your first completed single-replay analysis is free. No card or renewal."}
               </small>
               {billing.paymentGrace && <p role="alert">Payment recovery is in progress. Update your payment method to keep access uninterrupted.</p>}
             </div>

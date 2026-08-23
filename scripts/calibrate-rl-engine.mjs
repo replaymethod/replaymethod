@@ -8,7 +8,7 @@ import { runShadowDetectors, SHADOW_RUNTIME_VERSION } from "../services/rl-engin
 import { cohortKey, normalizeMode, normalizeRankCohort } from "../services/rl-engine/context.mjs";
 
 function usage() {
-  console.error("Usage: node scripts/calibrate-rl-engine.mjs <file-or-directory> [...] [--metadata corpus.json] [--split calibration|holdout] [--output report.json]");
+  console.error("Usage: node scripts/calibrate-rl-engine.mjs <file-or-directory> [...] [--metadata corpus.json] [--split calibration|holdout|calibration_dev|challenge|frozen_blind_holdout] [--output report.json]");
 }
 
 function replayFiles(target) {
@@ -29,18 +29,22 @@ const metadataPath = metadataIndex >= 0 ? rawArgs[metadataIndex + 1] : null;
 const split = splitIndex >= 0 ? rawArgs[splitIndex + 1] : null;
 const optionIndexes = [outputIndex, metadataIndex, splitIndex].filter((index) => index >= 0).flatMap((index) => [index, index + 1]);
 const targets = rawArgs.filter((arg, index) => !optionIndexes.includes(index));
-if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !metadataPath) || (split && !["calibration", "holdout"].includes(split))) {
+if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !metadataPath) || (split && !["calibration", "holdout", "calibration_dev", "challenge", "frozen_blind_holdout"].includes(split))) {
   usage();
   process.exitCode = 1;
 } else {
   const sourceMetadata = metadataPath ? JSON.parse(readFileSync(resolve(metadataPath), "utf8")) : { replays: {} };
-  const acquisitionEntries = Array.isArray(sourceMetadata.replays) ? sourceMetadata.replays : [];
+  const acquisitionEntries = Array.isArray(sourceMetadata.approved)
+    ? sourceMetadata.approved
+    : Array.isArray(sourceMetadata.replays) ? sourceMetadata.replays : [];
   const metadata = acquisitionEntries.length ? {
     replays: Object.fromEntries(acquisitionEntries.filter((entry) => entry.sha256).map((entry) => [entry.sha256, {
       mode: entry.mode,
-      rank: entry.trustworthyRankCohort ?? entry.rankFilter,
-      assignment: entry.assignment,
+      rank: entry.rank ?? entry.trustworthyRankCohort ?? entry.rankFilter,
+      assignment: entry.split ?? entry.assignment,
       source: entry.source,
+      subjectFingerprint: entry.subjectFingerprint,
+      privacySalt: sourceMetadata.privacySalt,
     }]))
   } : sourceMetadata;
   const unique = new Map();
@@ -62,10 +66,12 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
       const roster = inspectReplayRoster(bytes);
       const declared = metadata.replays?.[hash] ?? metadata.replays?.[hash.slice(0, 16)] ?? {};
       const declaredPlayerName = String(declared.playerName ?? "").trim().toLowerCase();
-      const subject = declaredPlayerName
-        ? roster.players.find((player) => player.name.trim().toLowerCase() === declaredPlayerName)
+      const subject = declared.subjectFingerprint && declared.privacySalt
+        ? roster.players.find((player) => createHash("sha256").update(`${declared.privacySalt}:${player.id}`).digest("hex").slice(0, 20) === declared.subjectFingerprint)
+        : declaredPlayerName
+          ? roster.players.find((player) => player.name.trim().toLowerCase() === declaredPlayerName)
         : roster.players[0];
-      if (declaredPlayerName && !subject) {
+      if ((declaredPlayerName || declared.subjectFingerprint) && !subject) {
         const error = new Error("Declared calibration player was not found in the replay roster.");
         error.code = "subject_player_not_found";
         throw error;
@@ -88,7 +94,7 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
         attributionState: "verified",
         rankCohort,
         cohortKey: cohortKey({ mode, rankCohort }),
-        metadataProvenance: declared.playerName || declared.rank || declared.rankCohort || declared.mode ? "private-corpus-manifest" : "replay-only",
+        metadataProvenance: declared.playerName || declared.subjectFingerprint || declared.rank || declared.rankCohort || declared.mode ? "private-corpus-manifest" : "replay-only",
         corpusAssignment: declared.assignment ?? null,
         gameVersion: evidence.normalized.gameVersion ?? null,
         playerCount: evidence.frameState.summary.playerCount,

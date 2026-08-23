@@ -78,10 +78,43 @@ function stopCopy(data: PublicReportData) {
   };
 }
 
-export default function ReportClient({ initial, accessToken, delivery, checkoutOpen }: { initial: PublicReportData; accessToken: string; delivery: "email" | "link"; checkoutOpen: boolean }) {
+type ReportMoment = { label: string; text: string };
+
+const performanceCategoryLabels: Record<string, string> = {
+  offense_defense: "Offense & defense",
+  kickoff: "Kickoffs",
+  boost_economy: "Boost economy",
+  movement_recovery: "Movement & recovery",
+  possession_touches: "Possession & touches",
+  positioning: "Positioning",
+  positioning_teamplay: "Positioning & teamplay",
+};
+
+function gameClock(value: number | null | undefined) {
+  if (!Number.isFinite(value)) return null;
+  const seconds = Math.max(0, Math.floor(Number(value)));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function compressMoments(moments: ReportMoment[]) {
+  const grouped = new Map<string, ReportMoment & { count: number }>();
+  for (const moment of moments) {
+    const key = moment.text.trim().toLocaleLowerCase("en-US");
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.count += 1;
+      continue;
+    }
+    grouped.set(key, { ...moment, count: 1 });
+  }
+  return [...grouped.values()];
+}
+
+export default function ReportClient({ initial, accessToken, delivery }: { initial: PublicReportData; accessToken: string; delivery: "email" | "link"; checkoutOpen: boolean }) {
   const [data, setData] = useState(initial);
-  const [feedbackScore, setFeedbackScore] = useState(initial.feedbackScore || 0);
+  const [feedbackScore] = useState(initial.feedbackScore || 0);
   const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackSignals, setFeedbackSignals] = useState({ observation: "", moment: "", advice: "", plan: "" });
   const [caseStudyConsent, setCaseStudyConsent] = useState(false);
   const [feedbackState, setFeedbackState] = useState<"idle" | "saving" | "saved" | "error">(initial.feedbackScore ? "saved" : "idle");
   const [copied, setCopied] = useState(false);
@@ -172,17 +205,21 @@ export default function ReportClient({ initial, accessToken, delivery, checkoutO
   };
 
   const saveFeedback = async () => {
-    if (!feedbackScore) return;
+    const score = feedbackScore || (feedbackSignals.observation === "yes" ? 5 : feedbackSignals.observation === "not_sure" ? 3 : feedbackSignals.observation === "no" ? 1 : 0);
+    if (!score) return;
     setFeedbackState("saving");
-    const response = await fetch(`/api/analyses/${data.publicId}/feedback`, { method: "POST", headers: { "Content-Type": "application/json", ...(accessToken ? { "X-Report-Access": accessToken } : {}) }, body: JSON.stringify({ score: feedbackScore, text: feedbackText, caseStudyConsent }) });
+    const structuredFeedback = [
+      `Observation matched: ${feedbackSignals.observation || "not answered"}`,
+      `Moment was correct: ${feedbackSignals.moment || "not answered"}`,
+      `Advice was clear: ${feedbackSignals.advice || "not answered"}`,
+      `Will test the rule: ${feedbackSignals.plan || "not answered"}`,
+      feedbackText.trim() ? `Comment: ${feedbackText.trim()}` : "",
+    ].filter(Boolean).join("\n");
+    const response = await fetch(`/api/analyses/${data.publicId}/feedback`, { method: "POST", headers: { "Content-Type": "application/json", ...(accessToken ? { "X-Report-Access": accessToken } : {}) }, body: JSON.stringify({ score, text: structuredFeedback, caseStudyConsent }) });
     setFeedbackState(response.ok ? "saved" : "error");
     if (response.ok) {
-      trackProductEvent("feedback", data.game as "league" | "valorant" | "rocket-league", `score_${feedbackScore}`);
+      trackProductEvent("feedback", data.game as "league" | "valorant" | "rocket-league", `score_${score}`);
     }
-  };
-
-  const trackUpgradeInterest = () => {
-    trackProductEvent("upgrade_intent", data.game as "league" | "valorant" | "rocket-league", "report_improvement_loop", "report");
   };
 
   const retryWithPlayer = async () => {
@@ -236,12 +273,45 @@ export default function ReportClient({ initial, accessToken, delivery, checkoutO
       text: item.description
     }))
     : (data.report?.evidenceMoments || []).map((text, index) => ({ label: `Evidence ${index + 1}`, text }));
-  const confidence = data.report?.confidence == null ? null : Math.round(data.report.confidence * 100);
+  const groupedEvidence = compressMoments(evidence);
   const experimental = data.earlyAccess?.coachingStatus === "experimental_insight";
+  const playlist = data.verifiedFacts?.mode || data.processing?.replayContext.mode || "the same playlist";
+  const performanceGroups = Object.entries((data.performance?.metrics || []).reduce<Record<string, NonNullable<typeof data.performance>["metrics"]>>((groups, metric) => {
+    (groups[metric.category] ||= []).push(metric);
+    return groups;
+  }, {}));
+  const momentFeed = [
+    ...groupedEvidence.map((moment, index) => ({
+      id: `coaching-${index}`,
+      title: data.report?.highestImpactMistake || "Coaching evidence",
+      timing: moment.label,
+      context: experimental ? "Experimental coaching window" : "Supported coaching window",
+      observation: moment.text,
+      consequence: data.report?.whyItCosts || "This window contributed to the selected match-specific focus.",
+      betterAlternative: data.report?.nextQueueRule || null,
+      limitation: data.report?.limitations[0] || "This moment describes one match and cannot establish a stable habit.",
+      kind: experimental ? "EXPERIMENTAL INTERPRETATION" : "CONTEXTUAL DETECTOR",
+    })),
+    ...(data.performance?.moments || []).map(moment => ({
+      id: moment.id,
+      title: moment.title,
+      timing: gameClock(moment.gameClockSeconds) ? `GAME CLOCK · ${gameClock(moment.gameClockSeconds)}` : `ELAPSED · ${gameClock(moment.timestampSeconds)}`,
+      context: moment.context,
+      observation: moment.observation,
+      consequence: moment.consequence,
+      betterAlternative: moment.betterAlternative,
+      limitation: moment.limitation,
+      kind: moment.evidenceKind === "verified_telemetry" ? "VERIFIED TELEMETRY" : "DERIVED METRIC",
+    })),
+  ].filter((moment, index, moments) => moments.findIndex(candidate => candidate.id === moment.id) === index).slice(0, 5);
+  const strongestMoments = momentFeed.slice(0, 3);
+  const matchScore = data.performance?.match.teamScore != null && data.performance.match.opponentScore != null
+    ? `${data.performance.match.teamScore}–${data.performance.match.opponentScore}` : "Score unavailable";
+  const matchResult = data.performance?.match.result === "win" ? "WIN" : data.performance?.match.result === "loss" ? "LOSS" : data.performance?.match.result === "draw" ? "DRAW" : "MATCH";
   const factEntries = data.verifiedFacts ? [
     ["PLAYER", data.verifiedFacts.subjectDisplayName],
     ["PLAYLIST", data.verifiedFacts.mode],
-    ["REPLAY RANK", data.verifiedFacts.rank],
+    [data.verifiedFacts.rankProvenance === "verified_replay" ? "VERIFIED REPLAY RANK" : "PLAYER-SUBMITTED RANK", data.verifiedFacts.rank],
     ["PLAYERS", data.verifiedFacts.playerCount == null ? null : String(data.verifiedFacts.playerCount)],
     ["SAMPLED FRAMES", data.verifiedFacts.sampledFrames == null ? null : data.verifiedFacts.sampledFrames.toLocaleString("en-US")],
     ["DECISION EVENTS", data.verifiedFacts.decisionEvents == null ? null : data.verifiedFacts.decisionEvents.toLocaleString("en-US")],
@@ -252,32 +322,48 @@ export default function ReportClient({ initial, accessToken, delivery, checkoutO
   return <main className="report-page">
     <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><button type="button" onClick={copyLink}>{copied ? "Copied ✓" : "Copy private link"}</button></div></nav>
     <section className="report-shell shell">
-      <header className="report-top"><div><span>PRIVATE PLAYER REPORT</span><h1>{data.gameLabel}</h1><p>{data.currentRank.startsWith("Pending") ? (data.processing?.replayContext.mode || "Playlist reading") : data.currentRank}{data.targetRank ? ` → ${data.targetRank}` : ""} · Submitted {new Date(`${data.createdAt}Z`).toLocaleDateString("en-GB", { dateStyle: "medium", timeZone: "UTC" })}</p></div><i className={data.status}>{data.status === "ready" ? "READY" : stopped ? "PAUSED" : "PROCESSING"}</i></header>
+      <header className="report-top"><div><span>PRIVATE · OWNER-VERIFIED REPORT ACCESS</span><h1>{data.verifiedFacts?.subjectDisplayName || data.gameLabel}</h1><p>{data.verifiedFacts?.mode || data.processing?.replayContext.mode || "Playlist reading"}{data.verifiedFacts?.rank ? ` · ${data.verifiedFacts.rank} (${data.verifiedFacts.rankProvenance === "verified_replay" ? "verified" : "player-submitted"})` : ""} · {new Date(`${data.verifiedFacts?.occurredAt || data.createdAt}Z`).toLocaleDateString("en-GB", { dateStyle: "medium", timeZone: "UTC" })}</p></div><i className={data.status}>{data.status === "ready" ? "READY" : stopped ? "PAUSED" : "PROCESSING"}</i></header>
 
-      {data.status !== "ready" ? <div className={`report-pending ${stopped ? "stopped" : ""}`}><div className="scan-orb"><i /><b>{stopped ? "!" : "↻"}</b></div><span>{stoppedCopy?.kicker || (data.processing?.stageLabel ? "AUTOMATED MATCH ANALYSIS" : "MATCH SECURED")}</span><h2>{stoppedCopy?.title || data.processing?.stageLabel || "Your match is queued."}</h2><p>{stoppedCopy?.body || "Replay Method is reading the submitted match, measuring repeated patterns and selecting one evidence-backed coaching focus."}</p>{identityResolvable && <section className="player-resolution" aria-labelledby="player-resolution-title"><div><span>{data.processing?.replayContext.mode ? `${data.processing.replayContext.mode.toUpperCase()} · PLAYERS FOUND` : "PLAYERS FOUND IN THIS REPLAY"}</span><h3 id="player-resolution-title">Which one is you?</h3><p>Choose your player and your current rank in this playlist. The original private replay is reused automatically.</p></div><div className="player-resolution-options" role="radiogroup" aria-label="Players identified in the replay">{data.processing?.candidatePlayers.map(player => <button type="button" role="radio" disabled={!interactive} aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} key={player} onClick={() => { setSelectedPlayer(player); setIdentityRetryState("idle"); }}>{player}</button>)}</div><label className="player-resolution-rank"><span>Your current {data.processing?.replayContext.mode || "playlist"} rank</span><select value={selectedRank} onChange={event => { setSelectedRank(event.target.value); setIdentityRetryState("idle"); }}><option value="">Choose rank</option>{rocketLeagueRanks.map(rank => <option value={rank} key={rank}>{rank}</option>)}</select></label><button className="player-resolution-submit" type="button" disabled={!interactive || !selectedPlayer || !selectedRank || identityRetryState === "saving"} onClick={retryWithPlayer}>{identityRetryState === "saving" ? "Starting…" : identityRetryState === "queued" ? "Analysis queued ✓" : "Analyze this saved replay →"}</button>{identityRetryState === "error" && <p role="alert">The replay could not be queued. Refresh this private report and try again.</p>}</section>}<div className="status-track">{stages.map((stage, index) => <div className={index <= statusIndex && !stopped ? "active" : index < statusIndex ? "complete" : ""} key={stage.key}><i>{index < statusIndex ? "✓" : index + 1}</i><span>{stage.label}</span></div>)}</div><aside>{stopped ? <><b>No fake certainty.</b><span>We stop when the available data cannot support a reliable report.</span></> : delivery === "email" ? <><b>Confirmation sent.</b><span>We’ll send another email when the report is ready.</span></> : <><b>Keep this private link.</b><span>Your report will appear here automatically when it is ready.</span></>}</aside></div> : (data.report || data.earlyAccess) && <>
-        {data.earlyAccess && <section className="early-access-intro"><span>{data.earlyAccess.badge}</span><h2>{data.earlyAccess.heading}</h2><p>{data.earlyAccess.body}</p><small>Formal detector status: not validated · This individual report has not been human-reviewed.</small></section>}
+      {data.status !== "ready" ? <div className={`report-pending ${stopped ? "stopped" : ""}`}><div className="scan-orb"><i /><b>{stopped ? "!" : "↻"}</b></div><span>{stoppedCopy?.kicker || (data.processing?.stageLabel ? "AUTOMATED MATCH ANALYSIS" : "MATCH SECURED")}</span><h2>{stoppedCopy?.title || data.processing?.stageLabel || "Your match is queued."}</h2><p>{stoppedCopy?.body || "Replay Method is reading the submitted match, measuring repeated patterns and selecting one evidence-backed coaching focus."}</p>{identityResolvable && <section className="player-resolution" aria-labelledby="player-resolution-title"><div><span>{data.processing?.replayContext.mode ? `${data.processing.replayContext.mode.toUpperCase()} · PLAYERS FOUND` : "PLAYERS FOUND IN THIS REPLAY"}</span><h3 id="player-resolution-title">Which one is you?</h3><p>Choose your exact player and current playlist rank. The original private replay is reused automatically.</p></div><div className="player-resolution-options" role="radiogroup" aria-label="Players identified in the replay">{data.processing?.candidatePlayers.map(player => <button type="button" role="radio" disabled={!interactive} aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} key={player} onClick={() => { setSelectedPlayer(player); setIdentityRetryState("idle"); }}>{player}</button>)}</div><label className="player-resolution-rank"><span>Your current {data.processing?.replayContext.mode || "playlist"} rank</span><select value={selectedRank} onChange={event => { setSelectedRank(event.target.value); setIdentityRetryState("idle"); }}><option value="">Choose rank</option>{rocketLeagueRanks.map(rank => <option value={rank} key={rank}>{rank}</option>)}</select></label><button className="player-resolution-submit" type="button" disabled={!interactive || !selectedPlayer || !selectedRank || identityRetryState === "saving"} onClick={retryWithPlayer}>{identityRetryState === "saving" ? "Starting…" : identityRetryState === "queued" ? "Analysis queued ✓" : "Analyze this saved replay →"}</button>{identityRetryState === "error" && <p role="alert">The replay could not be queued. Refresh this private report and try again.</p>}</section>}<div className="status-track">{stages.map((stage, index) => <div className={index <= statusIndex && !stopped ? "active" : index < statusIndex ? "complete" : ""} key={stage.key}><i>{index < statusIndex ? "✓" : index + 1}</i><span>{stage.label}</span></div>)}</div><aside>{stopped ? <><b>No fake certainty.</b><span>We stop when the available data cannot support a reliable report.</span></> : delivery === "email" ? <><b>Confirmation sent.</b><span>We’ll send another email when the report is ready.</span></> : <><b>Keep this private link.</b><span>Your report will appear here automatically when it is ready.</span></>}</aside></div> : (data.report || data.earlyAccess || data.performance) && <>
+        <section className={`match-in-20 ${data.report ? "has-focus" : "facts-only"}`} aria-labelledby="report-reveal-title">
+          <div className="match-in-20-main">
+            <div className="marcel-badges"><span>ONE REPLAY · PRIVATE ANALYSIS</span>{data.earlyAccess && <em>{data.earlyAccess.badge}</em>}</div>
+            <h2 id="report-reveal-title">Your match in 20 seconds.</h2>
+            <p className="match-result"><b>{matchResult} · {matchScore}</b>{data.performance?.match.overtime && <em>OVERTIME</em>}<span>{playlist}</span></p>
+            <div className="match-in-20-grid">
+              <article><small>WHAT WORKED</small><b>{data.performance?.strength?.title || "No positive claim was strong enough"}</b><p>{data.performance?.strength?.detail || "The replay was measured, but Replay Method will not manufacture praise from incomplete evidence."}</p></article>
+              <article><small>BIGGEST SUPPORTED OPPORTUNITY</small><b>{data.report?.highestImpactMistake || "No coaching focus cleared the evidence gate"}</b><p>{data.report?.whyItCosts || "You still receive the verified match and performance review below; unsupported coaching stays withheld."}</p></article>
+              <article><small>NEXT-MATCH RULE</small><b>{data.report?.nextQueueRule || "Do not turn one inconclusive replay into a habit claim."}</b><p>{data.report ? "Use this one if–then cue in your next three representative matches." : "Review the verified moments and use a new representative replay for another independent reading."}</p></article>
+            </div>
+            <a className="baseline-primary" href={data.report ? "#action-plan" : "#performance"}><span>{data.report ? "SHOW MY ONE-FOCUS PLAN" : "REVIEW MY VERIFIED PERFORMANCE"}</span><b>↓</b></a>
+          </div>
+          <aside className="marcel-strength" aria-label="Evidence status and sample size"><small>EVIDENCE STATUS</small><b>{data.report ? (experimental ? "EXPERIMENTAL COACHING" : "SUPPORTED COACHING") : "FACTS ONLY"}</b><span>One replay · within-match evidence</span><div><strong>1</strong><small>REPLAY</small></div><p>No rank benchmark, stable-habit claim or calibrated precision is inferred from this single match.</p></aside>
+        </section>
 
-        {factEntries.length > 0 && <section className="verified-match-facts"><header><span>VERIFIED MATCH FACTS</span><h2>What the replay itself established.</h2><p>Parser-backed facts are kept separate from every experimental coaching interpretation.</p></header><div>{factEntries.map(([label, value]) => <article key={label}><small>{label}</small><b>{value}</b></article>)}</div></section>}
+        {data.performance && <section className="performance-review" id="performance"><header><span>VERIFIED PERFORMANCE</span><h2>What happened—and what each measure can tell you.</h2><p>{data.performance.metrics.length} explained measures across {performanceGroups.length} applicable categories. Every value keeps its source, version and limitation.</p></header><div className="performance-groups">{performanceGroups.map(([category, metrics]) => <article className="performance-category" key={category}><h3>{performanceCategoryLabels[category] || category.replaceAll("_", " ")}</h3><div>{metrics.map(metric => <details className={`performance-metric ${metric.status}`} key={metric.id}><summary><span><small>{metric.kind.replaceAll("_", " ")}</small><b>{metric.label}</b></span><strong>{metric.displayValue}</strong></summary><div><p><b>What happened:</b> {metric.whatHappened}</p><p><b>Why it matters:</b> {metric.whyItMatters}</p><p><b>Limit:</b> {metric.limitation}</p><small>SOURCE · {metric.source} · {metric.version}{metric.sampleCount != null ? ` · N=${metric.sampleCount}` : ""}</small></div></details>)}</div></article>)}</div></section>}
 
-        {data.report && <>
-        <div className="report-hero"><div><span>{experimental ? "EXPERIMENTAL COACHING INSIGHT" : "YOUR PRIMARY LEAK"}</span><h2>{data.report.highestImpactMistake}</h2><div className="report-cost"><small>{experimental ? "WHY THIS MAY MATTER" : "WHY IT COSTS"}</small><p>{data.report.whyItCosts}</p></div></div><aside><small>{experimental ? "WITHIN-MATCH EVIDENCE" : "CONFIDENCE"}</small><b>{data.report.confidenceLabel ? `${data.report.confidenceLabel.toUpperCase()} ${experimental ? "EVIDENCE" : "CONFIDENCE"}` : "QUALITY REVIEWED"}</b><span>{confidence == null ? "Evidence checked before publishing" : experimental ? `${confidence}% evidence strength · experimental` : `${confidence}% detector confidence · ${data.report.analysisSource === "automated" ? "automated" : "reviewed"}`}</span><em>{experimental ? "This score describes repeated evidence in this match—not validated detector precision." : "Confidence in this finding for this match—not a rank-up probability."}</em></aside></div>
+        {momentFeed.length > 0 && <section className="report-evidence" id="moments"><header><span>ACTUAL MATCH MOMENTS</span><h2>Moments that changed the match.</h2><p>Replay-linked timestamps first. Interpretation stays marked and limitations remain visible.</p></header><div className="moment-list">{strongestMoments.map((moment, index) => <article key={moment.id}><i>{String(index + 1).padStart(2, "0")}</i><div><small>{moment.kind} · {moment.timing}</small><b>{moment.title}</b><p><strong>Context:</strong> {moment.context}</p><p><strong>Evidence:</strong> {moment.observation}</p><p><strong>Likely consequence:</strong> {moment.consequence}</p>{moment.betterAlternative && <p><strong>Better alternative:</strong> {moment.betterAlternative}</p>}<em>{moment.limitation}</em></div></article>)}</div>{momentFeed.length > 3 && <details className="moment-disclosure"><summary>Show all {momentFeed.length} moments</summary><div>{momentFeed.map(moment => <article key={`${moment.id}-all`}><small>{moment.kind} · {moment.timing}</small><b>{moment.title}</b><p><strong>Context:</strong> {moment.context}</p><p><strong>Evidence:</strong> {moment.observation}</p><p><strong>Likely consequence:</strong> {moment.consequence}</p>{moment.betterAlternative && <p><strong>Better alternative:</strong> {moment.betterAlternative}</p>}<em>{moment.limitation}</em></article>)}</div></details>}</section>}
 
-        <section className="report-evidence"><header><span>01 · EVIDENCE</span><h2>Why Replay Method thinks this.</h2><p>Specific observations from the submitted match—not a generic personality score.</p></header><div>{evidence.map((moment, index) => <article key={`${moment.text}-${index}`}><b>{moment.label}</b><p>{moment.text}</p></article>)}</div></section>
+        {data.report && <section className="report-deep-dive"><header><span>DEEP DIVE · ONE AREA</span><h2>{data.report.highestImpactMistake}</h2></header><div><article><small>WHY THIS AREA</small><p>{data.report.whyItCosts}</p></article><article><small>WHEN THE BEHAVIOR CAN BE CORRECT</small><p>{data.report.limitations[0] || "The same visible behavior can be correct in another game state; this finding applies only to the replay-linked evidence above."}</p></article></div><aside>{experimental ? "Experimental interpretation—not expert ground truth." : "Supported within this match—not a stable player profile."}</aside></section>}
 
-        <section className="queue-rule"><div><span>02 · NEXT-QUEUE RULE</span><h2>{data.report.nextQueueRule}</h2><p>Do not try to fix everything at once. Carry this single rule into the next match and mark the moments when it applies.</p></div><i>ONE<br />FOCUS</i></section>
+        <section className="report-strength"><span>WHAT YOU DID WELL</span><h2>{data.performance?.strength?.title || "No claim released without support."}</h2><p>{data.performance?.strength?.detail || "An honest analysis can withhold a strength claim when this replay does not provide enough direct evidence."}</p>{data.performance?.strength?.limitation && <small>{data.performance.strength.limitation}</small>}</section>
 
-        <section className="practice-plan"><header><span>03 · PRACTICE</span><h2>Your focused plan.</h2></header><div>{data.report.practicePlan.map((item, index) => <article key={`${item}-${index}`}><i>{String(index + 1).padStart(2, "0")}</i><div><small>{index === 0 ? "START HERE" : `STEP ${index + 1}`}</small><b>{item}</b></div></article>)}</div>{data.report.coachNote && <aside><span>COACH NOTE</span><p>{data.report.coachNote}</p></aside>}</section>
+        {data.report ? <section className="one-focus-plan" id="action-plan"><header><span>ONE-FOCUS PLAN</span><h2>{data.report.nextQueueRule}</h2><p>Apply one cue for the next three representative {playlist} matches. Do not optimize five things at once.</p></header><div className="one-focus-grid"><article><small>IF–THEN RULE</small><b>{data.report.nextQueueRule}</b></article><article><small>5–10 MINUTE DRILL</small><b>{data.report.practicePlan[0] || "No drill was defensibly linked to this finding."}</b></article><article><small>WHAT TO NOTICE</small><b>{data.report.practicePlan[1] || "Notice the same game state before the decision—not only the final outcome."}</b></article><article><small>WHAT THE NEXT REPLAY CHECKS</small><b>{data.report.practicePlan[2] || data.report.coachNote || "Whether the same replay-linked decision appears again under comparable conditions."}</b></article></div>{data.report.coachNote && <aside><span>COACH NOTE</span><p>{data.report.coachNote}</p></aside>}</section> : <section className="one-focus-plan abstained" id="action-plan"><header><span>LOCAL ABSTENTION</span><h2>No coaching plan was released from this replay.</h2><p>The verified review above remains the complete result. Replay Method did not turn neutral measurements into a fake mistake or generic drill.</p></header></section>}
 
-        <section className="verify-next"><div><span>04 · VERIFY</span><h2>Check the same decision again—not your rank overnight.</h2><p>Later analyses can add evidence to this focus only when the same supported detector observes it again. If that signal is absent or evidence is insufficient, Replay Method stays inconclusive.</p><ol><li><b>QUEUE</b><span>Carry only the next-queue rule into a representative match.</span></li><li><b>SUBMIT</b><span>Send the next supported match without cherry-picking a highlight.</span></li><li><b>COMPARE</b><span>Use another real observation of this same focus before calling it progress.</span></li></ol></div>{checkoutOpen ? <aside><span>CONTINUE THE IMPROVEMENT LOOP</span><b>Choose your cadence</b><ul><li>Four analyses every 30 days</li><li>Longitudinal focus history</li><li>Evidence standards never change</li></ul><Link href="/#pricing" onClick={trackUpgradeInterest}>Compare available plans →</Link><small>Payment changes cadence—not the quality gate.</small></aside> : <aside><span>BETA FOLLOW-UP · NO PAYMENT</span><b>Prove the focus before buying anything.</b><ul><li>Carry only the experimental rule into a representative match</li><li>Keep this private report in your history</li><li>Use another replay before calling the pattern progress</li></ul><Link href="/reports">Open my report history →</Link><small>Checkout remains closed. Early Access feedback is free.</small></aside>}</section>
-        </>}
+        {factEntries.length > 0 && <section className="verified-match-facts"><header><span>REPORT STATUS &amp; VERIFIED FACTS</span><h2>What the replay itself established.</h2><p>Parser-backed facts, submitted context and coaching interpretation remain visibly separate.</p></header><div>{factEntries.map(([label, value]) => <article key={label}><small>{label}</small><b title={value}>{value}</b></article>)}</div></section>}
 
-        {data.earlyAccess?.coachingStatus === "abstained" && <section className="coaching-abstention"><span>LOCAL COACHING ABSTENTION</span><h2>No experimental finding cleared this replay&apos;s evidence threshold.</h2><p>The match was read successfully and the verified facts above remain your complete report. Replay Method will not fill the empty coaching section with generic advice.</p><div>{data.earlyAccess.assessments.filter(item => item.status === "abstained").map(item => <article key={item.detectorId}><b>{item.detectorId}</b><span>{item.reason}</span></article>)}</div></section>}
+        <details className="report-method"><summary><span>Evidence &amp; methodology</span><small>Parser, detector decisions and limitations</small></summary><div className="report-method-grid"><div><span>METHOD</span><h2>Traceable coaching, not a black box.</h2><p>{data.earlyAccess ? "Verified facts come from the replay parser. Any coaching insight is a separately marked deterministic Early Access interpretation; no language model may add gameplay facts, and expert validation is still in progress." : data.report?.analysisSource === "automated" ? "This report was generated from versioned structured findings. The language layer can explain and prioritize them, but it cannot create new gameplay facts." : "This beta report was quality-reviewed. Automated engine metadata appears for reports produced by the structured pipeline."}</p></div><aside><b>{data.processing?.versions.parser || "Parser unavailable"}</b><span>Parser</span><b>{data.processing?.versions.detector || "Quality-reviewed beta"}</b><span>Detector</span><b>{data.processing?.versions.schema || "Legacy report schema"}</b><span>Schema</span></aside>{data.earlyAccess && <div className="method-decisions"><b>LOCAL DETECTOR DECISIONS</b>{data.earlyAccess.assessments.map(item => <article className={item.status} key={item.detectorId}><strong>{item.detectorId}</strong><span>{item.status === "experimental_insight" ? `EXPERIMENTAL · ${item.reason}` : `ABSTAINED · ${item.reason}`}</span></article>)}</div>}<div className="report-limitations"><b>KNOWN LIMITATIONS</b>{data.report?.limitations.length ? <ul>{data.report.limitations.map(item => <li key={item}>{item}</li>)}</ul> : <p>{data.earlyAccess ? "No coaching finding passed for this replay. Formal detector validation remains pending." : "No additional detector-specific limitations were recorded for this finding."}</p>}</div></div></details>
 
-        {data.earlyAccess?.coachingStatus === "experimental_insight" && <section className="coaching-abstention early-access-decisions"><span>LOCAL EVIDENCE DECISIONS</span><h2>Each detector earns its own answer.</h2><p>The primary insight above cleared the experimental policy. Unsupported checks abstained locally instead of blocking the complete report.</p><div>{data.earlyAccess.assessments.map(item => <article className={item.status} key={item.detectorId}><b>{item.detectorId}</b><span>{item.status === "experimental_insight" ? `EXPERIMENTAL · ${item.reason}` : `ABSTAINED · ${item.reason}`}</span></article>)}</div></section>}
+        {data.earlyAccess && <aside className="early-access-compact"><span>{data.earlyAccess.badge}</span><p>{data.earlyAccess.body}</p><small>Formal detector status: not validated · This individual report has not been human-reviewed.</small></aside>}
 
-        <section className="report-method"><div><span>CONFIDENCE + LIMITATIONS</span><h2>Traceable coaching, not a black box.</h2><p>{data.earlyAccess ? "Verified facts come from the replay parser. Any coaching insight is a separately marked deterministic Early Access interpretation; no language model may add gameplay facts, and expert validation is still in progress." : data.report?.analysisSource === "automated" ? "This report was generated from versioned structured findings. The language layer can explain and prioritize them, but it cannot create new gameplay facts." : "This beta report was quality-reviewed. Automated engine metadata will appear here for reports produced by the structured pipeline."}</p></div><aside><b>{data.processing?.versions.detector || "Quality-reviewed beta"}</b><span>Detector</span><b>{data.processing?.versions.schema || "Legacy report schema"}</b><span>Schema</span></aside><div className="report-limitations"><b>KNOWN LIMITATIONS</b>{data.report?.limitations.length ? <ul>{data.report.limitations.map(item => <li key={item}>{item}</li>)}</ul> : <p>{data.earlyAccess ? "No coaching finding passed for this replay. Formal detector validation remains pending." : "No additional detector-specific limitations were recorded for this finding."}</p>}</div></section>
+        <section className="report-feedback"><span>{data.earlyAccess ? "EARLY ACCESS PRODUCT FEEDBACK" : "REPORT FEEDBACK"}</span><h2>Help us test the experience—not certify the detector.</h2><p className="feedback-boundary">These answers are product feedback only. They are never treated as replay ground truth, detector labels or expert validation.</p>{feedbackState === "saved" ? <div className="feedback-saved" role="status"><i>✓</i><b>Feedback saved separately from detector evidence.</b></div> : <><div className="feedback-questions">{([
+          ["observation", "Did the main observation fit what happened?"],
+          ["moment", "Were the highlighted moments correct?"],
+          ["advice", "Was the advice clear?"],
+          ["plan", "Will you try the next-match rule?"],
+        ] as const).map(([key, question]) => <fieldset key={key}><legend>{question}</legend><div>{[["yes", "Yes"], ["not_sure", "Not sure"], ["no", "No"]].map(([value, label]) => <button type="button" aria-pressed={feedbackSignals[key] === value} className={feedbackSignals[key] === value ? "active" : ""} key={value} onClick={() => setFeedbackSignals(previous => ({ ...previous, [key]: value }))}>{label}</button>)}</div></fieldset>)}</div><textarea aria-label="Optional report feedback" value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="What fit, what was wrong, or what was unclear?" maxLength={1000} /><label><input type="checkbox" checked={caseStudyConsent} onChange={e => setCaseStudyConsent(e.target.checked)} /><span>You may quote this feedback anonymously as an Early Access product review.</span></label><button type="button" className="save-feedback" disabled={!Object.values(feedbackSignals).some(Boolean) || feedbackState === "saving"} onClick={saveFeedback}>{feedbackState === "saving" ? "Saving…" : "Save feedback"}</button>{feedbackState === "error" && <p role="alert">Could not save feedback. Try again.</p>}</>}</section>
 
-        <section className="report-feedback"><span>{data.earlyAccess ? "EARLY ACCESS FEEDBACK" : "VERIFIED BETA FEEDBACK"}</span><h2>Did this show you something useful?</h2>{data.earlyAccess && <p className="feedback-boundary">This product feedback is stored separately. It is not expert ground truth and does not validate a detector.</p>}{feedbackState === "saved" ? <div className="feedback-saved" role="status"><i>✓</i><b>Feedback saved. Thank you for helping build the method.</b></div> : <><div className="score-row" role="group" aria-label="Rate this report from 1 to 5">{[1,2,3,4,5].map(score => <button type="button" className={feedbackScore === score ? "active" : ""} aria-pressed={feedbackScore === score} aria-label={`${score} out of 5${score === 1 ? ", not useful" : score === 5 ? ", very useful" : ""}`} key={score} onClick={() => setFeedbackScore(score)}>{score}<small aria-hidden="true">{score === 1 ? "Not useful" : score === 5 ? "Very useful" : ""}</small></button>)}</div><textarea aria-label="Optional report feedback" value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="What was useful—or what was missing?" maxLength={1000} /><label><input type="checkbox" checked={caseStudyConsent} onChange={e => setCaseStudyConsent(e.target.checked)} /><span>You may quote this feedback anonymously as an Early Access product review.</span></label><button type="button" className="save-feedback" disabled={!feedbackScore || feedbackState === "saving"} onClick={saveFeedback}>{feedbackState === "saving" ? "Saving…" : "Save feedback"}</button>{feedbackState === "error" && <p role="alert">Could not save feedback. Try again.</p>}</>}</section>
+        <aside className="premium-bridge"><span>COMING LATER · NOT FOR SALE</span><h2>This match showed one signal. Premium shows whether it is your pattern — and whether it improves.</h2><p>The future concept compares representative replays over time. This free product remains one complete replay analysis; there is no checkout or locked evidence here.</p></aside>
       </>}
     </section>
   </main>;

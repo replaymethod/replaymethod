@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { AnalysisGame } from "../../lib/analysis";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 import { readApiResponse, uploadReplayInChunks, type StagedReplay } from "../../lib/client-replay-upload";
+import FreeAnalysisUsed, { FREE_ANALYSIS_USED_MESSAGE } from "../components/FreeAnalysisUsed";
 
 const games: { key: AnalysisGame; mark: string; name: string; proof: string; input: string }[] = [
   { key: "league", mark: "L", name: "League of Legends", proof: "Official Riot connection in approval", input: "Riot ID and a representative match link" },
@@ -65,7 +66,8 @@ function replayProblemCode(file: File) {
   return "unknown";
 }
 
-export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPlatform, engineOpen, videoOpen }: { initialGame: AnalysisGame | null; initialHypothesis: string; initialPlatform: RocketLeaguePlatform | null; engineOpen: boolean; videoOpen: boolean }) {
+export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPlatform, engineOpen, videoOpen, initialFreeAnalysisUsed = false }: { initialGame: AnalysisGame | null; initialHypothesis: string; initialPlatform: RocketLeaguePlatform | null; engineOpen: boolean; videoOpen: boolean; initialFreeAnalysisUsed?: boolean }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const replayInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const stagedReplayRef = useRef<StagedReplay | null>(null);
@@ -85,11 +87,15 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
   const [updatesConsent, setUpdatesConsent] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [freeAnalysisUsed, setFreeAnalysisUsed] = useState(initialFreeAnalysisUsed);
   const replayFirst = game === "rocket-league" && platform === "pc";
   const visibleStep = replayFirst ? (step === 3 ? 2 : 1) : step + 1;
   const visibleStepTotal = replayFirst ? 2 : 4;
 
-  useEffect(() => { track("analysis_start", initialGame, "analysis_page"); }, [initialGame]);
+  useEffect(() => {
+    formRef.current?.setAttribute("data-hydrated", "true");
+    track("analysis_start", initialGame, "analysis_page");
+  }, [initialGame]);
   const selected = useMemo(() => games.find(item => item.key === game), [game]);
 
   const chooseGame = (value: AnalysisGame) => {
@@ -136,6 +142,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
 
   const next = () => {
     setMessage("");
+    setFreeAnalysisUsed(false);
     if (step === 1 && game === "rocket-league" && platform === "pc" && !engineOpen) return setMessage("PC replay analysis is still in final quality validation. Join the waitlist for first access.");
     if (step === 1 && game === "rocket-league" && platform === "pc" && !replay) return setMessage("Upload the original Rocket League .replay file so the match can be parsed safely.");
     if (step === 1 && game === "rocket-league" && platform !== "pc" && !videoOpen) return setMessage("Console video analysis is not live yet. Join the console waitlist for first access.");
@@ -158,6 +165,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
     if (!game) return;
     setStatus("loading");
     setMessage("");
+    setFreeAnalysisUsed(false);
     const data = new FormData();
     data.set("game", game);
     data.set("platform", game === "rocket-league" ? platform : "pc");
@@ -204,7 +212,9 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
     } catch (error) {
       setStatus("error");
       const detail = error instanceof Error ? error.message : "We couldn’t create the analysis.";
-      setMessage(replaySaved ? `Your replay was saved securely, but the analysis did not start. Retry to reuse the saved file. ${detail}` : detail);
+      const allowanceUsed = detail === FREE_ANALYSIS_USED_MESSAGE;
+      setFreeAnalysisUsed(allowanceUsed);
+      setMessage(allowanceUsed ? "" : replaySaved ? `Your replay was saved securely, but the analysis did not start. Retry to reuse the saved file. ${detail}` : detail);
       track("analysis_failed", game, replay ? "replay_upload" : video ? "video_upload" : "evidence_link");
     }
   }
@@ -215,7 +225,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
       <header className="intake-header"><div><span>PRIVATE PRODUCT BETA</span><h1>Know what is ready.<br /><em>Never submit into a dead end.</em></h1><p>{game === "league" || game === "valorant" ? "Join the official-access waitlist. Automated Riot match analysis is not live yet." : platform === "pc" ? engineOpen ? "Upload one original replay for an evidence check." : "The PC parser is online, but public coaching is still in quality validation." : videoOpen ? "Upload a gameplay video for the console beta." : "Console video analysis is not live yet. Join the waitlist for first access."}</p></div><aside><b>{game === "rocket-league" && platform === "pc" && engineOpen ? "01" : "$0"}</b><span>{game === "rocket-league" && platform === "pc" && engineOpen ? "ANALYSIS INCLUDED" : "WAITLIST"}</span><small>Private · No card · Clear status</small></aside></header>
       <div className="intake-progress" aria-label={`Step ${visibleStep} of ${visibleStepTotal}`}><i style={{ width: `${(visibleStep / visibleStepTotal) * 100}%` }} /><span>0{visibleStep} / 0{visibleStepTotal}</span></div>
 
-      <form className="intake-card" aria-busy={status === "loading"} onSubmit={submit}>
+      <form ref={formRef} className="intake-card" data-hydrated="false" aria-busy={status === "loading"} onSubmit={submit}>
         {step === 0 && <section><span className="intake-kicker">CHOOSE THE EVIDENCE SYSTEM</span><h2>What are we reviewing?</h2><div className="intake-games">{games.map(item => <button type="button" key={item.key} onClick={() => chooseGame(item.key)}><i>{item.mark}</i><div><b>{item.name}</b><small>{item.proof}</small></div><span>→</span></button>)}</div></section>}
 
         {step === 2 && game && <section><button className="intake-back" type="button" onClick={() => setStep(1)}>← MATCH EVIDENCE</button><span className="intake-kicker">PLAYER CONTEXT · {selected?.name.toUpperCase()}</span><h2>Now add only the context that changes the review.</h2>{initialHypothesis && <div className="intake-hypothesis"><span>CLIMB CHECK HYPOTHESIS CARRIED FORWARD</span><b>{initialHypothesis}</b><small>You selected this as a hypothesis. The match still decides whether it is supported.</small></div>}<div className="field-grid"><label><span>Current rank *</span><input value={currentRank} onChange={e => setCurrentRank(e.target.value)} placeholder="e.g. Gold 2" maxLength={80} /></label><label><span>Target rank</span><input value={targetRank} onChange={e => setTargetRank(e.target.value)} placeholder="e.g. Diamond" maxLength={80} /></label><label className="wide"><span>{contextLabels[game].label} *</span><input value={playerContext} onChange={e => setPlayerContext(e.target.value)} placeholder={contextLabels[game].placeholder} maxLength={160} /></label><label className="wide"><span>What do you want to stop repeating? *</span><textarea value={goal} onChange={e => setGoal(e.target.value)} placeholder="Example: I keep winning early and throwing the lead in mid game." maxLength={500} /></label></div><p className="intake-explain">This context helps prioritize supported evidence. It cannot override what the match shows.</p></section>}
@@ -225,6 +235,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
         {step === 3 && game && <section><button className="intake-back" type="button" onClick={() => setStep(replayFirst ? 1 : 2)}>← {replayFirst ? "REPLAY" : "PLAYER CONTEXT"}</button><span className="intake-kicker">PRIVATE DELIVERY</span><h2>Where should we send your {game === "rocket-league" ? "result" : "request"}?</h2><div className="delivery-summary"><div><span>GAME</span><b>{selected?.name}{game === "rocket-league" ? ` · ${platforms.find(item => item.key === platform)?.name}` : ""}</b></div><div><span>{replayFirst ? "CONTEXT" : "RANK"}</span><b>{replayFirst ? "Read from replay · confirm after parse" : `${currentRank}${targetRank ? ` → ${targetRank}` : ""}`}</b></div><div><span>EVIDENCE</span><b>{replay ? replay.name : video ? video.name : "Private link added"}</b></div></div><div className="field-grid delivery-fields"><label className="wide"><span>Email for private delivery *</span><input type="email" autoComplete="email" inputMode="email" required value={email} onChange={e => { setEmail(e.target.value); stagedReplayRef.current = null; }} placeholder="you@email.com" /></label><label className="check wide"><input type="checkbox" required checked={dataConsent} onChange={e => setDataConsent(e.target.checked)} /><span>I agree that Replay Method may process this match, replay/VOD and my email to deliver the private beta status. <a href="/privacy" target="_blank">Privacy</a></span></label><label className="check wide"><input type="checkbox" checked={updatesConsent} onChange={e => setUpdatesConsent(e.target.checked)} /><span>Also send me product updates and beta-access news. Optional.</span></label></div><div className="honesty-box"><i>{game === "rocket-league" ? platform === "pc" ? "FRAME-EXACT QUALITY BETA" : "CONSOLE VIDEO BETA" : "RIOT ACCESS PREVIEW"}</i><p>{game === "rocket-league" ? platform === "pc" ? "The deterministic parser reads the playlist and players first. After one-tap identity and rank context, it returns coaching only where the exact evidence gate has passed." : "The video lane reviews only visible gameplay evidence and timestamps. It never presents video inference as hidden telemetry, and unsupported moments remain unscored." : "Your request and match reference will be preserved, but automated coaching cannot start until the official opt-in Riot integration is approved. No unsupported report will be generated."}</p></div><button className="submit-analysis" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING YOUR MATCH…" : game === "rocket-league" ? platform === "pc" ? "ANALYZE THIS REPLAY →" : "SUBMIT CONSOLE VIDEO EVIDENCE →" : "SAVE MY RIOT BETA REQUEST →"}</span></button><small className="submission-note">Your private status link appears immediately. First PC analysis included · No card or payment details.</small></section>}
 
         {step > 0 && step < 3 && !(step === 1 && game === "rocket-league" && (platform === "pc" ? !engineOpen : !videoOpen)) && <div className="intake-actions"><button type="button" onClick={next}>CONTINUE <span>→</span></button></div>}
+        {freeAnalysisUsed && <FreeAnalysisUsed />}
         {message && <p className="intake-message" role="alert">{message}</p>}
       </form>
       <footer className="intake-footer"><span>One match. One pattern. One plan.</span><div><Link href="/privacy">Privacy</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a></div></footer>

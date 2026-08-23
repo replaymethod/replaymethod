@@ -10,9 +10,10 @@ import {
 } from "@rlrml/subtr-actor";
 import { episodeTimelineSummary, normalizeEpisodeTimeline } from "./episode-timeline.mjs";
 import { frameStateSummary, normalizeFrameState } from "./frame-state.mjs";
+import { buildPerformanceSnapshot } from "./performance-snapshot.mjs";
 
 export const PARSER_VERSION = "subtr-actor@1.2.0";
-export const NORMALIZER_VERSION = "rocket-league-normalizer@0.2.0";
+export const NORMALIZER_VERSION = "rocket-league-normalizer@0.3.0";
 
 let initialized = false;
 
@@ -203,9 +204,10 @@ function resolvePlayer(meta, requestedIdentity) {
   );
 }
 
-function safeReplayMetadata(info, meta, subject, playerCount, frameState, episodeTimeline) {
+function safeReplayMetadata(info, meta, subject, playerCount, frameState, episodeTimeline, performanceSnapshot) {
   return {
     replayInfo: info,
+    matchGuid: scalarText(headerValue(meta, "MatchGUID")) || null,
     gameType: meta?.game_type ?? null,
     season: meta?.season ?? null,
     subject: { name: subject.name, id: subject.id || null },
@@ -214,6 +216,7 @@ function safeReplayMetadata(info, meta, subject, playerCount, frameState, episod
       frameState: frameStateSummary(frameState),
       episodeTimeline: episodeTimelineSummary(episodeTimeline),
     },
+    performanceSnapshot,
   };
 }
 
@@ -256,6 +259,13 @@ export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
   const frameState = normalizeFrameState(ndarray, normalizedMeta.meta, 10);
   const statsTimeline = plain(get_stats_timeline(data));
   const episodeTimeline = normalizeEpisodeTimeline(statsTimeline, player.id || player.name);
+  const performanceSnapshot = buildPerformanceSnapshot({
+    meta: normalizedMeta.meta,
+    subject: player,
+    frameState,
+    episodeTimeline,
+    mode: normalizedMeta.mode,
+  });
 
   const normalized = {
     schemaVersion: "game-data.v1",
@@ -274,10 +284,16 @@ export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
       players.length,
       frameState,
       episodeTimeline,
+      performanceSnapshot,
     ),
-    derivedMetrics: [],
+    derivedMetrics: performanceSnapshot.metrics.map((metric) => ({
+      key: metric.id,
+      label: metric.label,
+      value: metric.value,
+      unit: metric.unit,
+    })),
     limitations: [
-      "This parser checkpoint proves replay compatibility and player attribution; public coaching detectors remain disabled until precision calibration passes.",
+      "Aggregate performance metrics describe this match only. They do not create a stable player profile or rank benchmark.",
     ],
   };
 
