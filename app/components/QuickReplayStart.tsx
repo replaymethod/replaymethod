@@ -4,6 +4,7 @@ import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 import { readApiResponse, uploadReplayInChunks, type StagedReplay } from "../../lib/client-replay-upload";
+import { clearReplayUploadRecovery, loadReplayUploadRecovery, replayRecoveryStorageAvailable, saveReplayUploadRecovery } from "../../lib/client-replay-recovery.mjs";
 import { desktopHandoffUrl } from "../../lib/desktop-handoff.mjs";
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
@@ -153,9 +154,26 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     let replaySaved = Boolean(stagedReplayRef.current);
     try {
       track("upload_started", placement);
-      const staged = stagedReplayRef.current || await uploadReplayInChunks(replay, email, dataConsent, percent => {
-        setMessage(`Saving replay securely… ${percent}%`);
-      });
+      if (!stagedReplayRef.current && !replayRecoveryStorageAvailable(window.localStorage)) {
+        throw new Error("This browser blocked secure upload recovery. Allow site storage, then retry before sending the replay.");
+      }
+      const recovery = stagedReplayRef.current ? null : loadReplayUploadRecovery(window.localStorage, replay, email);
+      replaySaved = replaySaved || Boolean(recovery);
+      const staged = stagedReplayRef.current || await uploadReplayInChunks(
+        replay,
+        email,
+        dataConsent,
+        percent => setMessage(`${recovery ? "Resuming saved replay" : "Saving replay securely"}… ${percent}%`),
+        {
+          recovery,
+          onRecovery: nextRecovery => {
+            if (!saveReplayUploadRecovery(window.localStorage, nextRecovery)) {
+              throw new Error("This browser could not preserve the secure upload recovery token. Allow site storage, then retry.");
+            }
+            replaySaved = true;
+          },
+        },
+      );
       stagedReplayRef.current = staged;
       replaySaved = true;
       data.set("uploadId", staged.uploadId);
@@ -164,6 +182,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       const response = await fetch("/api/analyses", { method: "POST", body: data });
       const result = await readApiResponse(response) as { publicId?: string; accessToken?: string; url?: string; emailSent?: boolean; error?: string };
       if (!response.ok || !result.publicId) throw new Error(result.error || "We couldn’t start the analysis.");
+      clearReplayUploadRecovery(window.localStorage, staged.uploadId);
       track("upload_complete", placement);
       track("identity_captured", `${placement}_private_delivery`);
       track("processing_started", placement);
@@ -180,7 +199,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     } catch (error) {
       setStatus("error");
       const detail = error instanceof Error ? error.message : "We couldn’t start the analysis.";
-      setMessage(replaySaved ? `Your replay was saved securely, but the analysis did not start. Retry to reuse the saved file. ${detail}` : detail);
+      setMessage(replaySaved ? `Your secure upload session and every confirmed part were preserved. Retry—even after a reload—to reuse them without another upload or allowance. ${detail}` : detail);
       track("analysis_failed", placement);
     }
   }
