@@ -599,6 +599,47 @@ export const rlReviewImports = sqliteTable("rl_review_imports", {
   index("rl_review_imports_created_at_idx").on(table.createdAt)
 ]);
 
+export const productReviewers = sqliteTable("product_reviewers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  userId: text("user_id").notNull(),
+  email: text("email").notNull(),
+  displayName: text("display_name"),
+  reviewKind: text("review_kind"),
+  status: text("status").notNull().default("pending"),
+  approvedBy: text("approved_by"),
+  approvedAt: text("approved_at"),
+  revokedAt: text("revoked_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("product_reviewers_public_id_unique").on(table.publicId),
+  uniqueIndex("product_reviewers_user_id_unique").on(table.userId),
+  uniqueIndex("product_reviewers_email_unique").on(table.email),
+  index("product_reviewers_status_idx").on(table.status)
+]);
+
+export const productReviewSubmissions = sqliteTable("product_review_submissions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  reviewerId: integer("reviewer_id").notNull().references(() => productReviewers.id),
+  reviewKind: text("review_kind").notNull(),
+  state: text("state").notNull().default("draft"),
+  checklistJson: text("checklist_json").notNull().default("{}"),
+  issuesJson: text("issues_json").notNull().default("[]"),
+  evidenceKeysJson: text("evidence_keys_json").notNull().default("[]"),
+  overallRecommendation: text("overall_recommendation"),
+  sessionNotes: text("session_notes"),
+  submittedAt: text("submitted_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("product_review_submissions_public_id_unique").on(table.publicId),
+  uniqueIndex("product_review_submissions_reviewer_kind_unique").on(table.reviewerId, table.reviewKind),
+  index("product_review_submissions_state_idx").on(table.state),
+  index("product_review_submissions_updated_at_idx").on(table.updatedAt)
+]);
+
 export const detectorQualitySnapshots = sqliteTable("detector_quality_snapshots", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   publicId: text("public_id").notNull(),

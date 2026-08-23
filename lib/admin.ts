@@ -1,7 +1,7 @@
 import { getChatGPTUser, type ChatGPTUser } from "../app/chatgpt-auth";
 import { or, eq } from "drizzle-orm";
 import { getDb } from "../db";
-import { rlReviewers } from "../db/schema";
+import { productReviewers, rlReviewers } from "../db/schema";
 import { isSameOriginRequest } from "./request-security.mjs";
 
 function configuredValues(...values: Array<string | undefined>) {
@@ -76,5 +76,45 @@ export async function requireRlReviewerMutation(request: Request) {
   if (!user) return { response: Response.json({ error: "Unauthorized" }, { status: 401 }), reviewer: null, user: null };
   const reviewer = await getActiveRlReviewer(user);
   if (!reviewer) return { response: Response.json({ error: "Active reviewer access required." }, { status: 403 }), reviewer: null, user };
+  return { response: null, reviewer, user };
+}
+
+export async function getActiveProductReviewer(user: ChatGPTUser) {
+  if (!user.id) return null;
+  const db = await getDb();
+  const reviewer = await db.select().from(productReviewers).where(or(
+    eq(productReviewers.userId, user.id),
+    eq(productReviewers.email, user.email.toLowerCase())
+  )).get();
+  return reviewer?.status === "active" && reviewer.userId === user.id && reviewer.reviewKind ? reviewer : null;
+}
+
+export async function ensureProductReviewerApplicant(user: ChatGPTUser) {
+  if (!user.id) return null;
+  const db = await getDb();
+  const email = user.email.toLowerCase();
+  const existing = await db.select().from(productReviewers).where(or(
+    eq(productReviewers.userId, user.id),
+    eq(productReviewers.email, email)
+  )).get();
+  if (existing) return existing;
+  await db.insert(productReviewers).values({
+    publicId: crypto.randomUUID().replaceAll("-", ""),
+    userId: user.id,
+    email,
+    displayName: user.fullName || user.displayName,
+    status: "pending"
+  }).onConflictDoNothing();
+  return db.select().from(productReviewers).where(eq(productReviewers.userId, user.id)).get();
+}
+
+export async function requireProductReviewerMutation(request: Request) {
+  if (!isSameOriginRequest(request)) {
+    return { response: Response.json({ error: "Invalid product review request." }, { status: 403, headers: { "Cache-Control": "no-store" } }), reviewer: null, user: null };
+  }
+  const user = await getChatGPTUser();
+  if (!user) return { response: Response.json({ error: "Unauthorized" }, { status: 401 }), reviewer: null, user: null };
+  const reviewer = await getActiveProductReviewer(user);
+  if (!reviewer) return { response: Response.json({ error: "Active product reviewer access required." }, { status: 403 }), reviewer: null, user };
   return { response: null, reviewer, user };
 }

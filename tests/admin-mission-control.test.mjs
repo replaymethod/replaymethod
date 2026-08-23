@@ -13,8 +13,11 @@ const adminApiPaths = [
   new URL("../app/api/admin/rl-beta-submissions/manifest/route.ts", import.meta.url),
   new URL("../app/api/admin/rl-reviewers/route.ts", import.meta.url),
   new URL("../app/api/admin/rl-beta-submissions/[id]/status/route.ts", import.meta.url),
+  new URL("../app/api/admin/product-reviewers/route.ts", import.meta.url),
+  new URL("../app/api/admin/product-reviews/[id]/evidence/route.ts", import.meta.url),
+  new URL("../app/api/admin/product-reviews/[id]/evidence/[index]/route.ts", import.meta.url),
 ];
-const adminMutationPaths = [adminApiPaths[0], adminApiPaths[1], adminApiPaths[6], adminApiPaths[7]];
+const adminMutationPaths = [adminApiPaths[0], adminApiPaths[1], adminApiPaths[6], adminApiPaths[7], adminApiPaths[8]];
 
 test("keeps mission control behind the configured owner identity", async () => {
   const [dashboard, detail] = await Promise.all([readFile(dashboardPath, "utf8"), readFile(detailPath, "utf8")]);

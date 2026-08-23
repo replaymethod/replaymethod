@@ -2,7 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { requireChatGPTUser, chatGPTSignOutPath } from "../chatgpt-auth";
 import { getDb } from "../../db";
-import { analysisJobs, analysisRequests, analysisUsage, billingEvents, billingSubscriptions, emailDeliveries, funnelEvents, playerFocuses, rlBetaSubmissions, rlReviewCandidates, rlReviewImports, rlReviewLabels, rlReviewers, waitlist } from "../../db/schema";
+import { analysisJobs, analysisRequests, analysisUsage, billingEvents, billingSubscriptions, emailDeliveries, funnelEvents, playerFocuses, productReviewers, productReviewSubmissions, rlBetaSubmissions, rlReviewCandidates, rlReviewImports, rlReviewLabels, rlReviewers, waitlist } from "../../db/schema";
 import { isConfiguredSiteAdmin } from "../../lib/admin";
 import DeleteLeadButton from "./DeleteLeadButton";
 import { subsystemState } from "../../lib/subsystem-controls.mjs";
@@ -10,12 +10,14 @@ import ReviewerAccessForm from "./ReviewerAccessForm";
 import ReviewQueueImport from "./ReviewQueueImport";
 import ReplayCorpusStatusForm from "./ReplayCorpusStatusForm";
 import { percentage, reviewerOperationsSummary } from "../../lib/rl-quality";
+import ProductReviewerAccessForm from "./ProductReviewerAccessForm";
 
 export const dynamic = "force-dynamic";
 
 const gameLabels: Record<string, string> = { general: "General", league: "League of Legends", valorant: "VALORANT", "rocket-league": "Rocket League" };
 const placementLabels: Record<string, string> = { launch_bar: "Launch bar", nav: "Navigation", hero_form: "Hero form", final_form: "Final form", mobile_sticky: "Mobile sticky", pricing_card: "Pricing card", climb_plan: "Climb plan", hero_free_check: "Hero free check", hero_product_preview: "Hero sample report", hero_beta_link: "Hero beta link", nav_free_check: "Navigation free check", mobile_free_check: "Mobile free check", pricing_free: "Pricing free check", demo_beta: "Sample report beta CTA", climb_check_result_form: "Climb Check result form", free_layer: "Free value section", free_layer_beta: "Free section beta CTA" };
 const percent = (part: number, total: number) => total ? `${((part / total) * 100).toFixed(1)}%` : "—";
+const evidenceCount = (value: string) => { try { const parsed = JSON.parse(value) as unknown; return Array.isArray(parsed) ? parsed.length : 0; } catch { return 0; } };
 
 export default async function AdminPage() {
   const user = await requireChatGPTUser("/admin");
@@ -27,7 +29,7 @@ export default async function AdminPage() {
   const db = await getDb();
   const { env } = await import("cloudflare:workers");
   const controls = subsystemState(env as unknown as Record<string, unknown>);
-  const [leads, events, analyses, jobs, subscriptions, usage, deliveries, focuses, billingEventRows, reviewLabels, reviewers, betaReplays, reviewCandidates, reviewImports] = await Promise.all([
+  const [leads, events, analyses, jobs, subscriptions, usage, deliveries, focuses, billingEventRows, reviewLabels, reviewers, betaReplays, reviewCandidates, reviewImports, productReviewerRows, productReviewRows] = await Promise.all([
     db.select().from(waitlist).orderBy(desc(waitlist.createdAt), desc(waitlist.id)).limit(5000),
     db.select().from(funnelEvents).orderBy(desc(funnelEvents.createdAt), desc(funnelEvents.id)).limit(20000),
     db.select().from(analysisRequests).orderBy(desc(analysisRequests.createdAt), desc(analysisRequests.id)).limit(1000),
@@ -41,7 +43,9 @@ export default async function AdminPage() {
     db.select().from(rlReviewers).orderBy(desc(rlReviewers.updatedAt), desc(rlReviewers.id)).limit(100),
     db.select().from(rlBetaSubmissions).orderBy(desc(rlBetaSubmissions.createdAt), desc(rlBetaSubmissions.id)).limit(1000),
     db.select().from(rlReviewCandidates).where(eq(rlReviewCandidates.active, true)).orderBy(desc(rlReviewCandidates.id)).limit(1000),
-    db.select().from(rlReviewImports).orderBy(desc(rlReviewImports.updatedAt), desc(rlReviewImports.id)).limit(10)
+    db.select().from(rlReviewImports).orderBy(desc(rlReviewImports.updatedAt), desc(rlReviewImports.id)).limit(10),
+    db.select().from(productReviewers).orderBy(desc(productReviewers.updatedAt), desc(productReviewers.id)).limit(20),
+    db.select().from(productReviewSubmissions).orderBy(desc(productReviewSubmissions.updatedAt), desc(productReviewSubmissions.id)).limit(20)
   ]);
 
   const uniqueFor = (event: string, game?: string) => new Set(events.filter(row => row.event === event && (!game || row.game === game)).map(row => row.visitorId)).size;
@@ -94,7 +98,7 @@ export default async function AdminPage() {
 
   return <main className="admin-shell">
     <header className="admin-top"><div><span className="logo" aria-hidden="true" /><b>Replay Method operations</b></div><div><span>{user.email}</span><a href={chatGPTSignOutPath("/")}>Sign out</a></div></header>
-    <section className="admin-heading"><div><span>MISSION CONTROL</span><h1>{analyses.length} match analyses</h1><p>Monitor automated ingestion, failures, coaching quality and the real improvement funnel from one place.</p></div><div className="admin-heading-actions"><Link className="export-button" href="/admin/rl-review">RL review lab →</Link><Link className="export-button" href="/api/admin/waitlist">Waitlist CSV ↓</Link></div></section>
+    <section className="admin-heading"><div><span>MISSION CONTROL</span><h1>{analyses.length} match analyses</h1><p>Monitor automated ingestion, failures, coaching quality and the real improvement funnel from one place.</p></div><div className="admin-heading-actions"><Link className="export-button" href="/admin/rl-review">RL review lab →</Link><Link className="export-button" href="/product-review">Product review →</Link><Link className="export-button" href="/api/admin/waitlist">Waitlist CSV ↓</Link></div></section>
     <section className="admin-launch"><div><span>READY-TO-POST LINKS</span><b>Use the calibration link for replay recruitment. It never promises analysis.</b></div><Link href="/rocket-league-beta?utm_source=community&utm_campaign=rl-calibration-01">Replay contribution ↗</Link><Link href="/climb-check?utm_source=tiktok&utm_campaign=climb-check-01">Free Climb Check ↗</Link><Link href="/league?utm_source=tiktok&utm_campaign=league-01">League ↗</Link><Link href="/valorant?utm_source=tiktok&utm_campaign=valorant-01">VALORANT ↗</Link></section>
     <section className="admin-stats"><article><span>Running / queued</span><b>{runningAnalyses}</b></article><article><span>Reports ready</span><b>{readyAnalyses}</b></article><article><span>Blocked</span><b>{blockedAnalyses}</b></article><article><span>Failed</span><b>{failedAnalyses}</b></article><article><span>Avg. processing</span><b>{averageDuration}</b></article><article><span>Estimated engine cost</span><b>${estimatedCost.toFixed(4)}</b></article><article><span>Avg. report rating</span><b>{averageRating}</b></article><article><span>Unique visits</span><b>{visitors}</b></article><article><span>Analysis submitted</span><b>{uniqueFor("analysis_submit")}</b></article></section>
 
@@ -110,6 +114,9 @@ export default async function AdminPage() {
     <section className="admin-review-audit"><article><span>ACTIVE PRIVATE SET</span><b>{reviewSummary.candidates} candidates</b><small>{latestReviewImport ? `${latestReviewImport.replayCount} replays · 0 holdout overlap · ${latestReviewImport.reviewSetId}` : "No locked private import recorded"}</small></article><article><span>INDEPENDENT COVERAGE</span><b>{reviewSummary.doubleReviewed} / {reviewSummary.candidates}</b><small>{reviewSummary.independentReviewers} qualified reviewers · agreement {percentage(reviewSummary.agreement, 1)}</small></article><article><span>CONSENSUS</span><b>{reviewSummary.confirmed} positive · {reviewSummary.rejected} negative</b><small>{reviewSummary.falsePositives} false positives · {reviewSummary.unresolved} unresolved</small></article><article><span>EXCLUSIONS</span><b>{reviewSummary.exclusions.insufficientIndependentLabels} insufficient</b><small>{reviewSummary.exclusions.uncertain} uncertain · {reviewSummary.exclusions.oneToOneDisagreement} 1–1 disagreement · {reviewSummary.exclusions.unqualifiedOrWrongVersionLabels} ineligible labels</small></article><article><span>TIMESTAMPS</span><b>{reviewSummary.timestampVerifiedLabels} / {reviewSummary.timestampDenominator}</b><small>Verified among qualified locked labels</small></article></section>
     {reviewSummary.cohorts.length > 0 && <section className="admin-review-cohorts"><div><span>COHORT</span><b>CANDIDATES</b><b>DOUBLE</b><b>POSITIVE</b><b>NEGATIVE</b><b>UNRESOLVED</b></div>{reviewSummary.cohorts.map(cohort => <div key={cohort.cohort}><span>{cohort.cohort}</span><b>{cohort.candidates}</b><b>{cohort.doubleReviewed}</b><b>{cohort.confirmed}</b><b>{cohort.rejected}</b><b>{cohort.unresolved}</b></div>)}</section>}
     <section className="admin-reviewer-list">{reviewers.length === 0 ? <div className="admin-empty"><b>No reviewer applications yet.</b><p>Ask each reviewer to sign in once at /admin/rl-review.</p></div> : reviewers.map(reviewer => <article key={reviewer.id}><div><b>{reviewer.displayName || reviewer.email}</b><span>{reviewer.email}</span><small>{reviewer.publicId.slice(0, 10).toUpperCase()} · {reviewer.status} · {reviewer.platform ?? "platform unverified"}</small></div><ReviewerAccessForm reviewer={{ id: reviewer.id, status: reviewer.status, qualification: reviewer.qualification, playlistQualificationsJson: reviewer.playlistQualificationsJson, platform: reviewer.platform, qualificationNotes: reviewer.qualificationNotes }} /></article>)}</section>
+
+    <section className="admin-section-title waitlist-heading"><div><span>SEPARATE PRODUCT REVIEWS</span><h2>{productReviewRows.filter(row => row.state === "submitted").length} submitted</h2></div><small>Commercial and UX feedback are isolated from RL detector labels and use private evidence storage.</small></section>
+    <section className="admin-product-reviewers">{productReviewerRows.length === 0 ? <div className="admin-empty"><b>No product reviewer requests yet.</b><p>Ask Nikki and Marcel to sign in once at /product-review, then assign their separate lanes here.</p></div> : productReviewerRows.map(reviewer => { const submission = productReviewRows.find(row => row.reviewerId === reviewer.id && row.reviewKind === reviewer.reviewKind); return <article key={reviewer.id}><div><b>{reviewer.displayName || reviewer.email}</b><span>{reviewer.email}</span><small>{reviewer.status} · {reviewer.reviewKind || "lane unassigned"}{submission ? ` · ${submission.state} · ${evidenceCount(submission.evidenceKeysJson)} evidence files` : " · no server draft"}</small>{submission?.overallRecommendation && <p>{submission.overallRecommendation}</p>}{submission && <Link href={`/api/admin/product-reviews/${submission.id}/evidence`}>Private evidence manifest ↓</Link>}</div><ProductReviewerAccessForm reviewer={{ id: reviewer.id, status: reviewer.status, reviewKind: reviewer.reviewKind }} /></article>; })}</section>
 
     <section className="admin-analysis-wrap"><div className="admin-section-title"><div><span>AUTOMATED ANALYSIS QUEUE</span><h2>Jobs and quality review</h2></div><small>Open an item to inspect evidence, engine versions, retry safely or apply a quality override.</small></div>{analyses.length === 0 ? <div className="admin-empty"><b>No match submissions yet.</b><p>Send someone to the free analysis link above.</p></div> : <div className="admin-analysis-list">{analyses.map(row => { const job = jobByRequest.get(row.id); return <Link href={`/admin/analyses/${row.id}`} key={row.id}><i className={row.status}>{row.status === "ready" ? "✓" : row.status === "failed" || row.status === "blocked" ? "!" : row.status === "analyzing" ? "↻" : "↓"}</i><div><span>{gameLabels[row.game] ?? row.game} · {row.currentRank}{row.targetRank ? ` → ${row.targetRank}` : ""}</span><b>{row.goal}</b><small>{job?.stageLabel || "Legacy quality-review workflow"} · {row.email} · {new Date(`${row.createdAt}Z`).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</small></div><em className={row.status}>{row.status} →</em></Link>; })}</div>}</section>
 
