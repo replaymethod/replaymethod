@@ -23,9 +23,10 @@ type BillingSnapshot = {
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
   paymentGrace: boolean;
-  used: number;
-  limit: number;
-  windowEnd: string;
+  used: number | null;
+  limit: number | null;
+  unlimited?: boolean;
+  windowEnd: string | null;
 };
 
 export default function ReportsClient() {
@@ -115,7 +116,7 @@ export default function ReportsClient() {
     blocked: "Analysis paused — evidence preserved",
     failed: "Analysis needs attention",
   }[report.status] ?? "Report pending");
-  const planName = billing?.planKey === "semiannual" ? "6-month climb block" : billing?.planKey === "quarterly" ? "3-month cycle" : billing?.planKey === "monthly" ? "Monthly" : billing?.hasBillingAccount ? "No active plan" : "Free proof";
+  const planName = billing?.unlimited ? "Owner QA" : billing?.planKey === "semiannual" ? "6-month climb block" : billing?.planKey === "quarterly" ? "3-month cycle" : billing?.planKey === "monthly" ? "Monthly" : billing?.hasBillingAccount ? "No active plan" : "Free proof";
   const trackNewAnalysis = () => trackProductEvent(reports?.length ? "followup_started" : "analysis_start", "general", reports?.length ? "history_followup" : "history_empty");
 
   return (
@@ -133,17 +134,19 @@ export default function ReportsClient() {
           <aside className="billing-summary" aria-label="Analysis allowance and subscription">
             <div>
               <span>{planName.toUpperCase()}</span>
-              <strong>{billing.used} of {billing.limit} analyses used</strong>
+              <strong>{billing.unlimited ? "Unlimited QA analysis allowance" : `${billing.used} of ${billing.limit} analyses used`}</strong>
               <small>
-                {billing.planKey
-                  ? `${billing.cancelAtPeriodEnd ? "Access ends" : "Current billing period ends"} ${new Date(billing.currentPeriodEnd || billing.windowEnd).toLocaleDateString("en-GB", { dateStyle: "medium" })}`
+                {billing.unlimited
+                  ? "Server-side QA access is active without Stripe. Normal security, file-size and abuse limits remain enforced."
+                  : billing.planKey
+                  ? `${billing.cancelAtPeriodEnd ? "Access ends" : "Current billing period ends"} ${new Date(billing.currentPeriodEnd || billing.windowEnd || "").toLocaleDateString("en-GB", { dateStyle: "medium" })}`
                   : billing.hasBillingAccount
                     ? "Paid access is inactive. Your completed reports remain readable."
                     : "Your first completed diagnosis is free. No card or renewal."}
               </small>
               {billing.paymentGrace && <p role="alert">Payment recovery is in progress. Update your payment method to keep access uninterrupted.</p>}
             </div>
-            {billing.hasBillingAccount ? (
+            {billing.unlimited ? null : billing.hasBillingAccount ? (
               <button type="button" onClick={openPortal} disabled={portalState === "loading"}>
                 {portalState === "loading" ? "Opening secure portal…" : "Manage subscription"}
               </button>

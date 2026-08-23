@@ -189,7 +189,7 @@ export async function POST(request: Request) {
     });
     const player = await db.select({ id: players.id }).from(players).where(eq(players.email, email)).get();
     if (!player) throw new Error("Could not create the player identity.");
-    await reserveAnalysisAccess(request, player.id, publicId);
+    const reservedAccess = await reserveAnalysisAccess(request, player.id, publicId) as { reportingScope?: string };
     reservedPublicId = publicId;
 
     let originalFileName: string | null = null;
@@ -232,6 +232,8 @@ export async function POST(request: Request) {
       fileSize,
       goal: goal || "Find the most useful evidence-backed focus in this replay.",
       notes,
+      reportingScope: reservedAccess.reportingScope === "owner_qa" ? "owner_qa" : "product",
+      calibrationOptIn: false,
       source,
       campaign
     }).returning({ id: analysisRequests.id }).get();
