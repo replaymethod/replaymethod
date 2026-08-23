@@ -32,7 +32,7 @@ function MethodStrip() {
   </section>;
 }
 
-function ProductMoment() {
+function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
   function focusUploader() {
     const uploader = document.getElementById("replay-upload");
     if (!uploader) return;
@@ -47,7 +47,7 @@ function ProductMoment() {
       <span>THE IMPROVEMENT LOOP</span>
       <h2>See the moment.<br />Queue with one rule.</h2>
       <p>Replay Method turns supported match evidence into one focus you can carry into the next game. If the evidence is not strong enough, it stops instead of filling the screen with guesses.</p>
-      <div className="marcel-truth"><i>✓</i><span><b>Truth before hype</b>Public coaching stays off until real replay evidence and two independent qualified reviewers clear the detector gate.</span></div>
+      <div className="marcel-truth"><i>✓</i><span><b>Truth before hype</b>{earlyAccessOpen ? "Experimental Early Access coaching is clearly marked while formal detector validation continues independently." : "Coaching stays off until the current release gate opens."}</span></div>
     </div>
     <div className="marcel-demo" aria-label="Illustrative Replay Method product loop">
       <header><span>ILLUSTRATIVE FLOW</span><em>NOT A LIVE FINDING</em></header>
@@ -65,7 +65,7 @@ function ProductMoment() {
   </section>;
 }
 
-export default function Landing({ game = "general", checkoutOpen = false, engineOpen = false, calibrationOpen = false }: { game?: GameKey; checkoutOpen?: boolean; engineOpen?: boolean; calibrationOpen?: boolean }) {
+export default function Landing({ game = "general", checkoutOpen = false, engineOpen = false, calibrationOpen = false, earlyAccessOpen = false }: { game?: GameKey; checkoutOpen?: boolean; engineOpen?: boolean; calibrationOpen?: boolean; earlyAccessOpen?: boolean }) {
   useEffect(() => {
     const key = `replaymethod-view-${location.pathname}`;
     if (!sentViews.has(key)) {
@@ -84,9 +84,9 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
 
     <section className="marcel-hero shell">
       <div className="marcel-hero-copy">
-        <span className="marcel-status"><i /> ROCKET LEAGUE · {engineOpen ? "PC REPLAY BETA" : "PRIVATE BETA"}</span>
+        <span className="marcel-status"><i /> ROCKET LEAGUE · {engineOpen && earlyAccessOpen ? "EARLY ACCESS BETA" : engineOpen ? "PC REPLAY BETA" : "PRIVATE BETA"}</span>
         <h1>Stop grinding blind.<br /><em>Find the decision costing you games.</em></h1>
-        <p>{engineOpen ? "Drop one original PC replay. The engine reads the playlist and players, then asks only which player is you. If evidence has not earned a coaching claim, it stops and tells you." : "Drop one original PC replay. Replay Method securely captures the match and the exact player to follow—so real evidence can replace generic advice."}</p>
+        <p>{engineOpen && earlyAccessOpen ? "Drop one original PC replay. Choose your player, receive verified match facts and—only when the evidence clears the Early Access policy—one clearly marked experimental coaching insight." : engineOpen ? "Drop one original PC replay. The engine reads the playlist and players, then asks only which player is you. If evidence has not earned a coaching claim, it stops and tells you." : "Drop one original PC replay. Replay Method securely captures the match and the exact player to follow—so real evidence can replace generic advice."}</p>
         <div className="marcel-trust-row"><span>First analysis included · Private · No card</span></div>
       </div>
       <div className="marcel-upload-stage">
@@ -95,20 +95,20 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
     </section>
 
     <MethodStrip />
-    <ProductMoment />
+    <ProductMoment earlyAccessOpen={earlyAccessOpen} />
     {checkoutOpen && <PricingLadder analysisHref="#replay-upload" game="rocket-league" checkoutOpen replayReady />}
 
     <section className="marcel-beta-truth shell">
-      <span>WHY THIS IS A PRIVATE BETA</span>
-      <h2>{engineOpen ? "The engine can read the match. Coaching still has to earn the right to speak." : "Your replay helps build the proof. It does not buy a promise."}</h2>
-      <p>{engineOpen ? "Every replay enters the real parser and evidence pipeline. Exact detector scopes stay private until qualified independent review and holdout performance pass. A safe stop is a product result—not a failed promise." : "Uploads can open before coaching does. Every replay is stored with consent, player identity and rank context. Qualified reviewers then label detector moments independently. Only patterns that survive that process may appear in a future report."}</p>
+      <span>{earlyAccessOpen ? "WHY THIS IS EARLY ACCESS" : "WHY THIS IS A PRIVATE BETA"}</span>
+      <h2>{engineOpen && earlyAccessOpen ? "Verified facts first. Experimental coaching only where this replay supports it." : engineOpen ? "The engine can read the match. Coaching still has to earn the right to speak." : "Your replay helps build the proof. It does not buy a promise."}</h2>
+      <p>{engineOpen && earlyAccessOpen ? "Your report separates parser-backed facts, experimental coaching and local abstentions. Expert review continues independently and no Early Access result is represented as formally validated or individually human-reviewed." : engineOpen ? "Every replay enters the real parser and evidence pipeline. Exact detector scopes stay private until qualified independent review and holdout performance pass. A safe stop is a product result—not a failed promise." : "Uploads can open before coaching does. Every replay is stored with consent, player identity and rank context. Qualified reviewers then label detector moments independently. Only patterns that survive that process may appear in a future report."}</p>
       <Link href="/rocket-league-beta">{engineOpen ? "Contribute a calibration replay separately →" : "See how replay validation works →"}</Link>
     </section>
 
     <section className="marcel-faq shell">
       <details><summary>Where is my Rocket League replay?<b>+</b></summary><p>On Windows: Documents → My Games → Rocket League → TAGame → Demos. Choose the original file ending in .replay.</p></details>
-      <details><summary>Will I get an analysis now?<b>+</b></summary><p>{engineOpen ? "The live engine parses the replay, identifies its playlist and lets you choose your player. You receive a real report only when a detector has passed its exact evidence gate; otherwise you receive an honest evidence-status result and your free successful analysis remains unused." : "Not yet. Intake is for the private validation corpus. You receive a secure reference immediately; public coaching remains off until the evidence gate passes."}</p></details>
-      <details><summary>What happens to the file?<b>+</b></summary><p>It is stored privately for consented calibration, never used as public social proof and never treated as a validated result without review.</p></details>
+      <details><summary>Will I get an analysis now?<b>+</b></summary><p>{engineOpen && earlyAccessOpen ? "Yes. You receive a complete private report with verified match facts. A coaching insight appears only if it clears the conservative Early Access evidence policy; otherwise that part abstains locally and explains why." : engineOpen ? "The live engine parses the replay, identifies its playlist and lets you choose your player. You receive a real report only when a detector has passed its exact evidence gate; otherwise you receive an honest evidence-status result." : "Not yet. Intake is for the private validation corpus. You receive a secure reference immediately; public coaching remains off until the evidence gate passes."}</p></details>
+      <details><summary>What happens to the file?<b>+</b></summary><p>It is stored privately to deliver your requested report. Customer analysis replays are not used for detector calibration, training or evaluation without a separate explicit opt-in.</p></details>
     </section>
 
     <footer className="marcel-footer shell">

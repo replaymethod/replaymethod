@@ -5,6 +5,7 @@ import { getDatabase } from "../../../db";
 import { loadPublicReport } from "../../../lib/report-data";
 import { loadE2eReportFixture } from "../../../lib/e2e-report-fixtures";
 import { paidCheckoutReadiness } from "../../../lib/subsystem-controls.mjs";
+import { subsystemEnabled } from "../../../lib/subsystem-controls.mjs";
 import ReportClient from "./ReportClient";
 import { canAccessAnalysis } from "../../../lib/report-access.mjs";
 
@@ -19,11 +20,13 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   const { publicId } = await params;
   let e2eFixturesEnabled = false;
   let checkoutOpen = false;
+  let earlyAccessOutputEnabled = false;
   try {
     const { env } = await import("cloudflare:workers");
     const runtime = env as unknown as Record<string, unknown> & { REPLAYMETHOD_E2E_FIXTURES?: string };
     e2eFixturesEnabled = runtime.REPLAYMETHOD_E2E_FIXTURES === "true";
     checkoutOpen = paidCheckoutReadiness(runtime).ready;
+    earlyAccessOutputEnabled = subsystemEnabled(runtime.RL_EARLY_ACCESS_OUTPUT_ENABLED);
   } catch { /* Only the local E2E server defines this fail-closed binding. */ }
   const query = await searchParams;
   const requestHeaders = await headers();
@@ -34,7 +37,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     ? true
     : await canAccessAnalysis(await getDatabase(), publicId, accessToken, requestHeaders.get("cookie") || "");
   if (!authorized) notFound();
-  const report = e2eFixturesEnabled ? loadE2eReportFixture(publicId) || await loadPublicReport(publicId) : await loadPublicReport(publicId);
+  const report = e2eFixturesEnabled ? loadE2eReportFixture(publicId) || await loadPublicReport(publicId, { earlyAccessOutputEnabled }) : await loadPublicReport(publicId, { earlyAccessOutputEnabled });
   if (!report) notFound();
   return <ReportClient initial={report} accessToken={accessToken} delivery={query.delivery === "email" ? "email" : "link"} checkoutOpen={checkoutOpen} />;
 }

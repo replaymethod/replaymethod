@@ -26,6 +26,7 @@ export type AnalysisInput = {
 export type AdapterEnv = {
   BUCKET: R2Bucket;
   RL_ENGINE_ENABLED?: string;
+  RL_EARLY_ACCESS_OUTPUT_ENABLED?: string;
   RIOT_INGESTION_ENABLED?: string;
   RL_ENGINE_URL?: string;
   RL_ENGINE_TOKEN?: string;
@@ -89,7 +90,10 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
   if (!replay) return blocked("raw_input_missing", "The uploaded replay could not be found.", `R2 object ${input.fileKey} is missing.`);
   let response: Response;
   try {
-    response = await requestRocketLeagueAnalysis(engine, input, replay.body);
+    response = await requestRocketLeagueAnalysis(engine, {
+      ...input,
+      earlyAccessOutputEnabled: subsystemEnabled(env.RL_EARLY_ACCESS_OUTPUT_ENABLED),
+    }, replay.body);
   } catch (error) {
     const timedOut = error instanceof DOMException && ["AbortError", "TimeoutError"].includes(error.name);
     return blocked(

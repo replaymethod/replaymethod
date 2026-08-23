@@ -171,6 +171,56 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
       persistedFocusFindings.push({ finding: result.findings[index], findingId: persisted.id });
     }
 
+    if (result.abstention && result.outputTier === "experimental_early_access") {
+      const completedAt = new Date().toISOString();
+      const durationMs = Date.now() - started;
+      if (!await reserveExistingAnalysisUsage(env.DB, job.requestId)) {
+        await env.DB.batch([
+          env.DB.prepare("UPDATE analysis_requests SET status = 'blocked', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(job.requestId),
+          env.DB.prepare(`UPDATE analysis_jobs SET status = 'blocked', stage = 'blocked', stage_label = 'Analysis allowance is no longer available',
+            error_code = 'analysis_entitlement_unavailable', error_message = 'A late Early Access completion could not reacquire the released allowance.',
+            next_retry_at = NULL, duration_ms = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(durationMs, job.jobId),
+        ]);
+        return;
+      }
+      const completion = await env.DB.batch([
+        env.DB.prepare(`UPDATE analysis_usage SET status = 'consumed', consumed_at = ?, released_at = NULL, updated_at = CURRENT_TIMESTAMP
+          WHERE analysis_request_id = ? AND status = 'reserved'`).bind(completedAt, job.requestId),
+        env.DB.prepare(`UPDATE analysis_requests SET status = 'ready', highest_impact_mistake = NULL, why_it_costs = NULL,
+          evidence_moments = NULL, next_queue_rule = NULL, practice_plan = NULL,
+          coach_note = ?, ready_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+          AND EXISTS (SELECT 1 FROM analysis_usage WHERE analysis_request_id = ? AND status = 'consumed')`).bind(
+            "No experimental coaching finding cleared this replay's evidence threshold. The verified match facts remain available below.",
+            completedAt,
+            job.requestId,
+            job.requestId,
+          ),
+        env.DB.prepare(`UPDATE analysis_jobs SET status = 'completed', stage = 'completed', stage_label = 'Verified facts report ready',
+          error_code = ?, error_message = ?, parser_version = ?, analyzer_version = ?, detector_version = ?, coaching_version = ?,
+          schema_version = ?, estimated_cost_micros = ?, duration_ms = ?, completed_at = ?, next_retry_at = NULL, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND EXISTS (SELECT 1 FROM analysis_usage WHERE analysis_request_id = ? AND status = 'consumed')`).bind(
+            result.abstention.code,
+            encodePlayerResolutionContext(result.abstention.internalMessage, [], {
+              mode: result.normalized.mode ?? null,
+              gameVersion: result.normalized.gameVersion ?? null,
+              occurredAt: result.normalized.occurredAt ?? null,
+            }),
+            result.versions.parser,
+            result.versions.analyzer,
+            result.versions.detector,
+            result.versions.coaching,
+            result.versions.schema,
+            result.estimatedCostMicros,
+            durationMs,
+            completedAt,
+            job.jobId,
+            job.requestId,
+          ),
+      ]);
+      if (!completion[0].meta.changes) return;
+      return;
+    }
+
     if (result.abstention) {
       const completedAt = new Date().toISOString();
       const durationMs = Date.now() - started;
@@ -206,7 +256,8 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     }
 
     await setStage(env.DB, job.jobId, "coaching", "Prioritizing your coaching focus");
-    const synthesis = await synthesizeCoaching(result.findings, env);
+    const experimentalEarlyAccess = result.outputTier === "experimental_early_access";
+    const synthesis = await synthesizeCoaching(result.findings, env, { experimentalEarlyAccess });
     const report = synthesis.report;
     const readyAt = new Date().toISOString();
     const durationMs = Date.now() - started;
@@ -244,7 +295,7 @@ export async function processAnalysisJob(publicId: string, env: PipelineEnv) {
     ]);
     if (!completion[0].meta.changes) return;
 
-    if (job.playerId) {
+    if (job.playerId && !experimentalEarlyAccess) {
       try {
         const focusFindings = [...persistedFocusFindings].sort((left, right) =>
           Number(right.finding.id === report.primaryFindingId) - Number(left.finding.id === report.primaryFindingId));

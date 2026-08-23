@@ -37,6 +37,7 @@ the flag name and current boolean state, never a secret value.
 | `TRANSACTIONAL_EMAIL_ENABLED` | Provider delivery attempts |
 | `RL_ENGINE_ENABLED` | Web-to-Rocket-League-worker calls |
 | `RL_PUBLIC_DETECTORS_ENABLED` | Customer-facing detector output at the worker boundary |
+| `RL_EARLY_ACCESS_OUTPUT_ENABLED` | Separately marked experimental output; required in both Sites and the replay-engine host |
 | `RIOT_INGESTION_ENABLED` | Riot adapter ingestion |
 | `BACKGROUND_PROCESSING_ENABLED` | Automatic analysis retry scheduling |
 
@@ -46,6 +47,12 @@ relevant truthful blocked state, then investigate. Disabling email must not
 change report state; disabling billing must not break free surfaces; disabling
 the worker must preserve uploads; disabling public detectors must remain safe
 even while the worker is live.
+
+The Early Access flag is deliberately independent from
+`RL_PUBLIC_DETECTORS_ENABLED`. Turning it off in either the web environment or
+the replay-engine environment immediately returns new processing to the
+fail-closed verified-parse state. It never changes a detector lifecycle or
+formal validation status. Keep checkout off while Early Access is experimental.
 
 ## Backup and restore
 

@@ -39,6 +39,10 @@ names preserve their exact identity.
 - `RL_ENGINE_ENABLED=true` is required before the web adapter calls the worker.
 - `RL_PUBLIC_DETECTORS_ENABLED=true` is a separate process-level publication
   switch; it never substitutes for a passing detector activation record.
+- `RL_EARLY_ACCESS_OUTPUT_ENABLED=true` is a separate, reversible experimental
+  switch. The engine also requires the web worker to request Early Access for
+  that individual job, so either environment can stop new output. It does not
+  enable or validate a detector.
 - `BACKGROUND_PROCESSING_ENABLED=true` permits automatic retry scheduling.
 
 The server sets bounded header/request/keep-alive behavior, drains on SIGTERM
@@ -111,6 +115,14 @@ Public promotion additionally uses a conservative Wilson confidence floor so a
 small apparently perfect sample cannot pass. The deterministic coaching
 composer consumes only promoted findings, outputs one primary behavior with a
 practice and verification plan, and otherwise abstains.
+
+The public free Early Access lane is a different output tier. It exposes only
+bounded deterministic interpretations with repeated timestamped evidence in
+the submitted replay, labels them experimental, and reports confidence as
+within-match evidence strength rather than detector precision. Generic shadow
+observations do not become advice. Every other detector abstains locally, and
+the report still returns parser-verified match facts. Early Access feedback is
+never counted as expert ground truth.
 
 The detector registry defines lifecycle, exact versions, supported modes,
 sample floors, dependencies, conflicts and duplicate groups. Calibration

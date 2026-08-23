@@ -9,11 +9,11 @@ if (!parentPort) {
 initializeParser();
 parentPort.postMessage({ type: "ready" });
 
-parentPort.on("message", ({ jobId, operation, bytes, player, rank, publicOutputEnabled }) => {
+parentPort.on("message", ({ jobId, operation, bytes, player, rank, publicOutputEnabled, earlyAccessOutputEnabled }) => {
   try {
     const result = operation === "inspect"
       ? { kind: "inspection", normalized: inspectReplay(bytes, player, rank) }
-      : analyzeReplay(bytes, player, rank, { publicOutputEnabled });
+      : analyzeReplay(bytes, player, rank, { publicOutputEnabled, earlyAccessOutputEnabled });
     parentPort.postMessage({ jobId, ok: true, result });
   } catch (error) {
     parentPort.postMessage({

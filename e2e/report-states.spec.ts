@@ -6,6 +6,7 @@ const reports = {
   ready: "/report/33333333333333333333333333333333",
   stale: "/report/44444444444444444444444444444444",
   identity: "/report/55555555555555555555555555555555",
+  abstained: "/report/66666666666666666666666666666666",
 };
 
 test.describe("private report states", () => {
@@ -23,10 +24,13 @@ test.describe("private report states", () => {
     await expect(page.getByRole("heading", { name: /could not verify enough evidence/i })).toBeVisible();
   });
 
-  test("a completed report shows one finding, evidence and next rule", async ({ page }) => {
+  test("a completed Early Access report separates verified facts, one experimental insight and the next rule", async ({ page }) => {
     await page.goto(reports.ready);
     await expect(page.getByText("READY", { exact: true })).toBeVisible();
-    await expect(page.getByText("YOUR PRIMARY LEAK")).toBeVisible();
+    await expect(page.getByText("EARLY ACCESS BETA")).toBeVisible();
+    await expect(page.getByText("VERIFIED MATCH FACTS")).toBeVisible();
+    await expect(page.getByText("EXPERIMENTAL COACHING INSIGHT")).toBeVisible();
+    await expect(page.getByText(/not been human-reviewed/i)).toBeVisible();
     await expect(page.getByText("At 3:47, both teammates cross the ball line")).toBeVisible();
     await expect(page.getByText(/protect back post until the play resets/i)).toBeVisible();
   });
@@ -36,6 +40,16 @@ test.describe("private report states", () => {
     await expect(page.getByText("AUTOMATIC RECOVERY STARTED")).toBeVisible();
     await expect(page.getByRole("heading", { name: /took too long/i })).toBeVisible();
     await expect(page.getByText(/do not need to upload the replay again/i)).toBeVisible();
+  });
+
+  test("a successful parse remains a complete report when coaching abstains locally", async ({ page }) => {
+    await page.goto(reports.abstained);
+    await expect(page.getByText("READY", { exact: true })).toBeVisible();
+    await expect(page.getByText("VERIFIED MATCH FACTS")).toBeVisible();
+    await expect(page.getByText("LOCAL COACHING ABSTENTION")).toBeVisible();
+    await expect(page.getByText(/will not fill the empty coaching section with generic advice/i)).toBeVisible();
+    await expect(page.getByText("EARLY ACCESS FEEDBACK")).toBeVisible();
+    await expect(page.getByText("EXPERIMENTAL COACHING INSIGHT")).toHaveCount(0);
   });
 
   test("a mismatched player can select a parsed identity without re-uploading", async ({ page }) => {

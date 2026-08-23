@@ -19,6 +19,7 @@ test("production landing opens replay processing independently from detector pub
   const home = await read("../app/page.tsx");
   assert.match(home, /RL_ENGINE_ENABLED/);
   assert.doesNotMatch(home, /RL_PUBLIC_DETECTORS_ENABLED/);
+  assert.match(home, /RL_EARLY_ACCESS_OUTPUT_ENABLED/);
   assert.match(home, /RL_CALIBRATION_INTAKE_ENABLED/);
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
   assert.match(landing, /<QuickReplayStart placement="marcel_hero"/);

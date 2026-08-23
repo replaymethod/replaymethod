@@ -7,6 +7,7 @@ import { decodePlayerResolutionContext } from "../../../../lib/player-resolution
 import { declaredBodyTooLarge, isSameOriginRequest } from "../../../../lib/request-security.mjs";
 import { reserveExistingAnalysisUsage } from "../../../../lib/analysis-usage-state.mjs";
 import { canAccessAnalysis, reportAccessToken } from "../../../../lib/report-access.mjs";
+import { subsystemEnabled } from "../../../../lib/subsystem-controls.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ publ
   if (!await canAccessAnalysis(database, publicId, reportAccessToken(request), request.headers.get("cookie") || "")) {
     return Response.json({ error: "Not found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
   }
-  const report = await loadPublicReport(publicId);
+  let earlyAccessOutputEnabled = false;
+  try {
+    const { env } = await import("cloudflare:workers");
+    earlyAccessOutputEnabled = subsystemEnabled((env as unknown as { RL_EARLY_ACCESS_OUTPUT_ENABLED?: string }).RL_EARLY_ACCESS_OUTPUT_ENABLED);
+  } catch { /* Fail closed outside the bound worker environment. */ }
+  const report = await loadPublicReport(publicId, { earlyAccessOutputEnabled });
   if (!report) return Response.json({ error: "Not found" }, { status: 404 });
   return Response.json(report, { headers: { "Cache-Control": "no-store" } });
 }

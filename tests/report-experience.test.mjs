@@ -39,3 +39,18 @@ test("keeps confidence, limitations and feedback controls accessible", async () 
   assert.match(client, /role="alert"/);
   assert.doesNotMatch(client, /shadowRun|review_candidates|shadow-runtime|rl_review_candidates/);
 });
+
+test("separates Early Access facts, experimental coaching, abstention and product feedback", async () => {
+  const [client, data] = await Promise.all([readFile(clientPath, "utf8"), readFile(dataPath, "utf8")]);
+  assert.match(data, /badge: "EARLY ACCESS BETA"/);
+  assert.match(data, /heading: "Built from your real replay\. Refined through expert validation\."/);
+  assert.match(client, /data\.earlyAccess\.badge/);
+  assert.match(client, /data\.earlyAccess\.heading/);
+  assert.match(client, /VERIFIED MATCH FACTS/);
+  assert.match(client, /EXPERIMENTAL COACHING INSIGHT/);
+  assert.match(client, /LOCAL COACHING ABSTENTION/);
+  assert.match(client, /not expert ground truth and does not validate a detector/);
+  assert.match(data, /formalValidationStatus: "not_validated"/);
+  assert.match(data, /earlyAccess\?\.coachingStatus !== "abstained"/);
+  assert.match(data, /Experimental coaching display is temporarily paused by the Early Access kill switch/);
+});
