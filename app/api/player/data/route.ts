@@ -17,12 +17,12 @@ export async function GET(request: Request) {
     const player = await authenticatedPlayer(request, database);
     if (!player) return Response.json({ error: "Verify your email before exporting account data." }, { status: 401, headers: jsonHeaders() });
 
-    const [analyses, accounts, focuses, usage, subscriptions] = await Promise.all([
+    const [analyses, accounts, focuses, usage, subscriptions, entitlements] = await Promise.all([
       database.prepare(`SELECT ar.public_id, ar.game, ar.current_rank, ar.target_rank, ar.player_context,
         ar.evidence_type, ar.evidence_url, ar.original_file_name, ar.file_size, ar.goal, ar.notes,
         ar.status, ar.highest_impact_mistake, ar.why_it_costs, ar.evidence_moments,
         ar.next_queue_rule, ar.practice_plan, ar.coach_note, ar.feedback_score, ar.feedback_text,
-        ar.case_study_consent, ar.created_at, ar.ready_at
+        ar.case_study_consent, ar.reporting_scope, ar.calibration_opt_in, ar.created_at, ar.ready_at
         FROM analysis_requests ar
         JOIN analysis_jobs aj ON aj.analysis_request_id = ar.id
         WHERE aj.player_id = ? ORDER BY ar.created_at DESC`).bind(player.id).all(),
@@ -38,6 +38,8 @@ export async function GET(request: Request) {
       database.prepare(`SELECT plan_key, status, current_period_start, current_period_end,
         cancel_at_period_end, canceled_at, ended_at, grace_until, created_at, updated_at
         FROM billing_subscriptions WHERE player_id = ? ORDER BY created_at DESC`).bind(player.id).all(),
+      database.prepare(`SELECT public_id, entitlement_key, status, granted_at, revoked_at, updated_at
+        FROM player_entitlements WHERE player_id = ? ORDER BY granted_at DESC`).bind(player.id).all(),
     ]);
 
     const exportBody = {
@@ -49,6 +51,7 @@ export async function GET(request: Request) {
       trainingFocuses: focuses.results || [],
       analysisUsage: usage.results || [],
       subscriptions: subscriptions.results || [],
+      entitlements: entitlements.results || [],
       excludedOperationalData: "Secret tokens, provider identifiers, security logs and de-identified aggregate quality data are not included.",
     };
     const stamp = new Date().toISOString().slice(0, 10);
@@ -105,6 +108,8 @@ export async function DELETE(request: Request) {
       database.prepare(`DELETE FROM email_deliveries WHERE analysis_request_id IN (${requestIds})`).bind(player.email),
       database.prepare(`DELETE FROM analysis_report_access WHERE analysis_request_id IN (${requestIds})`).bind(player.email),
       database.prepare("DELETE FROM analysis_usage WHERE player_id = ?").bind(player.id),
+      database.prepare("DELETE FROM player_entitlement_audit WHERE player_id = ?").bind(player.id),
+      database.prepare("DELETE FROM player_entitlements WHERE player_id = ?").bind(player.id),
       database.prepare("DELETE FROM replay_upload_parts WHERE upload_session_id IN (SELECT id FROM replay_upload_sessions WHERE email = ?)").bind(player.email),
       database.prepare("DELETE FROM replay_upload_sessions WHERE email = ?").bind(player.email),
       database.prepare("DELETE FROM analysis_jobs WHERE player_id = ?").bind(player.id),

@@ -113,6 +113,8 @@ export const analysisRequests = sqliteTable("analysis_requests", {
   feedbackScore: integer("feedback_score"),
   feedbackText: text("feedback_text"),
   caseStudyConsent: integer("case_study_consent").notNull().default(0),
+  reportingScope: text("reporting_scope").notNull().default("product"),
+  calibrationOptIn: integer("calibration_opt_in", { mode: "boolean" }).notNull().default(false),
   source: text("source").notNull().default("direct"),
   campaign: text("campaign"),
   privacyVersion: text("privacy_version").notNull().default("2026-08-16-beta"),
@@ -142,6 +144,37 @@ export const players = sqliteTable("players", {
 }, table => [
   uniqueIndex("players_public_id_unique").on(table.publicId),
   uniqueIndex("players_email_unique").on(table.email)
+]);
+
+export const playerEntitlements = sqliteTable("player_entitlements", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  entitlementKey: text("entitlement_key").notNull(),
+  status: text("status").notNull().default("active"),
+  grantedBy: text("granted_by").notNull(),
+  grantedAt: text("granted_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  revokedAt: text("revoked_at"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_entitlements_public_id_unique").on(table.publicId),
+  uniqueIndex("player_entitlements_player_key_unique").on(table.playerId, table.entitlementKey),
+  index("player_entitlements_status_idx").on(table.entitlementKey, table.status)
+]);
+
+export const playerEntitlementAudit = sqliteTable("player_entitlement_audit", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  eventKey: text("event_key").notNull(),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  entitlementKey: text("entitlement_key").notNull(),
+  action: text("action").notNull(),
+  analysisPublicId: text("analysis_public_id"),
+  actor: text("actor").notNull(),
+  metadataJson: text("metadata_json").notNull().default("{}"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("player_entitlement_audit_event_unique").on(table.eventKey),
+  index("player_entitlement_audit_player_created_idx").on(table.playerId, table.createdAt)
 ]);
 
 export const playerClaims = sqliteTable("player_claims", {

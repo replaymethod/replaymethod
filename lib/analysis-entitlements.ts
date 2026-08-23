@@ -1,6 +1,8 @@
 import { getDatabase } from "../db";
 import { entitlementWindow, paidEntitlementWindow } from "./entitlement-policy.mjs";
 import { authenticatedPlayer } from "./player-session";
+import { activeOwnerQaEntitlement, reserveOwnerQaUsage } from "./owner-qa-entitlement.mjs";
+import { subsystemEnabled } from "./subsystem-controls.mjs";
 
 type SubscriptionRow = {
   planKey: string;
@@ -28,6 +30,13 @@ async function latestSubscription(db: D1Database, playerId: number) {
 export async function reserveAnalysisAccess(request: Request, playerId: number, analysisPublicId: string) {
   const db = await getDatabase();
   const signedIn = await authenticatedPlayer(request, db);
+  if (signedIn?.id === playerId) {
+    const { env } = await import("cloudflare:workers");
+    if (subsystemEnabled((env as unknown as { OWNER_QA_ENTITLEMENT_ENABLED?: string }).OWNER_QA_ENTITLEMENT_ENABLED)
+      && await activeOwnerQaEntitlement(db, playerId)) {
+      return reserveOwnerQaUsage(db, playerId, analysisPublicId);
+    }
+  }
   const subscription = signedIn?.id === playerId ? await latestSubscription(db, playerId) : null;
   const window = entitlementWindow(subscription, new Date());
 
@@ -66,6 +75,22 @@ export async function releaseAnalysisUsage(analysisPublicId: string) {
 
 export async function billingSnapshot(playerId: number) {
   const db = await getDatabase();
+  const { env } = await import("cloudflare:workers");
+  if (subsystemEnabled((env as unknown as { OWNER_QA_ENTITLEMENT_ENABLED?: string }).OWNER_QA_ENTITLEMENT_ENABLED)
+    && await activeOwnerQaEntitlement(db, playerId)) {
+    return {
+      planKey: null,
+      status: "owner_qa",
+      hasBillingAccount: false,
+      cancelAtPeriodEnd: false,
+      currentPeriodEnd: null,
+      paymentGrace: false,
+      used: null,
+      limit: null,
+      unlimited: true,
+      windowEnd: null,
+    };
+  }
   const subscription = await latestSubscription(db, playerId);
   const window = paidEntitlementWindow(subscription, new Date());
   const effective = window || entitlementWindow(null);
@@ -81,6 +106,7 @@ export async function billingSnapshot(playerId: number) {
     paymentGrace: Boolean(window?.paymentGrace),
     used: Number(count?.count || 0),
     limit: effective.limit,
+    unlimited: false,
     windowEnd: effective.windowEnd,
   };
 }

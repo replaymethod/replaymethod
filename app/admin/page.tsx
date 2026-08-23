@@ -51,22 +51,26 @@ export default async function AdminPage() {
   const uniqueFor = (event: string, game?: string) => new Set(events.filter(row => row.event === event && (!game || row.game === game)).map(row => row.visitorId)).size;
   const visitors = uniqueFor("page_view");
   const uniqueEmails = new Set(leads.map(row => row.email.toLowerCase())).size;
-  const readyAnalyses = analyses.filter(row => row.status === "ready").length;
-  const runningAnalyses = jobs.filter(row => ["queued", "running", "retry"].includes(row.status)).length;
-  const blockedAnalyses = analyses.filter(row => row.status === "blocked").length;
-  const failedAnalyses = analyses.filter(row => row.status === "failed").length;
-  const completedJobs = jobs.filter(row => row.status === "completed" && row.durationMs != null);
+  const productAnalyses = analyses.filter(row => row.reportingScope !== "owner_qa");
+  const productRequestIds = new Set(productAnalyses.map(row => row.id));
+  const productJobs = jobs.filter(row => productRequestIds.has(row.analysisRequestId));
+  const readyAnalyses = productAnalyses.filter(row => row.status === "ready").length;
+  const runningAnalyses = productJobs.filter(row => ["queued", "running", "retry"].includes(row.status)).length;
+  const blockedAnalyses = productAnalyses.filter(row => row.status === "blocked").length;
+  const failedAnalyses = productAnalyses.filter(row => row.status === "failed").length;
+  const completedJobs = productJobs.filter(row => row.status === "completed" && row.durationMs != null);
   const averageDuration = completedJobs.length ? `${(completedJobs.reduce((sum, row) => sum + (row.durationMs || 0), 0) / completedJobs.length / 1000).toFixed(1)}s` : "—";
-  const estimatedCost = jobs.reduce((sum, row) => sum + row.estimatedCostMicros, 0) / 1_000_000;
+  const estimatedCost = productJobs.reduce((sum, row) => sum + row.estimatedCostMicros, 0) / 1_000_000;
   const jobByRequest = new Map(jobs.map(job => [job.analysisRequestId, job]));
-  const ratedAnalyses = analyses.filter(row => row.feedbackScore);
+  const ratedAnalyses = productAnalyses.filter(row => row.feedbackScore);
   const averageRating = ratedAnalyses.length ? (ratedAnalyses.reduce((sum, row) => sum + (row.feedbackScore || 0), 0) / ratedAnalyses.length).toFixed(1) : "—";
   const paidActive = subscriptions.filter(row => ["active", "trialing"].includes(row.status)).length;
   const pastDue = subscriptions.filter(row => row.status === "past_due").length;
   const canceling = subscriptions.filter(row => row.cancelAtPeriodEnd).length;
   const billingAttention = billingEventRows.filter(row => row.status === "failed").length;
-  const consumedUsage = usage.filter(row => row.status === "consumed").length;
-  const reservedUsage = usage.filter(row => row.status === "reserved").length;
+  const measuredUsage = usage.filter(row => row.accessKind !== "owner_qa");
+  const consumedUsage = measuredUsage.filter(row => row.status === "consumed").length;
+  const reservedUsage = measuredUsage.filter(row => row.status === "reserved").length;
   const acceptedEmails = deliveries.filter(row => row.status === "accepted").length;
   const emailAttention = deliveries.filter(row => row.status !== "accepted" && Boolean(row.lastErrorCode)).length;
   const activeFocuses = focuses.filter(row => row.status === "active").length;
@@ -98,7 +102,7 @@ export default async function AdminPage() {
 
   return <main className="admin-shell">
     <header className="admin-top"><div><span className="logo" aria-hidden="true" /><b>Replay Method operations</b></div><div><span>{user.email}</span><a href={chatGPTSignOutPath("/")}>Sign out</a></div></header>
-    <section className="admin-heading"><div><span>MISSION CONTROL</span><h1>{analyses.length} match analyses</h1><p>Monitor automated ingestion, failures, coaching quality and the real improvement funnel from one place.</p></div><div className="admin-heading-actions"><Link className="export-button" href="/admin/rl-review">RL review lab →</Link><Link className="export-button" href="/product-review">Product review →</Link><Link className="export-button" href="/api/admin/waitlist">Waitlist CSV ↓</Link></div></section>
+    <section className="admin-heading"><div><span>MISSION CONTROL</span><h1>{productAnalyses.length} match analyses</h1><p>Monitor automated ingestion, failures, coaching quality and the real improvement funnel from one place. Owner QA runs are operational records but excluded from these product statistics.</p></div><div className="admin-heading-actions"><Link className="export-button" href="/admin/rl-review">RL review lab →</Link><Link className="export-button" href="/product-review">Product review →</Link><Link className="export-button" href="/api/admin/waitlist">Waitlist CSV ↓</Link></div></section>
     <section className="admin-launch"><div><span>READY-TO-POST LINKS</span><b>Use the calibration link for replay recruitment. It never promises analysis.</b></div><Link href="/rocket-league-beta?utm_source=community&utm_campaign=rl-calibration-01">Replay contribution ↗</Link><Link href="/climb-check?utm_source=tiktok&utm_campaign=climb-check-01">Free Climb Check ↗</Link><Link href="/league?utm_source=tiktok&utm_campaign=league-01">League ↗</Link><Link href="/valorant?utm_source=tiktok&utm_campaign=valorant-01">VALORANT ↗</Link></section>
     <section className="admin-stats"><article><span>Running / queued</span><b>{runningAnalyses}</b></article><article><span>Reports ready</span><b>{readyAnalyses}</b></article><article><span>Blocked</span><b>{blockedAnalyses}</b></article><article><span>Failed</span><b>{failedAnalyses}</b></article><article><span>Avg. processing</span><b>{averageDuration}</b></article><article><span>Estimated engine cost</span><b>${estimatedCost.toFixed(4)}</b></article><article><span>Avg. report rating</span><b>{averageRating}</b></article><article><span>Unique visits</span><b>{visitors}</b></article><article><span>Analysis submitted</span><b>{uniqueFor("analysis_submit")}</b></article></section>
 
