@@ -69,15 +69,17 @@ async function processDueRetries(env: Env, limit = 5) {
 }
 
 async function cleanupExpiredReplayUploads(env: Env, limit = 10) {
-  const expired = await env.DB.prepare(`SELECT id, object_key AS objectKey FROM replay_upload_sessions
+  const expired = await env.DB.prepare(`SELECT id, public_id AS publicId, object_key AS objectKey FROM replay_upload_sessions
     WHERE expires_at <= CURRENT_TIMESTAMP AND status != 'claimed' ORDER BY expires_at LIMIT ?`)
-    .bind(limit).all<{ id: number; objectKey: string | null }>();
+    .bind(limit).all<{ id: number; publicId: string; objectKey: string | null }>();
   for (const session of expired.results || []) {
     const parts = await env.DB.prepare("SELECT object_key AS objectKey FROM replay_upload_parts WHERE upload_session_id = ?")
       .bind(session.id).all<{ objectKey: string }>();
     const keys = [...(parts.results || []).map(part => part.objectKey), session.objectKey].filter((key): key is string => Boolean(key));
     if (keys.length) await env.BUCKET.delete(keys);
     await env.DB.batch([
+      env.DB.prepare(`UPDATE analysis_usage SET status = 'released', released_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP WHERE analysis_public_id = ? AND status = 'reserved'`).bind(session.publicId),
       env.DB.prepare("DELETE FROM replay_upload_parts WHERE upload_session_id = ?").bind(session.id),
       env.DB.prepare("DELETE FROM replay_upload_sessions WHERE id = ? AND status != 'claimed'").bind(session.id),
     ]);

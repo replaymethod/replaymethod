@@ -6,6 +6,7 @@ import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics
 import { readApiResponse, uploadReplayInChunks, type StagedReplay } from "../../lib/client-replay-upload";
 import { clearReplayUploadRecovery, loadReplayUploadRecovery, replayRecoveryStorageAvailable, saveReplayUploadRecovery } from "../../lib/client-replay-recovery.mjs";
 import { desktopHandoffUrl } from "../../lib/desktop-handoff.mjs";
+import FreeAnalysisUsed, { FREE_ANALYSIS_USED_MESSAGE } from "./FreeAnalysisUsed";
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 const DEFAULT_GOAL = "Find the highest-impact recurring mistake in this match.";
@@ -74,6 +75,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
   const [handoffCopied, setHandoffCopied] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [freeAnalysisUsed, setFreeAnalysisUsed] = useState(false);
 
   useEffect(() => formRef.current?.setAttribute("data-hydrated", "true"), []);
 
@@ -81,6 +83,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     if (!file) return;
     const problem = fileProblem(file);
     setMessage(problem);
+    setFreeAnalysisUsed(false);
     if (problem) {
       track("validation_failed", replayProblemCode(file));
       setStatus("error");
@@ -134,6 +137,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
 
     setStatus("loading");
     setMessage("");
+    setFreeAnalysisUsed(false);
     const data = new FormData();
     data.set("game", "rocket-league");
     data.set("platform", "pc");
@@ -199,7 +203,9 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     } catch (error) {
       setStatus("error");
       const detail = error instanceof Error ? error.message : "We couldn’t start the analysis.";
-      setMessage(replaySaved ? `Your secure upload session and every confirmed part were preserved. Retry—even after a reload—to reuse them without another upload or allowance. ${detail}` : detail);
+      const allowanceUsed = detail === FREE_ANALYSIS_USED_MESSAGE;
+      setFreeAnalysisUsed(allowanceUsed);
+      setMessage(allowanceUsed ? "" : replaySaved ? `Your secure upload session and every confirmed part were preserved. Retry—even after a reload—to reuse them without another upload or allowance. ${detail}` : detail);
       track("analysis_failed", placement);
     }
   }
@@ -239,6 +245,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       <div><Link className="console-primary" href={`/analyze?game=rocket-league&platform=${platform}`} onClick={() => track("cta_click", `${placement}_console_status`)}>CHECK CONSOLE STATUS <span>→</span></Link><a className="console-guide" href={consolePaths[platform].guide} target="_blank" rel="noreferrer">Official capture guide ↗</a></div><button className="console-back" type="button" onClick={() => choosePlatform("pc")}>← Use an original PC replay instead</button>
     </div>}
 
+    {freeAnalysisUsed && platform === "pc" && <FreeAnalysisUsed />}
     {message && platform === "pc" && <p className={`quick-message ${status}`} role="alert">{message}</p>}
   </form>;
 }

@@ -123,6 +123,7 @@ test.describe("first-time visitor funnel", () => {
 test.describe("truthful product boundaries", () => {
   test("Rocket League PC accepts original replays while console lanes stop before unusable evidence", async ({ page }) => {
     await page.goto("/analyze?game=rocket-league&platform=pc", { waitUntil: "load" });
+    await expect(page.locator('.intake-card[data-hydrated="true"]')).toBeVisible();
     await expect(page.getByText(/Original PC \.replay file when the public quality gate opens/i)).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(1);
     await page.getByRole("button", { name: /PS5/ }).click();

@@ -70,7 +70,8 @@ test("covers the requested funnel without sending product payloads", async () =>
   assert.match(contribution, /calibration_submit/);
   assert.match(quick, /validation_failed/);
   assert.match(report, /analysis_completed/);
-  assert.match(report, /upgrade_intent/);
+  assert.doesNotMatch(report, /upgrade_intent/);
+  assert.match(report, /COMING LATER · NOT FOR SALE/);
   assert.match(pricing, /checkout_started/);
   assert.match(billing, /paid_activation/);
   assert.match(history, /followup_started/);

@@ -13,6 +13,30 @@ function sqlTimestamp(date: Date) {
   return date.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
 }
 
+function performanceFixture(): NonNullable<PublicReportData["performance"]> {
+  const common = { status: "neutral" as const, version: "rocket-league-performance-snapshot@e2e", sampleCount: 3000 };
+  return {
+    version: "rocket-league-performance-snapshot@e2e",
+    match: { teamScore: 3, opponentScore: 2, result: "win", overtime: true, durationSeconds: 327 },
+    sample: { liveFrameCount: 3000, liveSeconds: 300, frameCoverage: { ball: 1, players: 1 } },
+    strength: { title: "Defensive contribution", detail: "The scoreboard recorded 3 saves for you in this match.", kind: "verified_fact", limitation: "Saves do not describe every defensive decision." },
+    metrics: [
+      { ...common, id: "scoreboard_contribution", category: "offense_defense", label: "Scoreboard contribution", displayValue: "1 G · 1 A · 3 S · 4 shots", value: 640, unit: "score", status: "strong", kind: "verified_fact", whatHappened: "The replay scoreboard recorded direct contributions.", whyItMatters: "It confirms recorded match outcomes.", limitation: "It does not explain decision quality.", source: "replay_metadata.player_stats" },
+      { ...common, id: "average_boost", category: "boost_economy", label: "Average boost reserve", displayValue: "42%", value: 42, unit: "percent", kind: "derived_metric", whatHappened: "Average sampled live-play boost.", whyItMatters: "Reserve affects available options.", limitation: "An average cannot judge each spend.", source: "frame_state.player_boost" },
+      { ...common, id: "zero_boost_time", category: "boost_economy", label: "Time at zero boost", displayValue: "8.4s", value: 8.4, unit: "seconds", kind: "derived_metric", whatHappened: "Live-play time at zero boost.", whyItMatters: "Zero reserve can limit recovery options.", limitation: "Zero boost is not automatically a mistake.", source: "frame_state.player_boost" },
+      { ...common, id: "average_speed", category: "movement_recovery", label: "Average live-play speed", displayValue: "1,452 uu/s", value: 1452, unit: "uu/s", kind: "derived_metric", whatHappened: "Mean car speed during live play.", whyItMatters: "It describes match tempo.", limitation: "Higher is not always better.", source: "frame_state.linear_velocity" },
+      { ...common, id: "touches", category: "possession_touches", label: "Recorded touches", displayValue: "31", value: 31, unit: "touches", kind: "verified_telemetry", whatHappened: "The parser attributed 31 touches to Turtle.", whyItMatters: "Touches locate direct possession involvement.", limitation: "Count cannot classify touch quality.", source: "episode_timeline.touch" },
+      { ...common, id: "average_ball_distance", category: "positioning", label: "Average distance to ball", displayValue: "2,640 uu", value: 2640, unit: "uu", kind: "derived_metric", whatHappened: "Mean live-play distance to the ball.", whyItMatters: "It describes depth relative to play.", limitation: "Distance alone cannot infer rotation role.", source: "frame_state.player_ball_distance" },
+    ],
+    moments: [
+      { id: "goal:1", title: "Your goal changed the scoreline", context: "Overtime goal", observation: "The replay recorded your final touch as the scorer.", consequence: "Your team added one goal.", betterAlternative: null, limitation: "The goal does not prove every earlier decision was optimal.", timestampSeconds: 227, gameClockSeconds: 0, frameStart: 2270, frameEnd: 2270, evidenceKind: "verified_telemetry", source: "episode_timeline.goal_context", version: "rocket-league-performance-snapshot@e2e" },
+      { id: "control:1", title: "Controlled possession", context: "Neutral third", observation: "Three touches remained connected in one controlled sequence.", consequence: "The play preserved another on-ball action.", betterAlternative: null, limitation: "Duration does not prove maximum threat.", timestampSeconds: 176, gameClockSeconds: 124, frameStart: 1760, frameEnd: 1800, evidenceKind: "verified_telemetry", source: "episode_timeline.controlled_play", version: "rocket-league-performance-snapshot@e2e" },
+      { id: "pass:1", title: "Completed pass sequence", context: "Team possession", observation: "Your touch was linked to a teammate reception.", consequence: "Possession moved to a teammate.", betterAlternative: null, limitation: "Completion does not prove best choice.", timestampSeconds: 143, gameClockSeconds: 157, frameStart: 1430, frameEnd: 1450, evidenceKind: "verified_telemetry", source: "episode_timeline.pass", version: "rocket-league-performance-snapshot@e2e" },
+      { id: "kickoff:1", title: "Kickoff contact", context: "Diagonal spawn", observation: "You reached the ball in 1.96 seconds.", consequence: "The immediate outcome was recorded as neutral.", betterAlternative: null, limitation: "One kickoff cannot establish repeatable quality.", timestampSeconds: 12, gameClockSeconds: 300, frameStart: 120, frameEnd: 125, evidenceKind: "verified_telemetry", source: "episode_timeline.kickoff", version: "rocket-league-performance-snapshot@e2e" },
+    ],
+  };
+}
+
 function base(publicId: string): PublicReportData {
   const now = new Date();
   return {
@@ -47,6 +71,7 @@ function base(publicId: string): PublicReportData {
     },
     report: null,
     verifiedFacts: null,
+    performance: null,
     earlyAccess: null,
     feedbackScore: null,
   };
@@ -97,7 +122,9 @@ export function loadE2eReportFixture(publicId: string): PublicReportData | null 
       parserEvents: 420,
       decisionEvents: 84,
       parserVersion: "rl-parser.e2e",
+      rankProvenance: "player_submitted",
     };
+    fixture.performance = performanceFixture();
     fixture.earlyAccess = {
       badge: "EARLY ACCESS BETA",
       heading: "Built from your real replay. Refined through expert validation.",
@@ -140,7 +167,9 @@ export function loadE2eReportFixture(publicId: string): PublicReportData | null 
       parserEvents: 390,
       decisionEvents: 76,
       parserVersion: "rl-parser.e2e",
+      rankProvenance: "player_submitted",
     };
+    fixture.performance = performanceFixture();
     fixture.earlyAccess = {
       badge: "EARLY ACCESS BETA",
       heading: "Built from your real replay. Refined through expert validation.",

@@ -27,12 +27,13 @@ test.describe("private report states", () => {
   test("a completed Early Access report separates verified facts, one experimental insight and the next rule", async ({ page }) => {
     await page.goto(reports.ready);
     await expect(page.getByText("READY", { exact: true })).toBeVisible();
-    await expect(page.getByText("EARLY ACCESS BETA")).toBeVisible();
-    await expect(page.getByText("VERIFIED MATCH FACTS")).toBeVisible();
-    await expect(page.getByText("EXPERIMENTAL COACHING INSIGHT")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your match in 20 seconds." })).toBeVisible();
+    await expect(page.getByLabel("Evidence status and sample size").getByText("EXPERIMENTAL COACHING", { exact: true })).toBeVisible();
+    await expect(page.getByText("VERIFIED PERFORMANCE", { exact: true })).toBeVisible();
+    await expect(page.getByText("REPORT STATUS & VERIFIED FACTS", { exact: true })).toBeVisible();
     await expect(page.getByText(/not been human-reviewed/i)).toBeVisible();
-    await expect(page.getByText("At 3:47, both teammates cross the ball line")).toBeVisible();
-    await expect(page.getByText(/protect back post until the play resets/i)).toBeVisible();
+    await expect(page.getByText("At 3:47, both teammates cross the ball line").first()).toBeVisible();
+    await expect(page.getByText(/protect back post until the play resets/i).first()).toBeVisible();
   });
 
   test("an interrupted worker never leaves an endless spinner", async ({ page }) => {
@@ -45,11 +46,11 @@ test.describe("private report states", () => {
   test("a successful parse remains a complete report when coaching abstains locally", async ({ page }) => {
     await page.goto(reports.abstained);
     await expect(page.getByText("READY", { exact: true })).toBeVisible();
-    await expect(page.getByText("VERIFIED MATCH FACTS")).toBeVisible();
-    await expect(page.getByText("LOCAL COACHING ABSTENTION")).toBeVisible();
-    await expect(page.getByText(/will not fill the empty coaching section with generic advice/i)).toBeVisible();
-    await expect(page.getByText("EARLY ACCESS FEEDBACK")).toBeVisible();
-    await expect(page.getByText("EXPERIMENTAL COACHING INSIGHT")).toHaveCount(0);
+    await expect(page.getByText("VERIFIED PERFORMANCE", { exact: true })).toBeVisible();
+    await expect(page.getByText("LOCAL ABSTENTION", { exact: true })).toBeVisible();
+    await expect(page.getByText(/did not turn neutral measurements into a fake mistake or generic drill/i)).toBeVisible();
+    await expect(page.getByText("EARLY ACCESS PRODUCT FEEDBACK", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Evidence status and sample size").getByText("FACTS ONLY", { exact: true })).toBeVisible();
   });
 
   test("a mismatched player can select a parsed identity without re-uploading", async ({ page }) => {
