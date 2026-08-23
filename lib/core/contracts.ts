@@ -94,6 +94,7 @@ export type StructuredFinding = {
   novelty?: "new" | "recurring" | "regressing" | "resolving";
   sampleSize?: number;
   lifecycle?: FindingLifecycle;
+  publicationStatus?: "formally_validated" | "experimental_early_access";
   context?: FindingContext;
   provenance?: FindingProvenance;
   abstentionCode?: AbstentionCode;
@@ -132,6 +133,7 @@ export type AnalyzerVersions = {
 
 export type AdapterSuccess = {
   kind: "success";
+  outputTier?: "formally_validated" | "experimental_early_access";
   normalized: NormalizedMatch;
   findings: StructuredFinding[];
   abstention?: {

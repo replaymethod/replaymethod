@@ -85,6 +85,10 @@ test("runtime recovery and response headers fail closed without blocking healthy
   const retryRoute = await source("../app/api/admin/analyses/[id]/retry/route.ts");
   assert.match(retryRoute, /Date\.now\(\) - updatedAt < 180_000/);
   assert.match(retryRoute, /analysisUsage\.status, "reserved"/);
+  assert.match(retryRoute, /public_output_disabled/);
+  assert.match(retryRoute, /usage\?\.status === "released"/);
+  assert.match(retryRoute, /A completed or consumed analysis cannot be queued again/);
+  assert.match(retryRoute, /idempotent: true/);
 });
 
 test("the real-replay engine budget covers the largest calibration files without becoming unbounded", async () => {

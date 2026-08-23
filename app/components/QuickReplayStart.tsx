@@ -208,7 +208,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     {replay && detailsOpen && <div className="quick-details" id="quick-replay-details">
       <label className="quick-email"><span>Where should we send your result?</span><input id="quick-replay-email" type="email" autoComplete="email" inputMode="email" value={email} onChange={event => { setEmail(event.target.value); stagedReplayRef.current = null; }} placeholder="you@email.com" required /></label>
       <p className="quick-email-note">Private delivery and recovery only. Marketing stays off unless you choose it below.</p>
-      <label className="quick-check"><input type="checkbox" checked={dataConsent} onChange={event => setDataConsent(event.target.checked)} required /><span>Process this replay and email to deliver my private beta analysis. <a href="/privacy" target="_blank">Privacy</a></span></label>
+      <label className="quick-check"><input type="checkbox" checked={dataConsent} onChange={event => setDataConsent(event.target.checked)} required /><span>Process this replay to deliver my private Early Access report. This does not opt the replay into calibration, training or evaluation. <a href="/privacy" target="_blank">Privacy</a></span></label>
       <button className="quick-submit" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "ANALYZE THIS REPLAY →"}</span></button>
       <small>No card · 1v1, 2v2 and 3v3 · The engine stops instead of guessing</small>
     </div>}

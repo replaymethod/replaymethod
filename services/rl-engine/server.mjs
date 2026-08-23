@@ -199,7 +199,7 @@ export function createReplayProcessor({ size = 1, timeoutMs = DEFAULT_JOB_TIMEOU
     spawn(slot);
   }
 
-  const processReplay = ({ operation, bytes, player, rank, publicOutputEnabled }) => {
+  const processReplay = ({ operation, bytes, player, rank, publicOutputEnabled, earlyAccessOutputEnabled }) => {
     const slot = slots.find((candidate) => candidate.ready && !candidate.busy && candidate.worker);
     if (!slot) return Promise.reject(new EngineTransientError(
       "rl_engine_warming",
@@ -224,7 +224,7 @@ export function createReplayProcessor({ size = 1, timeoutMs = DEFAULT_JOB_TIMEOU
       slot.pending = { jobId, resolve, reject, timer };
       const replayBytes = new Uint8Array(bytes);
       slot.worker.postMessage(
-        { jobId, operation, bytes: replayBytes, player, rank, publicOutputEnabled },
+        { jobId, operation, bytes: replayBytes, player, rank, publicOutputEnabled, earlyAccessOutputEnabled },
         [replayBytes.buffer],
       );
     });
@@ -250,6 +250,7 @@ export function createServer(options = {}) {
   const token = options.token ?? process.env.RL_ENGINE_TOKEN;
   const maxConcurrency = options.maxConcurrency ?? process.env.RL_ENGINE_MAX_CONCURRENCY;
   const publicOutputEnabled = options.publicOutputEnabled ?? process.env.RL_PUBLIC_DETECTORS_ENABLED === "true";
+  const earlyAccessHostEnabled = options.earlyAccessOutputEnabled ?? process.env.RL_EARLY_ACCESS_OUTPUT_ENABLED === "true";
   const concurrencyLimit = maximumConcurrency(maxConcurrency);
   const processor = options.processReplay ? null : createReplayProcessor({
     size: concurrencyLimit,
@@ -324,13 +325,15 @@ export function createServer(options = {}) {
       if (!/^[a-f0-9]{32}$/.test(requestId)) throw new RequestContractError("request_id_invalid", "The analysis request identifier was invalid.");
       const player = requiredHeader(request, "x-replay-method-player", 160, "subject_player_required", "Choose one player from the parsed replay.", { optional: true });
       const rank = requiredHeader(request, "x-replay-method-rank", 80, "rank_invalid", "The submitted rank metadata was invalid.", { optional: true });
+      const earlyAccessRequested = request.headers["x-replay-method-early-access"] === "true";
+      const earlyAccessOutputEnabled = earlyAccessHostEnabled && earlyAccessRequested;
 
       if (url.pathname === "/v1/analyze/rocket-league" && player) {
         pruneAsyncJobs();
         const existing = asyncJobs.get(requestId);
         if (existing) {
           request.resume();
-          if (existing.player !== player || existing.rank !== rank) {
+          if (existing.player !== player || existing.rank !== rank || existing.earlyAccessOutputEnabled !== earlyAccessOutputEnabled) {
             throw new RequestContractError("job_identity_mismatch", "The replay job metadata did not match its original request.");
           }
           return sendAsyncJob(response, requestId, existing);
@@ -339,7 +342,7 @@ export function createServer(options = {}) {
           throw new EngineTransientError("rl_engine_job_capacity", "The replay worker is at capacity. Your upload is preserved for an automatic retry.");
         }
         const bytes = await readBody(request);
-        const job = { state: "pending", player, rank, completedAt: 0, result: null, error: null };
+        const job = { state: "pending", player, rank, earlyAccessOutputEnabled, completedAt: 0, result: null, error: null };
         asyncJobs.set(requestId, job);
         void processReplay({
           operation: "analyze",
@@ -347,6 +350,7 @@ export function createServer(options = {}) {
           player,
           rank,
           publicOutputEnabled,
+          earlyAccessOutputEnabled,
         }).then((result) => {
           job.state = "completed";
           job.result = result;
@@ -372,6 +376,7 @@ export function createServer(options = {}) {
         player,
         rank,
         publicOutputEnabled,
+        earlyAccessOutputEnabled,
       });
       return json(response, 200, result);
     } catch (error) {

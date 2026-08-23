@@ -11,6 +11,9 @@ interface Env {
   RL_ENGINE_URL?: string;
   RL_ENGINE_TOKEN?: string;
   RL_ENGINE_TIMEOUT_MS?: string;
+  RL_ENGINE_ENABLED?: string;
+  RL_EARLY_ACCESS_OUTPUT_ENABLED?: string;
+  RL_PUBLIC_DETECTORS_ENABLED?: string;
   RIOT_LEAGUE_API_KEY?: string;
   RIOT_VALORANT_API_KEY?: string;
   RIOT_RSO_CLIENT_ID?: string;

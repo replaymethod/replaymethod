@@ -8,6 +8,34 @@ type CoachingEnv = {
   OPENAI_OUTPUT_COST_PER_MILLION?: string;
 };
 
+function deterministicEarlyAccessReport(findings: StructuredFinding[]): CoachingReport {
+  const eligible = findings.filter(finding => (
+    finding.publicationStatus === "experimental_early_access"
+    && finding.lifecycle === "shadow"
+    && finding.confidenceLabel !== "insufficient"
+    && finding.confidence >= 0.65
+    && Number.isInteger(finding.sampleSize)
+    && Number(finding.sampleSize) >= 2
+    && finding.evidence.length >= 2
+    && Boolean(finding.recommendation.queueRule)
+    && finding.recommendation.practiceSteps.length > 0
+  )).sort((left, right) => right.confidence - left.confidence || Number(right.sampleSize) - Number(left.sampleSize) || left.id.localeCompare(right.id));
+  const primary = eligible[0];
+  if (!primary) throw new Error("No experimental finding cleared the Early Access evidence policy.");
+  return {
+    primaryFindingId: primary.id,
+    highestImpactMistake: primary.title,
+    whyItCosts: primary.summary,
+    evidenceMoments: primary.evidence.slice(0, 5).map(item => item.description),
+    nextQueueRule: primary.recommendation.queueRule,
+    practicePlan: primary.recommendation.practiceSteps.slice(0, 5),
+    coachNote: "Treat this as one experimental focus for the next three representative matches. Expert validation continues; this report is not a formally validated detector result.",
+    confidence: primary.confidence,
+    confidenceLabel: primary.confidenceLabel,
+    limitations: primary.limitations,
+  };
+}
+
 const reportSchema = {
   type: "object",
   additionalProperties: false,
@@ -40,7 +68,10 @@ function responseText(payload: unknown) {
  * The deterministic report is always valid on its own. The optional LLM only
  * improves prioritization language and must preserve finding/evidence IDs.
  */
-export async function synthesizeCoaching(findings: StructuredFinding[], env: CoachingEnv): Promise<{ report: CoachingReport; costMicros: number; model: string }> {
+export async function synthesizeCoaching(findings: StructuredFinding[], env: CoachingEnv, options: { experimentalEarlyAccess?: boolean } = {}): Promise<{ report: CoachingReport; costMicros: number; model: string }> {
+  if (options.experimentalEarlyAccess) {
+    return { report: deterministicEarlyAccessReport(findings), costMicros: 0, model: "early-access-deterministic" };
+  }
   const fallback = deterministicReport(findings);
   if (!env.OPENAI_API_KEY) return { report: fallback, costMicros: 0, model: "deterministic" };
 

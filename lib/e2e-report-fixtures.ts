@@ -6,6 +6,7 @@ const ids = {
   ready: "33333333333333333333333333333333",
   stale: "44444444444444444444444444444444",
   identity: "55555555555555555555555555555555",
+  abstained: "66666666666666666666666666666666",
 } as const;
 
 function sqlTimestamp(date: Date) {
@@ -45,6 +46,8 @@ function base(publicId: string): PublicReportData {
       },
     },
     report: null,
+    verifiedFacts: null,
+    earlyAccess: null,
     feedbackScore: null,
   };
 }
@@ -83,6 +86,27 @@ export function loadE2eReportFixture(publicId: string): PublicReportData | null 
       limitations: ["This illustrative fixture is used only by the local browser test suite."],
       analysisSource: "automated",
     };
+    fixture.verifiedFacts = {
+      subjectDisplayName: "Turtle",
+      mode: "2v2",
+      rank: "Gold 3",
+      gameVersion: "test",
+      occurredAt: fixture.createdAt,
+      playerCount: 4,
+      sampledFrames: 3000,
+      parserEvents: 420,
+      decisionEvents: 84,
+      parserVersion: "rl-parser.e2e",
+    };
+    fixture.earlyAccess = {
+      badge: "EARLY ACCESS BETA",
+      heading: "Built from your real replay. Refined through expert validation.",
+      body: "This report is generated from verified match data and our latest coaching model. Coaching recommendations are experimental while expert validation continues. Your feedback helps shape the final Replay Method standard.",
+      coachingStatus: "experimental_insight",
+      formalValidationStatus: "not_validated",
+      policyVersion: "early-access.e2e",
+      assessments: [{ detectorId: "teamplay.double_commit", status: "experimental_insight", reason: "Three timestamped windows cleared the fixture policy." }],
+    };
   }
   if (publicId === ids.stale && fixture.processing) {
     fixture.processing.updatedAt = sqlTimestamp(new Date(Date.now() - 4 * 60_000));
@@ -94,6 +118,41 @@ export function loadE2eReportFixture(publicId: string): PublicReportData | null 
     fixture.processing.stageLabel = "Choose the player found in this replay.";
     fixture.processing.errorCode = "subject_player_not_found";
     fixture.processing.candidatePlayers = ["GarrettG", "Turtle", "Moses"];
+  }
+  if (publicId === ids.abstained) {
+    fixture.status = "ready";
+    fixture.readyAt = fixture.createdAt;
+    if (fixture.processing) {
+      fixture.processing.status = "completed";
+      fixture.processing.stage = "completed";
+      fixture.processing.stageLabel = "Verified facts report ready";
+      fixture.processing.errorCode = "early_access_no_supported_finding";
+      fixture.processing.durationMs = 38_000;
+    }
+    fixture.verifiedFacts = {
+      subjectDisplayName: "Turtle",
+      mode: "2v2",
+      rank: "Gold 3",
+      gameVersion: "test",
+      occurredAt: fixture.createdAt,
+      playerCount: 4,
+      sampledFrames: 2800,
+      parserEvents: 390,
+      decisionEvents: 76,
+      parserVersion: "rl-parser.e2e",
+    };
+    fixture.earlyAccess = {
+      badge: "EARLY ACCESS BETA",
+      heading: "Built from your real replay. Refined through expert validation.",
+      body: "This report is generated from verified match data and our latest coaching model. Coaching recommendations are experimental while expert validation continues. Your feedback helps shape the final Replay Method standard.",
+      coachingStatus: "abstained",
+      formalValidationStatus: "not_validated",
+      policyVersion: "early-access.e2e",
+      assessments: [
+        { detectorId: "boost.supersonic_waste", status: "abstained", reason: "Fewer than 3 independent evidence windows were observed." },
+        { detectorId: "teamplay.double_commit", status: "abstained", reason: "No qualifying signal was observed in this replay." },
+      ],
+    };
   }
   return fixture;
 }

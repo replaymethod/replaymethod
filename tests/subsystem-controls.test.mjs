@@ -14,6 +14,7 @@ test("reports switch names and boolean state without exposing secret values", ()
   assert.deepEqual(state.billingCheckout, { key: SUBSYSTEM_FLAGS.billingCheckout, enabled: true });
   assert.equal(state.transactionalEmail.enabled, false);
   assert.deepEqual(state.rocketLeagueCalibrationIntake, { key: "RL_CALIBRATION_INTAKE_ENABLED", enabled: false });
+  assert.deepEqual(state.rocketLeagueEarlyAccessOutput, { key: "RL_EARLY_ACCESS_OUTPUT_ENABLED", enabled: false });
   assert.equal(JSON.stringify(state).includes("never-return-this"), false);
 });
 

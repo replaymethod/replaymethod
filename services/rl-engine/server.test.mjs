@@ -186,6 +186,41 @@ test("long analysis is accepted once and polled idempotently", async () => {
   });
 });
 
+test("Early Access output requires both the host kill switch and the web request", async () => {
+  for (const scenario of [
+    { host: false, requested: true, expected: false },
+    { host: true, requested: false, expected: false },
+    { host: true, requested: true, expected: true },
+  ]) {
+    let received;
+    await withServer(async (base) => {
+      const accepted = await fetch(`${base}/v1/analyze/rocket-league`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/octet-stream",
+          "X-Replay-Method-Request": requestId,
+          "X-Replay-Method-Player": "Player",
+          "X-Replay-Method-Early-Access": scenario.requested ? "true" : "false",
+        },
+        body: new Uint8Array([1]),
+      });
+      assert.equal(accepted.status, 202);
+      for (let attempt = 0; attempt < 100 && received == null; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+      assert.equal(received, scenario.expected);
+    }, {
+      token,
+      earlyAccessOutputEnabled: scenario.host,
+      processReplay: async ({ earlyAccessOutputEnabled }) => {
+        received = earlyAccessOutputEnabled;
+        return { kind: "success", normalized: { game: "rocket-league" }, findings: [], versions: {}, estimatedCostMicros: 0 };
+      },
+    });
+  }
+});
+
 test("player identity errors return the parsed roster as structured recovery data", async () => withServer(async (base) => {
   const response = await fetch(`${base}/v1/inspect/rocket-league`, {
     method: "POST",
