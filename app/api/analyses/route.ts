@@ -152,7 +152,7 @@ export async function POST(request: Request) {
       if (!/^[a-f0-9]{32}$/.test(uploadId)) return Response.json({ error: "The saved replay upload is invalid. Start the upload again." }, { status: 400, headers: { "Cache-Control": "no-store" } });
       stagedReplay = await database.prepare(`SELECT id, object_key AS objectKey, file_name AS fileName, file_size AS fileSize,
         status, analysis_request_id AS analysisRequestId, updated_at AS updatedAt FROM replay_upload_sessions
-        WHERE public_id = ? AND token_hash = ? AND email = ? AND expires_at > CURRENT_TIMESTAMP`)
+        WHERE public_id = ? AND token_hash = ? AND email = ? AND datetime(expires_at) > CURRENT_TIMESTAMP`)
         .bind(uploadId, await sha256Hex(uploadToken), email).first<StagedReplayRow>();
       if (!stagedReplay?.objectKey) return Response.json({ error: "The saved replay upload was not found or expired. Start the upload again." }, { status: 404, headers: { "Cache-Control": "no-store" } });
       if (stagedReplay.status === "claimed" && stagedReplay.analysisRequestId) {
