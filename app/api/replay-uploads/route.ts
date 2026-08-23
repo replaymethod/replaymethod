@@ -10,7 +10,8 @@ const headers = { "Cache-Control": "no-store" };
 
 async function cleanupExpired(database: D1Database, bucket: R2Bucket) {
   const expired = await database.prepare(`SELECT id, object_key AS objectKey FROM replay_upload_sessions
-    WHERE expires_at <= CURRENT_TIMESTAMP AND status NOT IN ('claimed') ORDER BY expires_at LIMIT 3`).all<{ id: number; objectKey: string | null }>();
+    WHERE datetime(expires_at) <= CURRENT_TIMESTAMP AND status NOT IN ('claimed')
+    ORDER BY datetime(expires_at) LIMIT 3`).all<{ id: number; objectKey: string | null }>();
   for (const session of expired.results || []) {
     const parts = await database.prepare("SELECT object_key AS objectKey FROM replay_upload_parts WHERE upload_session_id = ?")
       .bind(session.id).all<{ objectKey: string }>();

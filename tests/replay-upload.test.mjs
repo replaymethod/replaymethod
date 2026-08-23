@@ -125,6 +125,7 @@ test("upload chain is private, bounded, ownership-linked, idempotent and deletab
   for (const route of [start, part, complete]) assert.match(route, /isSameOriginRequest\(request\)/);
   assert.match(start, /fileSize > MAX_REPLAY_BYTES/);
   assert.match(start, /token_hash/);
+  assert.match(start, /datetime\(expires_at\) <= CURRENT_TIMESTAMP/);
   assert.match(part, /body\.byteLength !== expectedSize/);
   assert.match(part, /INSERT OR IGNORE INTO replay_upload_parts/);
   assert.match(complete, /failed integrity check/);
@@ -137,6 +138,7 @@ test("upload chain is private, bounded, ownership-linked, idempotent and deletab
   assert.doesNotMatch(start + part + complete, /R2_ACCESS|SECRET_ACCESS|presign/i);
   assert.match(intake, /status === "claimed"/);
   assert.match(intake, /idempotent: true/);
+  assert.match(intake, /datetime\(expires_at\) > CURRENT_TIMESTAMP/);
   assert.match(client, /uploadReplayInChunks/);
   assert.match(client, /FINALIZE_RETRY_DELAYS_MS/);
   assert.match(client, /options\.onRecovery\?\.\(session\)/);
