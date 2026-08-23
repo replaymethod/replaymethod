@@ -8,6 +8,7 @@ import { paidCheckoutReadiness } from "../../../lib/subsystem-controls.mjs";
 import { subsystemEnabled } from "../../../lib/subsystem-controls.mjs";
 import ReportClient from "./ReportClient";
 import { canAccessAnalysis } from "../../../lib/report-access.mjs";
+import { legacyUtcTimestamp } from "../../../lib/report-date.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -39,5 +40,13 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   if (!authorized) notFound();
   const report = e2eFixturesEnabled ? loadE2eReportFixture(publicId) || await loadPublicReport(publicId, { earlyAccessOutputEnabled }) : await loadPublicReport(publicId, { earlyAccessOutputEnabled });
   if (!report) notFound();
-  return <ReportClient initial={report} accessToken={accessToken} delivery={query.delivery === "email" ? "email" : "link"} checkoutOpen={checkoutOpen} />;
+  const normalizedReport = {
+    ...report,
+    createdAt: legacyUtcTimestamp(report.createdAt) || report.createdAt,
+    verifiedFacts: report.verifiedFacts ? {
+      ...report.verifiedFacts,
+      occurredAt: legacyUtcTimestamp(report.verifiedFacts.occurredAt),
+    } : null,
+  };
+  return <ReportClient initial={normalizedReport} accessToken={accessToken} delivery={query.delivery === "email" ? "email" : "link"} checkoutOpen={checkoutOpen} />;
 }
