@@ -27,6 +27,7 @@ test.describe("private report states", () => {
   test("a completed Early Access report separates verified facts, one experimental insight and the next rule", async ({ page }) => {
     await page.goto(reports.ready);
     await expect(page.getByText("READY", { exact: true })).toBeVisible();
+    await expect(page.getByText("Invalid Date", { exact: true })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Your match in 20 seconds." })).toBeVisible();
     await expect(page.getByLabel("Evidence status and sample size").getByText("EXPERIMENTAL COACHING", { exact: true })).toBeVisible();
     await expect(page.getByText("VERIFIED PERFORMANCE", { exact: true })).toBeVisible();
@@ -46,6 +47,7 @@ test.describe("private report states", () => {
   test("a successful parse remains a complete report when coaching abstains locally", async ({ page }) => {
     await page.goto(reports.abstained);
     await expect(page.getByText("READY", { exact: true })).toBeVisible();
+    await expect(page.getByText("Invalid Date", { exact: true })).toHaveCount(0);
     await expect(page.getByText("VERIFIED PERFORMANCE", { exact: true })).toBeVisible();
     await expect(page.getByText("LOCAL ABSTENTION", { exact: true })).toBeVisible();
     await expect(page.getByText(/did not turn neutral measurements into a fake mistake or generic drill/i)).toBeVisible();
