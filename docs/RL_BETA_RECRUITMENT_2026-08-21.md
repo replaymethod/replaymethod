@@ -52,5 +52,15 @@ receive coaching during calibration.
 > Apply by signing in once at:
 > https://replaymethod.xyz/admin/rl-review
 
+After the first sign-in, the reviewer sends the owner the platform, relevant
+playlist, current rank and historical peak rank that should be verified. Access
+remains pending until the owner records the evidence and approves the account.
+Once approved, the same link opens the private queue. Reviewers should finish
+each blind judgment independently, use the autosaved draft if interrupted and
+lock only when ready; a locked first judgment cannot be edited.
+
+Do not send reviewer files, object URLs or shared credentials. Do not let the
+two primary reviewers compare answers before both have locked their own labels.
+
 Community participation must use the founder identity or clearly disclose the
 Replay Method affiliation. Do not manufacture endorsements, votes or accounts.

@@ -31,8 +31,8 @@ All items are required before production collection opens:
 - Verify the production R2 binding with a reversible test object.
 - Verify configured owner authentication and replay download authorization.
 - Confirm the privacy notice and beta/calibration terms are acceptable to the owner; obtain legal review if desired.
-- Name at least two qualified reviewers and configure their identities individually through `ADMIN_USER_IDS` (preferred) or `ADMIN_EMAILS`.
-- Agree on reviewer qualification (`competitive_player`, `rocket_league_coach`, or `replay_analyst`). Unverified operators do not count toward the gate.
+- Name at least two independent qualified reviewers. Each person must sign in once at `/admin/rl-review` with their own stable ChatGPT identity before an owner can approve access.
+- Verify each applicant's identity, platform, relevant playlist, current rank, historical peak rank and qualification evidence in the owner dashboard. A reported but unconfirmed rank remains pending. The product owner may be an additional control but must not automatically count toward the two independent reviewers.
 - Set `RL_CALIBRATION_INTAKE_ENABLED=true` only after the checks above.
 - Keep `RL_PUBLIC_DETECTORS_ENABLED=false` and `BILLING_CHECKOUT_ENABLED=false`.
 
@@ -55,10 +55,23 @@ Do not say “get your free analysis,” “AI coach,” “rank up,” or imply
    `npm run rl-engine:calibrate -- <corpus-directory> --metadata <manifest.json> --output <calibration-report.json>`
 
 6. The runner must find the exact declared player in the roster. A mismatch fails with `subject_player_not_found`; do not silently select another player.
-7. Build a versioned private review queue and anonymized moment artifact from the report.
-8. Have two qualified reviewers label candidates independently. Repeat edits by one reviewer do not count as another reviewer.
-9. Inspect per-detector precision, Wilson lower bound, false-positive rate, timestamp accuracy, cohort coverage, reviewer agreement, version drift, reproducibility, dependencies, conflict resolution and abstention.
-10. Keep public detectors off unless every gate passes.
+7. Build a versioned private review queue and anonymized moment artifact from the report. Never import holdout material into the review system.
+8. From `/admin`, import only the exact approved queue and moment files. Confirm the displayed set id, file hashes, unique candidate count, replay count and zero holdout overlap. Reimporting the same files must be idempotent.
+9. Ask each reviewer to sign in once at `/admin/rl-review`. In `/admin`, open the applicant, record the verified platform/current and peak playlist ranks plus evidence, confirm that reported details are no longer provisional, then approve the account.
+10. Have the two qualified reviewers work independently. They must make and lock their own blind first judgment before seeing the detector or another reviewer. Do not let them discuss moments until both have submitted.
+11. Inspect agreement, positives, negatives, false positives, timestamp verification, cohort coverage, denominators, exclusions, version drift, reproducibility, dependencies and abstention. A 1–1 split remains `UNRESOLVED`; owner control input does not turn it into independent agreement.
+12. Keep public detectors off unless every unchanged gate passes for an exact detector version/mode/rank/evidence/platform scope.
+
+## Current approved private set
+
+- Set: `kickoff-calibration-2026-08-22.v1`.
+- 102 unique kickoff moments from 64 calibration replays.
+- Queue SHA-256: `937b94d07e31acc746e12424350c694770a63e5e0cdc63d2199eb6d390e533d7`.
+- Moments SHA-256: `895c21b10c43bd81ca01c5c4b5a83926f4a18c18cacfa363cb05771c7145466e`.
+- Manifest SHA-256: `66be35f92e7a7770e34d78a0ddf8caca8551314e1173073ce66adee6da435b01`.
+- Holdout overlap: zero. Holdout is never shown or imported.
+
+The live import audit and progress report are owner-only. Candidate clips are stored under a private R2 prefix and have no public URL.
 
 ## Target corpus
 
