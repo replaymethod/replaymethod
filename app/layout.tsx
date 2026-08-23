@@ -13,15 +13,24 @@ export const metadata: Metadata = {
     siteName: "Replay Method",
     title: "Replay Method — Stop grinding blind",
     description: "Rocket League replay → one focus → one next-match rule. Evidence before advice.",
-    images: [{ url: "/og-takeover.png", width: 1731, height: 909, alt: "Replay Method — Stop guessing why you're stuck." }]
+    images: [{ url: "/brand/og-replay-method-v12-1200x630.png", width: 1200, height: 630, alt: "Replay Method — Stop grinding blind." }]
   },
   twitter: {
     card: "summary_large_image",
     title: "Replay Method — Stop grinding blind",
     description: "Rocket League replay → one focus → one next-match rule. Evidence before advice.",
-    images: ["/og-takeover.png"]
+    images: ["/brand/og-replay-method-v12-1200x630.png"]
   },
-  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  icons: {
+    icon: [
+      { url: "/brand/replay-method-mark-v12-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/brand/replay-method-mark-v12-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/replay-method-mark-v12-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" }
+    ],
+    shortcut: "/brand/replay-method-mark-v12-32.png",
+    apple: [{ url: "/brand/replay-method-apple-touch-v12-180.png", sizes: "180x180", type: "image/png" }]
+  },
   verification: { google: process.env.GOOGLE_SITE_VERIFICATION }
 };
 

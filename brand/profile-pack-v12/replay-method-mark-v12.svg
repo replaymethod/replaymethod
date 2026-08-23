@@ -1,4 +1,5 @@
-<svg width="64" height="64" viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Replay Method">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="2048" height="2048" viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Replay Method">
   <foreignObject width="37" height="37">
     <div xmlns="http://www.w3.org/1999/xhtml" style="display:grid;place-items:center;width:37px;height:37px;border-radius:11px;background:linear-gradient(140deg,#a248ff,#5449ff);color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:900;line-height:normal">↻</div>
   </foreignObject>
