@@ -129,10 +129,17 @@ test("upload chain is private, bounded, ownership-linked, idempotent and deletab
   assert.match(part, /INSERT OR IGNORE INTO replay_upload_parts/);
   assert.match(complete, /failed integrity check/);
   assert.match(complete, /status = 'complete'/);
+  assert.match(complete, /ASSEMBLY_LEASE_SECONDS/);
+  assert.match(complete, /assembly_interrupted/);
+  assert.match(complete, /error_code = \?/);
+  assert.match(complete, /staging cleanup deferred/);
+  assert.match(complete, /analyses\/\$\{uploadId\}/, "final object identity is deterministic per upload session");
   assert.doesNotMatch(start + part + complete, /R2_ACCESS|SECRET_ACCESS|presign/i);
   assert.match(intake, /status === "claimed"/);
   assert.match(intake, /idempotent: true/);
   assert.match(client, /uploadReplayInChunks/);
+  assert.match(client, /FINALIZE_RETRY_DELAYS_MS/);
+  assert.match(client, /options\.onRecovery\?\.\(session\)/);
   assert.doesNotMatch(client, /response\.json\(\)/);
   assert.match(pipeline, /if \(!completion\[0\]\.meta\.changes\) return/);
   assert.match(deletion, /replay_upload_sessions/);
