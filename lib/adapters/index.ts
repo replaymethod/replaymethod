@@ -152,6 +152,12 @@ async function rocketLeagueAdapter(input: AnalysisInput, env: AdapterEnv): Promi
   if (payload.kind !== "success" || payload.normalized?.game !== "rocket-league" || !Array.isArray(payload.findings)) {
     return blocked("rl_engine_contract_failed", "The replay worker returned an unsupported result. Your upload is preserved.", "RL engine returned an invalid adapter contract.");
   }
+  const performanceSnapshot = payload.normalized?.metadata && typeof payload.normalized.metadata === "object"
+    ? (payload.normalized.metadata as Record<string, unknown>).performanceSnapshot
+    : null;
+  if (!performanceSnapshot || typeof performanceSnapshot !== "object") {
+    return blocked("rl_engine_contract_failed", "The replay worker configuration needs operator attention. Your upload is preserved.", "RL engine returned a success payload without the required performance snapshot.");
+  }
   if (!payload.findings.length && (!payload.abstention?.code || !payload.abstention.publicMessage || !payload.abstention.internalMessage)) {
     return blocked("rl_engine_contract_failed", "The replay worker returned an incomplete result. Your upload is preserved.", "RL engine returned no findings without a structured abstention.");
   }

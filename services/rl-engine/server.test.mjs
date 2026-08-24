@@ -4,6 +4,9 @@ import { request as httpRequest } from "node:http";
 import test from "node:test";
 import { createServer, ENGINE_VERSION, MAX_REPLAY_BYTES, PARSER_VERSION } from "./server.mjs";
 import { ReplayInputError } from "./parser.mjs";
+import { ANALYZER_VERSION } from "./analyzer.mjs";
+import { NORMALIZER_VERSION } from "./parser.mjs";
+import { PERFORMANCE_SNAPSHOT_VERSION } from "./performance-snapshot.mjs";
 
 const token = "test-token-that-is-long-enough";
 const requestId = "11111111111111111111111111111111";
@@ -38,6 +41,9 @@ test("health endpoint is public and cache-safe", async () => withServer(async (b
     status: "ready",
     engineVersion: ENGINE_VERSION,
     parserVersion: PARSER_VERSION,
+    normalizerVersion: NORMALIZER_VERSION,
+    analyzerVersion: ANALYZER_VERSION,
+    performanceSnapshotVersion: PERFORMANCE_SNAPSHOT_VERSION,
     activeRequests: 0,
     maxConcurrency: 1,
   });

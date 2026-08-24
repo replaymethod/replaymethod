@@ -1,4 +1,4 @@
-export const PERFORMANCE_SNAPSHOT_VERSION = "rocket-league-performance-snapshot@0.1.0";
+export const PERFORMANCE_SNAPSHOT_VERSION = "rocket-league-performance-snapshot@0.2.0";
 
 const SUPERSONIC_SPEED = 2200;
 const LOW_SPEED = 400;

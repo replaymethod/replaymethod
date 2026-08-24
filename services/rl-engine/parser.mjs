@@ -13,7 +13,7 @@ import { frameStateSummary, normalizeFrameState } from "./frame-state.mjs";
 import { buildPerformanceSnapshot } from "./performance-snapshot.mjs";
 
 export const PARSER_VERSION = "subtr-actor@1.2.0";
-export const NORMALIZER_VERSION = "rocket-league-normalizer@0.3.0";
+export const NORMALIZER_VERSION = "rocket-league-normalizer@0.4.0";
 
 let initialized = false;
 
