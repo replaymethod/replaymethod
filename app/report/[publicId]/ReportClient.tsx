@@ -324,6 +324,17 @@ export default function ReportClient({ initial, accessToken, delivery }: { initi
     })),
   ].filter((moment, index, moments) => moments.findIndex(candidate => candidate.id === moment.id) === index).slice(0, 5);
   const strongestMoments = momentFeed.slice(0, 3);
+  const feedbackQuestions = data.report ? [
+    ["observation", "Did the main observation fit what happened?"],
+    ["moment", "Were the highlighted moments correct?"],
+    ["advice", "Was the advice easy to understand?"],
+    ["plan", "Does the next-three-match plan feel doable?"],
+  ] as const : [
+    ["observation", "Were the verified match facts clear?"],
+    ["moment", "Were the highlighted telemetry moments useful?"],
+    ["advice", "Was it clear why coaching was withheld?"],
+    ["plan", "Do you know what kind of replay to submit next?"],
+  ] as const;
   const matchScore = data.performance?.match.teamScore != null && data.performance.match.opponentScore != null
     ? `${data.performance.match.teamScore}–${data.performance.match.opponentScore}` : "Score unavailable";
   const matchResult = data.performance?.match.result === "win" ? "WIN" : data.performance?.match.result === "loss" ? "LOSS" : data.performance?.match.result === "draw" ? "DRAW" : "MATCH";
@@ -383,14 +394,9 @@ export default function ReportClient({ initial, accessToken, delivery }: { initi
           {data.earlyAccess && <aside className="early-access-compact"><span>{data.earlyAccess.badge}</span><p>{data.earlyAccess.body}</p><small>Formal detector status: not validated · This individual report has not been human-reviewed.</small></aside>}
         </section>
 
-        <section className="report-feedback" id="feedback"><span>{data.earlyAccess ? "EARLY ACCESS PRODUCT FEEDBACK" : "REPORT FEEDBACK"}</span><h2>Help us test the experience—not certify the detector.</h2><p className="feedback-boundary">These answers are product feedback only. They are never treated as replay ground truth, detector labels or expert validation.</p>{feedbackState === "saved" ? <div className="feedback-saved" role="status"><i>✓</i><b>Feedback saved separately from detector evidence.</b></div> : <><div className="feedback-questions">{([
-          ["observation", "Did the main observation fit what happened?"],
-          ["moment", "Were the highlighted moments correct?"],
-          ["advice", "Was the advice easy to understand?"],
-          ["plan", "Does the next-three-match plan feel doable?"],
-        ] as const).map(([key, question]) => <fieldset key={key}><legend>{question}</legend><div>{[["yes", "Yes"], ["not_sure", "Not sure"], ["no", "No"]].map(([value, label]) => <button type="button" aria-pressed={feedbackSignals[key] === value} className={feedbackSignals[key] === value ? "active" : ""} key={value} onClick={() => setFeedbackSignals(previous => ({ ...previous, [key]: value }))}>{label}</button>)}</div></fieldset>)}</div><textarea aria-label="Optional report feedback" value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="What was missing, wrong, or unclear?" maxLength={1000} /><label><input type="checkbox" checked={caseStudyConsent} onChange={e => setCaseStudyConsent(e.target.checked)} /><span>You may quote this feedback anonymously as an Early Access product review.</span></label><button type="button" className="save-feedback" disabled={!Object.values(feedbackSignals).some(Boolean) || feedbackState === "saving"} onClick={saveFeedback}>{feedbackState === "saving" ? "Saving…" : "Save feedback"}</button>{feedbackState === "error" && <p role="alert">Could not save feedback. Try again.</p>}</>}</section>
+        <section className="report-feedback" id="feedback"><span>{data.earlyAccess ? "EARLY ACCESS PRODUCT FEEDBACK" : "REPORT FEEDBACK"}</span><h2>{data.report ? "Help us test the experience—not certify the detector." : "Help us test the facts-only experience—not invent a verdict."}</h2><p className="feedback-boundary">These answers are product feedback only. They are never treated as replay ground truth, detector labels or expert validation.</p>{feedbackState === "saved" ? <div className="feedback-saved" role="status"><i>✓</i><b>Feedback saved separately from detector evidence.</b></div> : <><div className="feedback-questions">{feedbackQuestions.map(([key, question]) => <fieldset key={key}><legend>{question}</legend><div>{[["yes", "Yes"], ["not_sure", "Not sure"], ["no", "No"]].map(([value, label]) => <button type="button" aria-pressed={feedbackSignals[key] === value} className={feedbackSignals[key] === value ? "active" : ""} key={value} onClick={() => setFeedbackSignals(previous => ({ ...previous, [key]: value }))}>{label}</button>)}</div></fieldset>)}</div><textarea aria-label="Optional report feedback" value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="What was missing, wrong, or unclear?" maxLength={1000} /><label><input type="checkbox" checked={caseStudyConsent} onChange={e => setCaseStudyConsent(e.target.checked)} /><span>You may quote this feedback anonymously as an Early Access product review.</span></label><button type="button" className="save-feedback" disabled={!Object.values(feedbackSignals).some(Boolean) || feedbackState === "saving"} onClick={saveFeedback}>{feedbackState === "saving" ? "Saving…" : "Save feedback"}</button>{feedbackState === "error" && <p role="alert">Could not save feedback. Try again.</p>}</>}</section>
 
-        <aside className="premium-bridge"><span>COMING LATER · NOT FOR SALE</span><h2>This match showed one signal. Premium shows whether it is your pattern — and whether it improves.</h2><p>The future concept compares representative replays over time. This free product remains one complete replay analysis; there is no checkout or locked evidence here.</p></aside>
+        <aside className="premium-bridge"><span>COMING LATER · NOT FOR SALE</span><h2>{data.report ? "This match showed one signal. Premium shows whether it is your pattern — and whether it improves." : "This match did not support a coaching signal. A larger baseline can test what actually recurs."}</h2><p>{data.report ? "The future concept compares representative replays over time." : "The future concept compares representative replays before calling anything a pattern."} This free product remains one complete replay analysis; there is no checkout or locked evidence here.</p></aside>
       </>}
     </section>
   </main>;
