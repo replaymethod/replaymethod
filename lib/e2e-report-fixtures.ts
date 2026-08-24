@@ -169,7 +169,6 @@ export function loadE2eReportFixture(publicId: string): PublicReportData | null 
       parserVersion: "rl-parser.e2e",
       rankProvenance: "player_submitted",
     };
-    fixture.performance = performanceFixture();
     fixture.earlyAccess = {
       badge: "EARLY ACCESS BETA",
       heading: "Built from your real replay. Refined through expert validation.",

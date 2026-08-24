@@ -51,6 +51,8 @@ test("separates Early Access facts, experimental coaching, abstention and produc
   assert.match(client, /VERIFIED MATCH CONTEXT/);
   assert.match(client, /EXPERIMENTAL COACHING/);
   assert.match(client, /YOUR NEXT 3 MATCHES · ABSTAINED/);
+  assert.match(client, /FULL MATCH STATS · UNAVAILABLE/);
+  assert.match(client, /No missing match measures were estimated or presented as facts/);
   assert.match(client, /never treated as replay ground truth, detector labels or expert validation/);
   assert.match(data, /formalValidationStatus: "not_validated"/);
   assert.match(data, /earlyAccess\?\.coachingStatus !== "abstained"/);
