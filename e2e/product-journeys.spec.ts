@@ -63,28 +63,29 @@ test.describe("first-time visitor funnel", () => {
 
   test("the landing page explains one cross-match problem and exposes one immediate replay action", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /10 games in/i })).toBeVisible();
-    await expect(page.getByText("One free 10-match baseline · Private · No card", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Ten representative matches. One supported focus." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Upload 10 ranked replays/i })).toBeVisible();
+    await expect(page.locator(".marcel-trust-row").getByText("One free 10-match review · Private · No card", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ten matches. One next move." })).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(0);
     await expect(page.getByRole("button", { name: /League of Legends|VALORANT/i })).toHaveCount(0);
-    await expect(page.getByText("Add ten ranked replays", { exact: true })).toBeVisible();
-    await expect(page.getByText("Separate recurrence from noise", { exact: true })).toBeVisible();
-    await expect(page.getByText("Take one rule into your next 3", { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: /CHOOSE MY 10 REPLAYS/ })).toHaveAttribute("href", "/analyze");
+    await expect(page.getByText("See what keeps happening", { exact: true })).toBeVisible();
+    await expect(page.getByText("Know what to try next", { exact: true })).toBeVisible();
+    await expect(page.getByText("Check if it improves", { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Choose 10 replays/ }).first()).toHaveAttribute("href", "/analyze");
     await expect(page.locator(".marcel-faq details")).toHaveCount(5);
   });
 
-  test("the illustrative product loop supports pointer, keyboard and swipe before returning focus to upload", async ({ page }) => {
+  test("the illustrative product loop supports autoplay, pointer, keyboard and swipe before opening upload", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     await expectTenReplayStart(page);
-    await expect(page.getByRole("tab", { name: "MATCH", exact: true })).toHaveAttribute("aria-selected", "true");
-    await page.getByRole("tab", { name: "DECISION", exact: true }).click();
-    await expect(page.getByRole("tab", { name: "DECISION", exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#loop-stage-panel")).toContainText("You enter the same channel.");
-    await page.getByRole("tab", { name: "DECISION", exact: true }).press("ArrowRight");
-    await expect(page.getByRole("tab", { name: "RULE", exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#loop-stage-panel")).toContainText("Hold one layer deeper.");
+    await page.getByRole("tab", { name: "0–2 SEC", exact: true }).click();
+    await expect(page.getByRole("tab", { name: "0–2 SEC", exact: true })).toHaveAttribute("aria-selected", "true");
+    await page.getByRole("tab", { name: "2–4 SEC", exact: true }).click();
+    await expect(page.getByRole("tab", { name: "2–4 SEC", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#loop-stage-panel")).toContainText("The clear beats both of you.");
+    await page.getByRole("tab", { name: "2–4 SEC", exact: true }).press("ArrowRight");
+    await expect(page.getByRole("tab", { name: "4–6 SEC", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#loop-stage-panel")).toContainText("You followed too close. Nobody covered the clear.");
     const demo = page.locator(".marcel-demo");
     await demo.evaluate((element) => {
       const swipe = (type: string, clientX: number) => {
@@ -95,10 +96,11 @@ test.describe("first-time visitor funnel", () => {
       swipe("touchstart", 320);
       swipe("touchend", 120);
     });
-    await expect(page.getByRole("tab", { name: "CHECK AGAIN", exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByText("NOT A LIVE FINDING", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: /BUILD MY 10-MATCH BASELINE/ }).click();
-    await expect(page.locator("#ten-replay-start")).toBeFocused();
+    await expect(page.getByRole("tab", { name: "6–8 SEC", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#loop-stage-panel")).toContainText("Let them go. Cover what happens next.");
+    await expect(page.getByText("NOT YOUR ANALYSIS", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: /Find the mistake I keep repeating/ }).click();
+    await expect(page).toHaveURL(/\/analyze$/);
   });
 
   test("reduced motion keeps the product loop legible without animated state", async ({ page }) => {
@@ -107,21 +109,22 @@ test.describe("first-time visitor funnel", () => {
     await expectTenReplayStart(page);
     await expect(page.locator(".marcel-demo-stages button").first()).toHaveCSS("animation-name", "none");
     await expect(page.locator(".marcel-demo .scan-line")).toHaveCSS("display", "none");
-    await page.getByRole("button", { name: /BUILD MY 10-MATCH BASELINE/ }).click();
-    await expect(page.locator("#ten-replay-start")).toBeInViewport();
+    await expect(page.getByRole("button", { name: "Play", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: /Find the mistake I keep repeating/ }).click();
+    await expect(page).toHaveURL(/\/analyze$/);
   });
 
   test("the intake requires exactly ten originals and one shared context", async ({ page }) => {
     await page.goto("/analyze", { waitUntil: "load" });
     await expect(page.locator('main.batch-intake-page[data-hydrated="true"]')).toBeVisible();
     await expect(page.locator(".intake-card")).toBeVisible();
-    await expect(page.getByText("Choose your ten representative replays.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Choose your ten replays.", { exact: true })).toBeVisible();
     await expect(page.getByLabel("0 of 10 verified replays")).toBeVisible();
-    await expect(page.getByText(/same player and playlist/i).first()).toBeVisible();
+    await expect(page.getByText(/same player.*ranked.*playlist/i).first()).toBeVisible();
     await expect(page.getByLabel("Email for the private report *")).toBeVisible();
     await expect(page.getByLabel("Current playlist rank *")).toBeVisible();
     await expect(page.locator('input[type="file"][multiple]')).toHaveCount(1);
-    await expect(page.getByRole("button", { name: /START MY FREE 10-REPLAY BASELINE/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /VERIFY MY 10 REPLAYS/ })).toBeVisible();
     const uploadLayout = await page.locator(".file-drop").evaluate(element => {
       const label = element.querySelector("b")?.getBoundingClientRect();
       const helper = element.querySelector("small")?.getBoundingClientRect();
@@ -132,9 +135,58 @@ test.describe("first-time visitor funnel", () => {
     expect(uploadLayout.separation).toBeGreaterThanOrEqual(0);
   });
 
+  test("ten-file selection and drag-and-drop keep good files when one needs replacing", async ({ page }) => {
+    await page.goto("/analyze", { waitUntil: "load" });
+    await expect(page.locator('main.batch-intake-page[data-hydrated="true"]')).toBeVisible();
+    const tenReplays = Array.from({ length: 10 }, (_, index) => ({
+      name: `match-${String(index + 1).padStart(2, "0")}.replay`,
+      mimeType: "application/octet-stream",
+      buffer: Buffer.from(`synthetic-selection-${index}`),
+    }));
+    await page.locator('input[type="file"]').setInputFiles(tenReplays);
+    await expect(page.locator(".batch-file-list article.ready")).toHaveCount(10);
+    await expect(page.getByText("10 files ready. Each replay will be verified separately; a rejected file will not remove the others.", { exact: true })).toBeVisible();
+
+    await page.reload({ waitUntil: "load" });
+    await expect(page.locator('main.batch-intake-page[data-hydrated="true"]')).toBeVisible();
+    await page.locator(".file-drop").evaluate(element => {
+      const transfer = new DataTransfer();
+      for (let index = 0; index < 9; index += 1) {
+        transfer.items.add(new File([`drop-${index}`], `drop-${index + 1}.replay`, { type: "application/octet-stream" }));
+      }
+      transfer.items.add(new File(["wrong"], "wrong-file.txt", { type: "text/plain" }));
+      element.dispatchEvent(new DragEvent("drop", { bubbles: true, dataTransfer: transfer }));
+    });
+    await expect(page.locator(".batch-file-list article.ready")).toHaveCount(9);
+    await expect(page.locator(".batch-file-list article.excluded")).toHaveCount(1);
+    await expect(page.getByText("Choose original Rocket League .replay files.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Choose or drop 1 replacement file", { exact: true })).toBeVisible();
+
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "match-10.replay",
+      mimeType: "application/octet-stream",
+      buffer: Buffer.from("synthetic-selection-10"),
+    });
+    await expect(page.locator(".batch-file-list article.ready")).toHaveCount(10);
+    await expect(page.getByText("10 files ready. Each replay will be verified separately; a rejected file will not remove the others.", { exact: true })).toBeVisible();
+
+    await page.reload({ waitUntil: "load" });
+    await expect(page.locator('main.batch-intake-page[data-hydrated="true"]')).toBeVisible();
+    await page.locator(".file-drop").evaluate(element => {
+      const transfer = new DataTransfer();
+      for (let index = 0; index < 10; index += 1) {
+        transfer.items.add(new File([`drop-${index}`], `drop-${index + 1}.replay`, { type: "application/octet-stream" }));
+      }
+      element.dispatchEvent(new DragEvent("dragover", { bubbles: true, dataTransfer: transfer }));
+      element.dispatchEvent(new DragEvent("drop", { bubbles: true, dataTransfer: transfer }));
+    });
+    await expect(page.locator(".batch-file-list article.ready")).toHaveCount(10);
+    await expect(page.getByText("10 files ready. Each replay will be verified separately; a rejected file will not remove the others.", { exact: true })).toBeVisible();
+  });
+
   test("Rocket League is active while League and VALORANT are explicitly deferred", async ({ page }) => {
     await page.goto("/rocket-league");
-    await expect(page.getByRole("link", { name: /CHOOSE MY 10 REPLAYS/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Choose 10 replays/ }).first()).toBeVisible();
     for (const [route, game] of [["/league", "League of Legends"], ["/valorant", "VALORANT"]] as const) {
       await page.goto(route);
       await expect(page.getByText(`${game.toUpperCase()} · COMING LATER`, { exact: true })).toBeVisible();
@@ -172,15 +224,15 @@ test.describe("truthful product boundaries", () => {
     await page.locator("summary").filter({ hasText: "What if one file is invalid?" }).click();
     await expect(page.getByText(/does not consume a valid slot/i)).toBeVisible();
     await page.locator("summary").filter({ hasText: "Why might Replay Method abstain?" }).click();
-    await expect(page.getByText(/withholds the coaching plan/i)).toBeVisible();
+    await expect(page.getByText(/explains why it cannot name a habit yet/i)).toBeVisible();
   });
 
   test("the public start link reaches the same 10-replay intake on mobile and desktop", async ({ page }) => {
     await page.goto("/?utm_source=community&token=private", { waitUntil: "load" });
     await expectTenReplayStart(page);
-    await page.getByRole("link", { name: /CHOOSE MY 10 REPLAYS/ }).click();
+    await page.getByRole("link", { name: /Choose 10 replays/ }).first().click();
     await expect(page).toHaveURL(/\/analyze$/);
-    await expect(page.getByRole("heading", { name: /10 games in/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Upload 10 ranked replays/i })).toBeVisible();
     expect(new URL(page.url()).searchParams.has("token")).toBe(false);
   });
 
@@ -196,7 +248,7 @@ test.describe("truthful product boundaries", () => {
   test("the commercial landing does not distract with pricing or checkout", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#pricing")).toHaveCount(1);
-    await expect(page.getByText("PREMIUM PREVIEW · COMING LATER", { exact: true })).toBeVisible();
+    await expect(page.getByText("PREMIUM · COMING LATER", { exact: true })).toBeVisible();
     await expect(page.getByText(/35 representative replays per week/i)).toBeVisible();
     await expect(page.locator('[data-plan="monthly"]')).toHaveCount(0);
     await expect(page.getByRole("button", { name: /buy|subscribe|checkout/i })).toHaveCount(0);

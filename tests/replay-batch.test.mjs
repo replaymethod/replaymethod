@@ -67,9 +67,13 @@ test("batch product reserves one allowance and never counts excluded files as va
   assert.match(process, /valid_count = valid_count \+ 1/);
   assert.match(process, /excluded_count = excluded_count \+ \?/);
   assert.match(process, /nextSlot === 10/);
+  assert.match(process, /report\s*\?\s*database\.prepare\(`UPDATE analysis_usage SET status = 'consumed'/);
+  assert.match(process, /database\.prepare\(`UPDATE analysis_usage SET status = 'released'/);
   assert.match(process, /job_public_id = \?/);
   assert.match(process, /crypto\.randomUUID\(\)\.replaceAll\("-", ""\)/);
   assert.match(flow, /Choose exactly \$\{required\}/);
+  assert.match(flow, /onDrop=\{dropFiles\}/);
+  assert.match(flow, /Wrong files stay visible with a clear reason/);
   assert.match(flow, /replaymethod-ten-replay-upload/);
   assert.match(report, /row\.evidenceType !== "replay_batch" \|\| Boolean\(finding\)/);
   assert.match(parser, /externalMatchId: matchGuid \|\| undefined/);

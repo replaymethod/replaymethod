@@ -31,7 +31,7 @@ test.describe("private report states", () => {
     await expect(page.getByRole("heading", { name: "Your match in 20 seconds." })).toBeVisible();
     await expect(page.getByLabel("Evidence status and sample size").getByText("EXPERIMENTAL COACHING", { exact: true })).toBeVisible();
     await expect(page.getByText("FULL MATCH STATS", { exact: true })).toBeVisible();
-    await expect(page.getByText("CONFIDENCE & LIMITATIONS", { exact: true })).toBeVisible();
+    await expect(page.getByText("HOW SURE IS THIS?", { exact: true })).toBeVisible();
     await expect(page.getByText("THE DECISION TO FIX FIRST", { exact: true })).toBeVisible();
     await expect(page.getByText("YOUR NEXT 3 MATCHES", { exact: true })).toBeVisible();
     await expect(page.getByText("Advanced details", { exact: true })).toBeVisible();
@@ -67,15 +67,15 @@ test.describe("private report states", () => {
     await expect(page.getByText("READY", { exact: true })).toBeVisible();
     await expect(page.getByText("Invalid Date", { exact: true })).toHaveCount(0);
     await expect(page.getByText("FULL MATCH STATS · UNAVAILABLE", { exact: true })).toBeVisible();
-    await expect(page.getByText("YOUR NEXT 3 MATCHES · ABSTAINED", { exact: true })).toBeVisible();
+    await expect(page.getByText("HONEST RESULT", { exact: true })).toBeVisible();
     await expect(page.getByText(/did not turn neutral measurements into a fake mistake or generic drill/i)).toBeVisible();
     await expect(page.getByText("EARLY ACCESS PRODUCT FEEDBACK", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Evidence status and sample size").getByText("FACTS ONLY", { exact: true })).toBeVisible();
   });
 
-  test("missing detailed measures keep the Stats destination truthful and navigable", async ({ page }) => {
+  test("missing detailed measures keep the Match facts destination truthful and navigable", async ({ page }) => {
     await page.goto(reports.abstained);
-    await page.getByRole("button", { name: /Stats/ }).click();
+    await page.getByRole("button", { name: /Match facts/ }).click();
     await expect(page.locator("#performance")).toBeFocused();
     await expect(page.getByText("FULL MATCH STATS · UNAVAILABLE", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Detailed match measures were not available/i })).toBeVisible();

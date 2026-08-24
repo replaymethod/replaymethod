@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { readApiResponse } from "../../lib/client-api-response.mjs";
 import FreeAnalysisUsed, { FREE_ANALYSIS_USED_MESSAGE } from "../components/FreeAnalysisUsed";
@@ -55,6 +55,7 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
   const [candidates, setCandidates] = useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [busy, setBusy] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const [message, setMessage] = useState("");
   const [freeUsed, setFreeUsed] = useState(initialFreeAnalysisUsed);
   const [ownerVerificationRequired, setOwnerVerificationRequired] = useState(false);
@@ -83,20 +84,54 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
   const updateRow = (key: string, status: FileRow["status"], rowMessage = "") => setRows(current => current.map(row => row.key === key ? { ...row, status, message: rowMessage } : row));
 
   const chooseFiles = (list: FileList | null) => {
-    if (!list) return;
+    if (!list?.length || busy) return;
     const files = [...list];
-    const problem = files.map(replayProblem).find(Boolean);
-    if (problem) { setMessage(problem); if (inputRef.current) inputRef.current.value = ""; return; }
-    const unique = files.filter((file, index) => files.findIndex(candidate => fileKey(candidate) === fileKey(file)) === index);
-    const required = TARGET - validCount;
-    if (unique.length !== required) {
-      setMessage(`Choose exactly ${required} replay${required === 1 ? "" : "s"} to fill the remaining ${required} valid slot${required === 1 ? "" : "s"}.`);
-      if (inputRef.current) inputRef.current.value = "";
-      return;
+    const queued = rows.filter(row => ["ready", "error"].includes(row.status));
+    const knownKeys = new Set(rows.filter(row => row.status !== "excluded").map(row => row.key));
+    let openSlots = Math.max(0, TARGET - validCount - queued.length);
+    let accepted = 0;
+    let rejected = 0;
+    const additions: FileRow[] = [];
+
+    for (const file of files) {
+      const key = fileKey(file);
+      const problem = replayProblem(file);
+      if (problem) {
+        additions.push({ key: `${key}:rejected:${rows.length + additions.length}`, file, status: "excluded", message: problem });
+        rejected += 1;
+        continue;
+      }
+      if (knownKeys.has(key)) {
+        additions.push({ key: `${key}:duplicate:${rows.length + additions.length}`, file, status: "excluded", message: "Duplicate selection — choose a different match." });
+        rejected += 1;
+        continue;
+      }
+      if (openSlots === 0) {
+        additions.push({ key: `${key}:extra:${rows.length + additions.length}`, file, status: "excluded", message: "Not added — all ten selection slots are already filled." });
+        rejected += 1;
+        continue;
+      }
+      additions.push({ key, file, status: "ready", message: "Ready to verify" });
+      knownKeys.add(key);
+      openSlots -= 1;
+      accepted += 1;
     }
-    setRows(current => [...current.filter(row => ["valid", "excluded"].includes(row.status)), ...unique.map(file => ({ key: fileKey(file), file, status: "ready" as const, message: "Ready" }))]);
-    trackProductEvent("replay_selected", "rocket-league", `ten_replay_${unique.length}`);
-    setMessage(`${unique.length} replay${unique.length === 1 ? "" : "s"} ready. Files are verified one at a time; invalid files can be replaced.`);
+
+    setRows(current => [...current, ...additions]);
+    trackProductEvent("replay_selected", "rocket-league", `ten_replay_${accepted}`);
+    const stillNeeded = Math.max(0, openSlots);
+    setMessage(rejected
+      ? `${accepted} file${accepted === 1 ? "" : "s"} kept. ${rejected} need${rejected === 1 ? "s" : ""} replacing${stillNeeded ? `; add ${stillNeeded} more` : ""}.`
+      : stillNeeded
+        ? `${accepted} file${accepted === 1 ? "" : "s"} kept. Add ${stillNeeded} more to reach ten.`
+        : "10 files ready. Each replay will be verified separately; a rejected file will not remove the others.");
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const dropFiles = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+    chooseFiles(event.dataTransfer.files);
   };
 
   async function createBatch() {
@@ -162,9 +197,9 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
         await new Promise<void>(resolve => { playerResolver.current = resolve; });
         continue;
       }
-      if (result.status === "excluded") return { status: "excluded", message: String(result.error || "This file needs a replacement.") };
-      if (result.status === "ready") return { status: "ready", reportUrl: batch.reportUrl };
-      if (result.accepted || result.status === "collecting") return { status: "valid" };
+      if (result.status === "excluded") return { status: "excluded", validCount: Number(result.validCount || 0), message: String(result.error || "This file needs a replacement.") };
+      if (result.status === "ready") return { status: "ready", validCount: 10, reportUrl: batch.reportUrl };
+      if (result.accepted || result.status === "collecting") return { status: "valid", validCount: Number(result.validCount || 0) };
       if (!response.ok && response.status < 500) throw new Error(String(result.error || "The replay could not be verified."));
       await wait(Number(response.headers.get("Retry-After") || 3) * 1000);
     }
@@ -197,11 +232,13 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
     setBusy(true);
     try {
       const batch = await createBatch();
+      let latestValidCount = validCount;
       for (const row of pendingRows) {
         updateRow(row.key, "uploading", "Saving byte-verified original…");
         await upload(row.file, batch);
         updateRow(row.key, "processing", "Verifying player, playlist and match…");
         const result = await processSaved(batch);
+        latestValidCount = result.validCount;
         if (result.status === "excluded") {
           updateRow(row.key, "excluded", result.message || "Replacement required");
           trackProductEvent("validation_failed", "rocket-league", "ten_replay_excluded");
@@ -221,7 +258,7 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
           return;
         }
       }
-      const remaining = TARGET - validCount;
+      const remaining = TARGET - latestValidCount;
       setMessage(remaining > 0 ? `Batch saved. Replace ${remaining} excluded replay${remaining === 1 ? "" : "s"}; invalid files did not consume a slot.` : "Building your ten-match report…");
     } catch (error) {
       const detail = error instanceof Error ? error.message : "The saved batch could not continue.";
@@ -234,16 +271,19 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
   };
 
   const remaining = TARGET - validCount;
+  const queuedCount = rows.filter(row => ["ready", "error"].includes(row.status)).length;
+  const selectionRemaining = Math.max(0, remaining - queuedCount);
+  const displayedExcluded = Math.max(excludedCount, rows.filter(row => row.status === "excluded").length);
   return <main ref={pageRef} className="intake-page batch-intake-page" data-hydrated="false">
     <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><Link href="/">Exit</Link></div></nav>
     <section className="intake-shell shell">
-      <header className="intake-header"><div><span>FREE TEN-MATCH BASELINE</span><h1>10 games in.<br /><em>One clear plan out.</em></h1><p>Upload ten original ranked PC replays from the same player and playlist. We separate recurring patterns from one-off moments.</p></div><aside><b>{validCount}/10</b><span>VERIFIED REPLAYS</span><small>{excludedCount ? `${excludedCount} excluded · ` : ""}Private · No card · Resumable</small></aside></header>
+      <header className="intake-header"><div><span>YOUR FREE 10-MATCH REVIEW</span><h1>Upload 10 ranked replays.<br /><em>See what keeps happening.</em></h1><p>Choose ten original ranked PC replays from the same player and playlist. Every file stays visible while Replay Method verifies it.</p></div><aside><b>{validCount}/10</b><span>VERIFIED REPLAYS</span><small>{displayedExcluded ? `${displayedExcluded} excluded · ` : ""}Private · No card · Resumable</small></aside></header>
       <div className="intake-progress" aria-label={`${validCount} of 10 verified replays`}><i style={{ width: `${validCount * 10}%` }} /><span>{validCount} / 10</span></div>
       <form className="intake-card batch-intake" onSubmit={submit} aria-busy={busy}>
-        <section><span className="intake-kicker">EXACTLY TEN VALID MATCHES</span><h2>{remaining === 10 ? "Choose your ten representative replays." : remaining ? `Add ${remaining} replacement replay${remaining === 1 ? "" : "s"}.` : "All ten matches are verified."}</h2><p className="intake-explain">Same player · same ranked 1v1, 2v2 or 3v3 playlist. Duplicate, unreadable, wrong-player and wrong-playlist files are excluded and replaced without using another free batch.</p>
-          {remaining > 0 && <label className={`file-drop ${rows.some(row => row.status === "ready") ? "has-file" : ""}`}><input ref={inputRef} type="file" multiple accept=".replay,application/octet-stream" onChange={event => chooseFiles(event.target.files)} disabled={busy} /><i>↥</i><b>{remaining === 10 ? "Choose exactly 10 original .replay files" : `Choose exactly ${remaining} replacement file${remaining === 1 ? "" : "s"}`}</b><small>Maximum 16 MB each · originals stay private · uploads resume safely</small></label>}
+        <section><span className="intake-kicker">EXACTLY TEN VALID MATCHES</span><h2>{remaining === 10 && selectionRemaining === 10 ? "Choose your ten replays." : remaining ? `Add ${selectionRemaining} more replay${selectionRemaining === 1 ? "" : "s"}.` : "All ten matches are verified."}</h2><p className="intake-explain">Same player · same ranked 1v1, 2v2 or 3v3 playlist. Wrong files stay visible with a clear reason; the good files remain in place.</p>
+          {selectionRemaining > 0 && <label className={`file-drop ${rows.some(row => row.status === "ready") ? "has-file" : ""} ${dragActive ? "drag-active" : ""}`} onDragEnter={event => { event.preventDefault(); setDragActive(true); }} onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; setDragActive(true); }} onDragLeave={event => { if (event.currentTarget === event.target) setDragActive(false); }} onDrop={dropFiles}><input ref={inputRef} type="file" multiple accept=".replay,application/octet-stream" onChange={event => chooseFiles(event.target.files)} disabled={busy} /><i>↥</i><b>{selectionRemaining === 10 ? "Choose or drop 10 .replay files" : `Choose or drop ${selectionRemaining} replacement file${selectionRemaining === 1 ? "" : "s"}`}</b><small>Pick all ten at once · maximum 16 MB each · uploads resume safely</small></label>}
           <Link className="replay-file-help" href="/replay-upload" target="_blank" rel="noreferrer">Can’t find the files? <span>Open the guide →</span></Link>
-          {rows.length > 0 && <div className="batch-file-list" aria-label="Replay verification list">{rows.map((row, index) => <article className={row.status} key={row.key}><i>{row.status === "valid" ? "✓" : row.status === "excluded" ? "×" : String(index + 1).padStart(2, "0")}</i><div><b>{row.file.name}</b><small>{row.message}</small></div></article>)}</div>}
+          {rows.length > 0 && <div className="batch-file-list" aria-label="Replay verification list" aria-live="polite">{rows.map((row, index) => <article className={row.status} key={row.key}><i>{row.status === "valid" ? "✓" : row.status === "excluded" ? "×" : String(index + 1).padStart(2, "0")}</i><div><b>{row.file.name}</b><small>{row.message}</small></div></article>)}</div>}
         </section>
         <section><span className="intake-kicker">PLAYER CONTEXT &amp; PRIVATE DELIVERY</span><h2>One context, used consistently across the batch.</h2><div className="field-grid">
           {!ownerQa && <label className="wide"><span>Email for the private report *</span><input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required /></label>}
@@ -253,7 +293,7 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
           <label className="check wide"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} required /><span>I agree that Replay Method may privately process these ten original replay files to deliver my report. <a href="/privacy" target="_blank">Privacy</a></span></label>
         </div></section>
         {candidates.length > 0 && <section className="player-resolution" aria-labelledby="batch-player-title"><div><span>PLAYER IDENTITY · LOCK ONCE</span><h3 id="batch-player-title">Which player is you?</h3><p>Every accepted replay must contain this exact verified player.</p></div><div className="player-resolution-options" role="radiogroup" aria-label="Players found in replay 1">{candidates.map(player => <button type="button" role="radio" aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} onClick={() => setSelectedPlayer(player)} key={player}>{player}</button>)}</div><button className="player-resolution-submit" type="button" disabled={!selectedPlayer || !rank} onClick={lockPlayer}>Lock this player for all 10 →</button></section>}
-        <button className="submit-analysis" disabled={busy || remaining === 0 || candidates.length > 0}><span>{busy ? candidates.length ? "WAITING FOR PLAYER…" : `VERIFYING ${validCount}/10…` : session ? `CONTINUE SAVED BATCH · ${validCount}/10 →` : "START MY FREE 10-REPLAY BASELINE →"}</span></button>
+        <button className="submit-analysis" disabled={busy || remaining === 0 || candidates.length > 0}><span>{busy ? candidates.length ? "WAITING FOR PLAYER…" : `VERIFYING ${validCount}/10…` : session ? `CONTINUE SAVED REVIEW · ${validCount}/10 →` : "VERIFY MY 10 REPLAYS →"}</span></button>
         <small className="submission-note">One free ten-replay batch · No card · Invalid replacements do not consume valid slots.</small>
         {freeUsed && <FreeAnalysisUsed />}{ownerVerificationRequired && <OwnerVerificationRequired />}{message && <p className="intake-message" role="alert">{message}</p>}
       </form>
