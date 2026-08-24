@@ -62,7 +62,7 @@ test("puts the product action before explanatory browsing", async () => {
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
   assert.match(landing, /engineOpen \? <QuickReplayStart/);
   assert.match(landing, /Stop grinding blind/);
-  assert.match(landing, /Drop the replay/);
+  assert.match(landing, /Drop one replay/);
   assert.match(contribution, /replay && <section className="rl-intake-context"/);
   assert.match(contribution, /Choose the original PC file\. The next step appears instantly/);
 });

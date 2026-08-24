@@ -35,5 +35,5 @@ test("renders production social metadata and the fail-closed product-first path"
   assert.match(html, /Replay uploads are closed right now/i);
   assert.doesNotMatch(html, /type="file"/i);
   assert.doesNotMatch(html, /Choose my game|Contribute one replay/i);
-  assert.match(html, /Drop the replay/i);
+  assert.match(html, /Drop one replay/i);
 });
