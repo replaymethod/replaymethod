@@ -14,6 +14,13 @@ interface Env {
   RL_ENGINE_ENABLED?: string;
   RL_EARLY_ACCESS_OUTPUT_ENABLED?: string;
   RL_PUBLIC_DETECTORS_ENABLED?: string;
+  BACKGROUND_PROCESSING_ENABLED?: string;
+  OWNER_QA_ENTITLEMENT_ENABLED?: string;
+  OWNER_QA_PLAYER_ID?: string;
+  ADMIN_EMAIL?: string;
+  ADMIN_EMAILS?: string;
+  ADMIN_USER_ID?: string;
+  ADMIN_USER_IDS?: string;
   RIOT_LEAGUE_API_KEY?: string;
   RIOT_VALORANT_API_KEY?: string;
   RIOT_RSO_CLIENT_ID?: string;

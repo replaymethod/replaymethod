@@ -6,6 +6,7 @@ import type { AnalysisGame } from "../../lib/analysis";
 import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics";
 import { readApiResponse, uploadReplayInChunks, type StagedReplay } from "../../lib/client-replay-upload";
 import FreeAnalysisUsed, { FREE_ANALYSIS_USED_MESSAGE } from "../components/FreeAnalysisUsed";
+import OwnerVerificationRequired, { OWNER_VERIFICATION_REQUIRED_MESSAGE } from "../components/OwnerVerificationRequired";
 
 const games: { key: AnalysisGame; mark: string; name: string; proof: string; input: string }[] = [
   { key: "league", mark: "L", name: "League of Legends", proof: "Official Riot connection in approval", input: "Riot ID and a representative match link" },
@@ -88,6 +89,8 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
   const [freeAnalysisUsed, setFreeAnalysisUsed] = useState(initialFreeAnalysisUsed);
+  const [ownerVerificationRequired, setOwnerVerificationRequired] = useState(false);
+  const [ownerQa, setOwnerQa] = useState(false);
   const replayFirst = game === "rocket-league" && platform === "pc";
   const visibleStep = replayFirst ? (step === 3 ? 2 : 1) : step + 1;
   const visibleStepTotal = replayFirst ? 2 : 4;
@@ -95,6 +98,8 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
   useEffect(() => {
     formRef.current?.setAttribute("data-hydrated", "true");
     track("analysis_start", initialGame, "analysis_page");
+    fetch("/api/player/access", { cache: "no-store" }).then(response => response.json())
+      .then((access: { ownerQa?: boolean }) => setOwnerQa(access.ownerQa === true)).catch(() => { /* normal anonymous flow */ });
   }, [initialGame]);
   const selected = useMemo(() => games.find(item => item.key === game), [game]);
 
@@ -143,6 +148,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
   const next = () => {
     setMessage("");
     setFreeAnalysisUsed(false);
+    setOwnerVerificationRequired(false);
     if (step === 1 && game === "rocket-league" && platform === "pc" && !engineOpen) return setMessage("PC replay analysis is still in final quality validation. Join the waitlist for first access.");
     if (step === 1 && game === "rocket-league" && platform === "pc" && !replay) return setMessage("Upload the original Rocket League .replay file so the match can be parsed safely.");
     if (step === 1 && game === "rocket-league" && platform !== "pc" && !videoOpen) return setMessage("Console video analysis is not live yet. Join the console waitlist for first access.");
@@ -166,6 +172,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
     setStatus("loading");
     setMessage("");
     setFreeAnalysisUsed(false);
+    setOwnerVerificationRequired(false);
     const data = new FormData();
     data.set("game", game);
     data.set("platform", game === "rocket-league" ? platform : "pc");
@@ -175,7 +182,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
     data.set("goal", replayFirst ? "Find the most useful evidence-backed focus in this replay." : goal);
     data.set("notes", notes);
     data.set("evidenceUrl", evidenceUrl);
-    data.set("email", email);
+    data.set("email", ownerQa ? "" : email);
     data.set("dataConsent", String(dataConsent));
     data.set("updatesConsent", String(updatesConsent));
     data.set("company", "");
@@ -188,7 +195,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
     try {
       if (replay || video) track("upload_started", game, video ? "console_video_intake" : "analysis_intake");
       if (replay) {
-        const staged = stagedReplayRef.current || await uploadReplayInChunks(replay, email, dataConsent, percent => {
+        const staged = stagedReplayRef.current || await uploadReplayInChunks(replay, ownerQa ? "" : email, dataConsent, percent => {
           setMessage(`Saving replay securely… ${percent}%`);
         });
         stagedReplayRef.current = staged;
@@ -213,8 +220,10 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
       setStatus("error");
       const detail = error instanceof Error ? error.message : "We couldn’t create the analysis.";
       const allowanceUsed = detail === FREE_ANALYSIS_USED_MESSAGE;
+      const verificationNeeded = detail === OWNER_VERIFICATION_REQUIRED_MESSAGE;
       setFreeAnalysisUsed(allowanceUsed);
-      setMessage(allowanceUsed ? "" : replaySaved ? `Your replay was saved securely, but the analysis did not start. Retry to reuse the saved file. ${detail}` : detail);
+      setOwnerVerificationRequired(verificationNeeded);
+      setMessage(allowanceUsed ? "" : verificationNeeded ? "" : replaySaved ? `Your replay was saved securely, but the analysis did not start. Retry to reuse the saved file. ${detail}` : detail);
       track("analysis_failed", game, replay ? "replay_upload" : video ? "video_upload" : "evidence_link");
     }
   }
@@ -232,10 +241,11 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
 
         {step === 1 && game && <section><button className="intake-back" type="button" onClick={() => setStep(0)}>← CHANGE GAME</button><span className="intake-kicker">MATCH EVIDENCE · {selected?.name.toUpperCase()}</span><h2>{game === "rocket-league" && (platform === "pc" ? !engineOpen : !videoOpen) ? "This evidence lane is not open yet." : "Start with something we can prove."}</h2>{game === "rocket-league" && <div className="intake-platforms" role="group" aria-label="Rocket League platform">{platforms.map(item => <button type="button" key={item.key} className={platform === item.key ? "active" : ""} aria-pressed={platform === item.key} onClick={() => { setPlatform(item.key); setReplay(null); setVideo(null); setEvidenceUrl(""); setMessage(""); }}><i>{item.key === "pc" ? "PC" : item.key === "ps5" ? "△" : item.key === "xbox" ? "X" : "◫"}</i><span><b>{item.name}</b><small>{item.evidence}{item.key === "pc" && !engineOpen ? " · quality gate closed" : ""}</small></span></button>)}</div>}<p className="intake-explain">{game === "rocket-league" && platform !== "pc" ? videoOpen ? `${platforms.find(item => item.key === platform)?.name} uses visible video evidence.` : "We are not collecting console footage until the video analysis can return a useful result." : `${selected?.input}. Pick the match that best represents the problem—not your best game.`}</p>{game !== "rocket-league" && <div className="integration-notice"><b>RIOT ACCESS STATUS</b><p>Automated League and VALORANT analysis is not live. This form only preserves an opt-in beta request while official access is pending.</p></div>}{game === "rocket-league" && platform === "pc" && !engineOpen && <div className="integration-notice"><b>PC QUALITY VALIDATION</b><p>The replay parser is online. Public findings stay closed until the coaching detectors pass their quality gate.</p><Link href="/#join-beta">Join PC first access →</Link></div>}{game === "rocket-league" && platform !== "pc" && !videoOpen && <div className="integration-notice"><b>CONSOLE VIDEO WAITLIST</b><p>PS5, Xbox and Switch clips cannot be analyzed yet. We will not collect footage that only ends in a queue.</p><Link href="/#join-beta">Join console first access →</Link></div>}<div className="evidence-grid">{game !== "rocket-league" && <label><span>Representative match or profile link</span><input type="url" inputMode="url" value={evidenceUrl} onChange={e => setEvidenceUrl(e.target.value)} placeholder="https://tracker.gg/... or official match page" maxLength={1000} /></label>}{game === "rocket-league" && platform === "pc" && engineOpen && <><label className={`file-drop ${replay ? "has-file" : ""}`}><input ref={replayInputRef} type="file" accept=".replay,application/octet-stream" onChange={e => selectReplay(e.target.files?.[0] || null)} /><i>{replay ? "✓" : "↥"}</i><b>{replay ? replay.name : "Upload the original .replay file"}</b><small>{replay ? `${fileSizeLabel(replay.size)} · validated` : "Maximum 16 MB · Private · Frame-exact evidence"}</small></label>{!replay && <Link className="replay-file-help" href="/replay-upload" target="_blank" rel="noreferrer">Can’t find the file? <span>Open guide · keep this form →</span></Link>}</>}{game === "rocket-league" && platform !== "pc" && videoOpen && <><label className={`file-drop video-drop ${video ? "has-file" : ""}`}><input ref={videoInputRef} type="file" accept="video/mp4,video/quicktime,video/webm,video/mpeg,.m4v" onChange={e => selectVideo(e.target.files?.[0] || null)} /><i>{video ? "✓" : "▶"}</i><b>{video ? video.name : "Upload gameplay video"}</b><small>{video ? `${fileSizeLabel(video.size)} · video ready` : "MP4, MOV, WebM or MPEG · max 95 MB"}</small></label><div className="evidence-divider"><span>OR</span></div><label><span>Full-match or gameplay VOD link</span><input type="url" inputMode="url" value={evidenceUrl} onChange={e => setEvidenceUrl(e.target.value)} placeholder="https://youtube.com/..." maxLength={1000} /></label></>}<label><span>Anything we should watch for?</span><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional context" maxLength={1600} /></label></div></section>}
 
-        {step === 3 && game && <section><button className="intake-back" type="button" onClick={() => setStep(replayFirst ? 1 : 2)}>← {replayFirst ? "REPLAY" : "PLAYER CONTEXT"}</button><span className="intake-kicker">PRIVATE DELIVERY</span><h2>Where should we send your {game === "rocket-league" ? "result" : "request"}?</h2><div className="delivery-summary"><div><span>GAME</span><b>{selected?.name}{game === "rocket-league" ? ` · ${platforms.find(item => item.key === platform)?.name}` : ""}</b></div><div><span>{replayFirst ? "CONTEXT" : "RANK"}</span><b>{replayFirst ? "Read from replay · confirm after parse" : `${currentRank}${targetRank ? ` → ${targetRank}` : ""}`}</b></div><div><span>EVIDENCE</span><b>{replay ? replay.name : video ? video.name : "Private link added"}</b></div></div><div className="field-grid delivery-fields"><label className="wide"><span>Email for private delivery *</span><input type="email" autoComplete="email" inputMode="email" required value={email} onChange={e => { setEmail(e.target.value); stagedReplayRef.current = null; }} placeholder="you@email.com" /></label><label className="check wide"><input type="checkbox" required checked={dataConsent} onChange={e => setDataConsent(e.target.checked)} /><span>I agree that Replay Method may process this match, replay/VOD and my email to deliver the private beta status. <a href="/privacy" target="_blank">Privacy</a></span></label><label className="check wide"><input type="checkbox" checked={updatesConsent} onChange={e => setUpdatesConsent(e.target.checked)} /><span>Also send me product updates and beta-access news. Optional.</span></label></div><div className="honesty-box"><i>{game === "rocket-league" ? platform === "pc" ? "FRAME-EXACT QUALITY BETA" : "CONSOLE VIDEO BETA" : "RIOT ACCESS PREVIEW"}</i><p>{game === "rocket-league" ? platform === "pc" ? "The deterministic parser reads the playlist and players first. After one-tap identity and rank context, it returns coaching only where the exact evidence gate has passed." : "The video lane reviews only visible gameplay evidence and timestamps. It never presents video inference as hidden telemetry, and unsupported moments remain unscored." : "Your request and match reference will be preserved, but automated coaching cannot start until the official opt-in Riot integration is approved. No unsupported report will be generated."}</p></div><button className="submit-analysis" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING YOUR MATCH…" : game === "rocket-league" ? platform === "pc" ? "ANALYZE THIS REPLAY →" : "SUBMIT CONSOLE VIDEO EVIDENCE →" : "SAVE MY RIOT BETA REQUEST →"}</span></button><small className="submission-note">Your private status link appears immediately. First PC analysis included · No card or payment details.</small></section>}
+        {step === 3 && game && <section><button className="intake-back" type="button" onClick={() => setStep(replayFirst ? 1 : 2)}>← {replayFirst ? "REPLAY" : "PLAYER CONTEXT"}</button><span className="intake-kicker">PRIVATE DELIVERY</span><h2>{ownerQa ? "Your verified owner session will receive this result." : `Where should we send your ${game === "rocket-league" ? "result" : "request"}?`}</h2><div className="delivery-summary"><div><span>GAME</span><b>{selected?.name}{game === "rocket-league" ? ` · ${platforms.find(item => item.key === platform)?.name}` : ""}</b></div><div><span>{replayFirst ? "CONTEXT" : "RANK"}</span><b>{replayFirst ? "Read from replay · confirm after parse" : `${currentRank}${targetRank ? ` → ${targetRank}` : ""}`}</b></div><div><span>EVIDENCE</span><b>{replay ? replay.name : video ? video.name : "Private link added"}</b></div></div><div className="field-grid delivery-fields">{ownerQa ? <div className="quick-owner-verified wide" role="status"><i>✓</i><div><b>OWNER QA VERIFIED</b><span>Server-side identity · unlimited QA · excluded from product metrics and calibration</span></div></div> : <label className="wide"><span>Email for private delivery *</span><input type="email" autoComplete="email" inputMode="email" required value={email} onChange={e => { setEmail(e.target.value); stagedReplayRef.current = null; }} placeholder="you@email.com" /></label>}<label className="check wide"><input type="checkbox" required checked={dataConsent} onChange={e => setDataConsent(e.target.checked)} /><span>I agree that Replay Method may process this match, replay/VOD and {ownerQa ? "my verified owner session" : "my email"} to deliver the private beta status. <a href="/privacy" target="_blank">Privacy</a></span></label>{!ownerQa && <label className="check wide"><input type="checkbox" checked={updatesConsent} onChange={e => setUpdatesConsent(e.target.checked)} /><span>Also send me product updates and beta-access news. Optional.</span></label>}</div><div className="honesty-box"><i>{game === "rocket-league" ? platform === "pc" ? "FRAME-EXACT QUALITY BETA" : "CONSOLE VIDEO BETA" : "RIOT ACCESS PREVIEW"}</i><p>{game === "rocket-league" ? platform === "pc" ? "The deterministic parser reads the playlist and players first. After one-tap identity and rank context, it returns coaching only where the exact evidence gate has passed." : "The video lane reviews only visible gameplay evidence and timestamps. It never presents video inference as hidden telemetry, and unsupported moments remain unscored." : "Your request and match reference will be preserved, but automated coaching cannot start until the official opt-in Riot integration is approved. No unsupported report will be generated."}</p></div><button className="submit-analysis" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING YOUR MATCH…" : game === "rocket-league" ? platform === "pc" ? "ANALYZE THIS REPLAY →" : "SUBMIT CONSOLE VIDEO EVIDENCE →" : "SAVE MY RIOT BETA REQUEST →"}</span></button><small className="submission-note">Your private status link appears immediately. First PC analysis included · No card or payment details.</small></section>}
 
         {step > 0 && step < 3 && !(step === 1 && game === "rocket-league" && (platform === "pc" ? !engineOpen : !videoOpen)) && <div className="intake-actions"><button type="button" onClick={next}>CONTINUE <span>→</span></button></div>}
         {freeAnalysisUsed && <FreeAnalysisUsed />}
+        {ownerVerificationRequired && <OwnerVerificationRequired />}
         {message && <p className="intake-message" role="alert">{message}</p>}
       </form>
       <footer className="intake-footer"><span>One match. One pattern. One plan.</span><div><Link href="/privacy">Privacy</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a></div></footer>

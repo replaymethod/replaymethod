@@ -7,6 +7,7 @@ import { readApiResponse, uploadReplayInChunks, type StagedReplay } from "../../
 import { clearReplayUploadRecovery, loadReplayUploadRecovery, replayRecoveryStorageAvailable, saveReplayUploadRecovery } from "../../lib/client-replay-recovery.mjs";
 import { desktopHandoffUrl } from "../../lib/desktop-handoff.mjs";
 import FreeAnalysisUsed, { FREE_ANALYSIS_USED_MESSAGE } from "./FreeAnalysisUsed";
+import OwnerVerificationRequired, { OWNER_VERIFICATION_REQUIRED_MESSAGE } from "./OwnerVerificationRequired";
 
 const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
 const DEFAULT_GOAL = "Find the highest-impact recurring mistake in this match.";
@@ -76,14 +77,21 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
   const [freeAnalysisUsed, setFreeAnalysisUsed] = useState(false);
+  const [ownerVerificationRequired, setOwnerVerificationRequired] = useState(false);
+  const [ownerQa, setOwnerQa] = useState(false);
 
-  useEffect(() => formRef.current?.setAttribute("data-hydrated", "true"), []);
+  useEffect(() => {
+    formRef.current?.setAttribute("data-hydrated", "true");
+    fetch("/api/player/access", { cache: "no-store" }).then(response => response.json())
+      .then((access: { ownerQa?: boolean }) => setOwnerQa(access.ownerQa === true)).catch(() => { /* normal anonymous flow */ });
+  }, []);
 
   function selectFile(file: File | null) {
     if (!file) return;
     const problem = fileProblem(file);
     setMessage(problem);
     setFreeAnalysisUsed(false);
+    setOwnerVerificationRequired(false);
     if (problem) {
       track("validation_failed", replayProblemCode(file));
       setStatus("error");
@@ -98,7 +106,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     setStatus("idle");
     track("replay_selected", placement);
     track("analysis_start", `${placement}_details`);
-    window.setTimeout(() => document.getElementById("quick-replay-email")?.focus(), 0);
+    window.setTimeout(() => document.getElementById(ownerQa ? "quick-replay-consent" : "quick-replay-email")?.focus(), 0);
   }
 
   function choosePlatform(next: Platform) {
@@ -138,6 +146,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     setStatus("loading");
     setMessage("");
     setFreeAnalysisUsed(false);
+    setOwnerVerificationRequired(false);
     const data = new FormData();
     data.set("game", "rocket-league");
     data.set("platform", "pc");
@@ -147,7 +156,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     data.set("goal", DEFAULT_GOAL);
     data.set("notes", notes);
     data.set("evidenceUrl", "");
-    data.set("email", email);
+    data.set("email", ownerQa ? "" : email);
     data.set("dataConsent", String(dataConsent));
     data.set("updatesConsent", String(updatesConsent));
     data.set("company", "");
@@ -161,11 +170,12 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       if (!stagedReplayRef.current && !replayRecoveryStorageAvailable(window.localStorage)) {
         throw new Error("This browser blocked secure upload recovery. Allow site storage, then retry before sending the replay.");
       }
-      const recovery = stagedReplayRef.current ? null : loadReplayUploadRecovery(window.localStorage, replay, email);
+      const deliveryIdentity = ownerQa ? "" : email;
+      const recovery = stagedReplayRef.current ? null : loadReplayUploadRecovery(window.localStorage, replay, deliveryIdentity);
       replaySaved = replaySaved || Boolean(recovery);
       const staged = stagedReplayRef.current || await uploadReplayInChunks(
         replay,
-        email,
+        deliveryIdentity,
         dataConsent,
         percent => setMessage(`${recovery ? "Resuming saved replay" : "Saving replay securely"}… ${percent}%`),
         {
@@ -204,8 +214,10 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
       setStatus("error");
       const detail = error instanceof Error ? error.message : "We couldn’t start the analysis.";
       const allowanceUsed = detail === FREE_ANALYSIS_USED_MESSAGE;
+      const verificationNeeded = detail === OWNER_VERIFICATION_REQUIRED_MESSAGE;
       setFreeAnalysisUsed(allowanceUsed);
-      setMessage(allowanceUsed ? "" : replaySaved ? `Your secure upload session and every confirmed part were preserved. Retry—even after a reload—to reuse them without another upload or allowance. ${detail}` : detail);
+      setOwnerVerificationRequired(verificationNeeded);
+      setMessage(allowanceUsed ? "" : verificationNeeded ? "" : replaySaved ? `Your secure upload session and every confirmed part were preserved. Retry—even after a reload—to reuse them without another upload or allowance. ${detail}` : detail);
       track("analysis_failed", placement);
     }
   }
@@ -231,9 +243,8 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     </div>}
 
     {replay && detailsOpen && <div className="quick-details" id="quick-replay-details">
-      <label className="quick-email"><span>Where should we send your result?</span><input id="quick-replay-email" type="email" autoComplete="email" inputMode="email" value={email} onChange={event => { setEmail(event.target.value); stagedReplayRef.current = null; }} placeholder="you@email.com" required /></label>
-      <p className="quick-email-note">Private delivery and recovery only. Marketing stays off unless you choose it below.</p>
-      <label className="quick-check"><input type="checkbox" checked={dataConsent} onChange={event => setDataConsent(event.target.checked)} required /><span>Process this replay to deliver my private Early Access report. This does not opt the replay into calibration, training or evaluation. <a href="/privacy" target="_blank">Privacy</a></span></label>
+      {ownerQa ? <div className="quick-owner-verified" role="status"><i>✓</i><div><b>OWNER QA VERIFIED</b><span>Private delivery uses your server-verified owner session. This run is excluded from product metrics and calibration.</span></div></div> : <><label className="quick-email"><span>Where should we send your result?</span><input id="quick-replay-email" type="email" autoComplete="email" inputMode="email" value={email} onChange={event => { setEmail(event.target.value); stagedReplayRef.current = null; }} placeholder="you@email.com" required /></label><p className="quick-email-note">Private delivery and recovery only. Marketing stays off unless you choose it below.</p></>}
+      <label className="quick-check"><input id="quick-replay-consent" type="checkbox" checked={dataConsent} onChange={event => setDataConsent(event.target.checked)} required /><span>Process this replay to deliver my private Early Access report. This does not opt the replay into calibration, training or evaluation. <a href="/privacy" target="_blank">Privacy</a></span></label>
       <button className="quick-submit" disabled={status === "loading"}><span aria-live="polite">{status === "loading" ? "SECURING AND READING YOUR MATCH…" : "ANALYZE THIS REPLAY →"}</span></button>
       <small>No card · 1v1, 2v2 and 3v3 · The engine stops instead of guessing</small>
     </div>}
@@ -246,6 +257,7 @@ export default function QuickReplayStart({ placement }: { placement: string }) {
     </div>}
 
     {freeAnalysisUsed && platform === "pc" && <FreeAnalysisUsed />}
+    {ownerVerificationRequired && platform === "pc" && <OwnerVerificationRequired />}
     {message && platform === "pc" && <p className={`quick-message ${status}`} role="alert">{message}</p>}
   </form>;
 }

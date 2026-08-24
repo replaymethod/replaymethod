@@ -109,6 +109,7 @@ export async function DELETE(request: Request) {
       database.prepare(`DELETE FROM analysis_report_access WHERE analysis_request_id IN (${requestIds})`).bind(player.email),
       database.prepare("DELETE FROM analysis_usage WHERE player_id = ?").bind(player.id),
       database.prepare("DELETE FROM player_entitlement_audit WHERE player_id = ?").bind(player.id),
+      database.prepare("DELETE FROM owner_qa_identities WHERE player_id = ?").bind(player.id),
       database.prepare("DELETE FROM player_entitlements WHERE player_id = ?").bind(player.id),
       database.prepare("DELETE FROM replay_upload_parts WHERE upload_session_id IN (SELECT id FROM replay_upload_sessions WHERE email = ?)").bind(player.email),
       database.prepare("DELETE FROM replay_upload_sessions WHERE email = ?").bind(player.email),

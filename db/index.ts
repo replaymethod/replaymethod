@@ -195,6 +195,18 @@ export async function ensureProductSchema(database: D1Database) {
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_sessions_token_hash_unique ON player_sessions (token_hash)"),
       database.prepare("CREATE INDEX IF NOT EXISTS player_sessions_player_idx ON player_sessions (player_id)"),
       database.prepare("CREATE INDEX IF NOT EXISTS player_sessions_expires_at_idx ON player_sessions (expires_at)"),
+      database.prepare(`CREATE TABLE IF NOT EXISTS owner_qa_identities (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        provider text DEFAULT 'chatgpt' NOT NULL,
+        provider_user_id text NOT NULL,
+        player_id integer NOT NULL,
+        bound_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        last_verified_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        revoked_at text,
+        FOREIGN KEY (player_id) REFERENCES players(id)
+      )`),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS owner_qa_identities_provider_user_unique ON owner_qa_identities (provider, provider_user_id)"),
+      database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS owner_qa_identities_player_unique ON owner_qa_identities (player_id)"),
       database.prepare(`CREATE TABLE IF NOT EXISTS billing_customers (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         player_id integer NOT NULL,

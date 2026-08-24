@@ -205,6 +205,19 @@ export const playerSessions = sqliteTable("player_sessions", {
   index("player_sessions_expires_at_idx").on(table.expiresAt)
 ]);
 
+export const ownerQaIdentities = sqliteTable("owner_qa_identities", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  provider: text("provider").notNull().default("chatgpt"),
+  providerUserId: text("provider_user_id").notNull(),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  boundAt: text("bound_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  lastVerifiedAt: text("last_verified_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  revokedAt: text("revoked_at"),
+}, table => [
+  uniqueIndex("owner_qa_identities_provider_user_unique").on(table.provider, table.providerUserId),
+  uniqueIndex("owner_qa_identities_player_unique").on(table.playerId),
+]);
+
 export const billingCustomers = sqliteTable("billing_customers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   playerId: integer("player_id").notNull().references(() => players.id),

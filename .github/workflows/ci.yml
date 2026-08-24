@@ -39,8 +39,8 @@ jobs:
       - name: Build and test
         run: npm test
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Critical browser journeys
         run: npm run test:e2e
