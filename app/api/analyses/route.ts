@@ -10,6 +10,8 @@ import { declaredBodyTooLarge, isSameOriginRequest, operationalErrorCode } from 
 import { replayUploadToken, sha256Hex } from "../../../lib/replay-upload.mjs";
 import { REPORT_ACCESS_SECONDS } from "../../../lib/report-access.mjs";
 import { subsystemEnabled } from "../../../lib/subsystem-controls.mjs";
+import { authenticatedPlayer } from "../../../lib/player-session";
+import { activeOwnerQaEntitlement } from "../../../lib/owner-qa-entitlement.mjs";
 
 export const runtime = "edge";
 
@@ -68,7 +70,10 @@ export async function POST(request: Request) {
       return Response.json({ publicId: crypto.randomUUID().replaceAll("-", "") }, { status: 201 });
     }
 
-    const email = cleanText(form.get("email"), 254).toLowerCase();
+    const database = await getDatabase();
+    const signedIn = await authenticatedPlayer(request, database);
+    const submittedEmail = cleanText(form.get("email"), 254).toLowerCase();
+    const email = submittedEmail || signedIn?.email.toLowerCase() || "";
     const game = cleanText(form.get("game"), 30);
     const platform = cleanText(form.get("platform"), 20) || "pc";
     const currentRank = cleanText(form.get("currentRank"), 80);
@@ -137,9 +142,9 @@ export async function POST(request: Request) {
       if (!bucket) return Response.json({ error: "Replay uploads are temporarily unavailable. Paste a Ballchasing or VOD link instead." }, { status: 503 });
     }
 
-    const database = await getDatabase();
     const db = await getDb();
-    const recent = await db.select({ count: sql<number>`count(*)` }).from(analysisRequests).where(and(
+    const ownerQa = signedIn?.email.toLowerCase() === email && Boolean(await activeOwnerQaEntitlement(database, signedIn.id));
+    const recent = ownerQa ? { count: 0 } : await db.select({ count: sql<number>`count(*)` }).from(analysisRequests).where(and(
       eq(analysisRequests.email, email),
       sql`${analysisRequests.createdAt} >= datetime('now', '-24 hours')`
     )).get();

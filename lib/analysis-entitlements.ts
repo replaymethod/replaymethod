@@ -30,12 +30,16 @@ async function latestSubscription(db: D1Database, playerId: number) {
 export async function reserveAnalysisAccess(request: Request, playerId: number, analysisPublicId: string) {
   const db = await getDatabase();
   const signedIn = await authenticatedPlayer(request, db);
+  const { env } = await import("cloudflare:workers");
+  const ownerQaEnabled = subsystemEnabled((env as unknown as { OWNER_QA_ENTITLEMENT_ENABLED?: string }).OWNER_QA_ENTITLEMENT_ENABLED);
+  const ownerQaEntitlement = ownerQaEnabled ? await activeOwnerQaEntitlement(db, playerId) : null;
   if (signedIn?.id === playerId) {
-    const { env } = await import("cloudflare:workers");
-    if (subsystemEnabled((env as unknown as { OWNER_QA_ENTITLEMENT_ENABLED?: string }).OWNER_QA_ENTITLEMENT_ENABLED)
-      && await activeOwnerQaEntitlement(db, playerId)) {
+    if (ownerQaEntitlement) {
       return reserveOwnerQaUsage(db, playerId, analysisPublicId);
     }
+  }
+  if (ownerQaEntitlement) {
+    throw new EntitlementError("Owner QA requires a verified owner session on this device.", 403, "owner_verification_required");
   }
   const subscription = signedIn?.id === playerId ? await latestSubscription(db, playerId) : null;
   const window = entitlementWindow(subscription, new Date());

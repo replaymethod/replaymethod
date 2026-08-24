@@ -37,6 +37,19 @@ test.describe("private report states", () => {
     await expect(page.getByText(/protect back post until the play resets/i).first()).toBeVisible();
   });
 
+  test("the one-focus action transfers focus once without locking later scrolling", async ({ page }) => {
+    await page.goto(reports.ready);
+    await page.getByRole("button", { name: /SHOW MY ONE-FOCUS PLAN/ }).click();
+    await expect(page.locator("#action-plan")).toBeFocused();
+    expect(new URL(page.url()).hash).toBe("");
+    const anchored = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press("PageDown");
+    await page.waitForTimeout(900);
+    const after = await page.evaluate(() => window.scrollY);
+    expect(after).toBeGreaterThan(anchored + 40);
+    expect(new URL(page.url()).hash).toBe("");
+  });
+
   test("an interrupted worker never leaves an endless spinner", async ({ page }) => {
     await page.goto(reports.stale);
     await expect(page.getByText("AUTOMATIC RECOVERY STARTED")).toBeVisible();

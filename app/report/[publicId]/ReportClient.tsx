@@ -40,6 +40,11 @@ function utcTimestamp(value: string) {
 
 function stopCopy(data: PublicReportData) {
   const code = data.processing?.errorCode;
+  if (["rl_engine_unavailable", "rl_engine_timeout", "rl_engine_unreachable", "stale_running_lease"].includes(code || "")) return {
+    kicker: data.processing?.status === "retry" ? "AUTOMATIC RETRY SCHEDULED" : "REPLAY WORKER TEMPORARILY UNAVAILABLE",
+    title: "Your original replay is preserved for an automatic retry.",
+    body: "No new upload, allowance or duplicate analysis is needed. Keep this private report link; the same job will resume automatically when the worker responds."
+  };
   if (code === "rl_engine_not_configured") return {
     kicker: "AUTOMATION ACCESS PENDING",
     title: "Your replay is safe. The dedicated replay engine is not online yet.",
@@ -204,6 +209,14 @@ export default function ReportClient({ initial, accessToken, delivery }: { initi
     window.setTimeout(() => setCopied(false), 1800);
   };
 
+  const scrollToFocusPlan = () => {
+    const target = document.getElementById("action-plan");
+    if (!target) return;
+    target.tabIndex = -1;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    target.focus({ preventScroll: true });
+  };
+
   const saveFeedback = async () => {
     const score = feedbackScore || (feedbackSignals.observation === "yes" ? 5 : feedbackSignals.observation === "not_sure" ? 3 : feedbackSignals.observation === "no" ? 1 : 0);
     if (!score) return;
@@ -335,7 +348,7 @@ export default function ReportClient({ initial, accessToken, delivery }: { initi
               <article><small>BIGGEST SUPPORTED OPPORTUNITY</small><b>{data.report?.highestImpactMistake || "No coaching focus cleared the evidence gate"}</b><p>{data.report?.whyItCosts || "You still receive the verified match and performance review below; unsupported coaching stays withheld."}</p></article>
               <article><small>NEXT-MATCH RULE</small><b>{data.report?.nextQueueRule || "Do not turn one inconclusive replay into a habit claim."}</b><p>{data.report ? "Use this one if–then cue in your next three representative matches." : "Review the verified moments and use a new representative replay for another independent reading."}</p></article>
             </div>
-            <a className="baseline-primary" href={data.report ? "#action-plan" : "#performance"}><span>{data.report ? "SHOW MY ONE-FOCUS PLAN" : "REVIEW MY VERIFIED PERFORMANCE"}</span><b>↓</b></a>
+            <button className="baseline-primary" type="button" onClick={scrollToFocusPlan}><span>{data.report ? "SHOW MY ONE-FOCUS PLAN" : "REVIEW MY VERIFIED PERFORMANCE"}</span><b>↓</b></button>
           </div>
           <aside className="marcel-strength" aria-label="Evidence status and sample size"><small>EVIDENCE STATUS</small><b>{data.report ? (experimental ? "EXPERIMENTAL COACHING" : "SUPPORTED COACHING") : "FACTS ONLY"}</b><span>One replay · within-match evidence</span><div><strong>1</strong><small>REPLAY</small></div><p>No rank benchmark, stable-habit claim or calibrated precision is inferred from this single match.</p></aside>
         </section>

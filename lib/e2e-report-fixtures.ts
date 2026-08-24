@@ -116,7 +116,7 @@ export function loadE2eReportFixture(publicId: string): PublicReportData | null 
       mode: "2v2",
       rank: "Gold 3",
       gameVersion: "test",
-      occurredAt: `${fixture.createdAt.replace(" ", "T")}Z`,
+      occurredAt: "2026-04-14 23-37-58",
       playerCount: 4,
       sampledFrames: 3000,
       parserEvents: 420,

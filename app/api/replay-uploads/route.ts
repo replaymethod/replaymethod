@@ -4,6 +4,8 @@ import { EntitlementError, releaseAnalysisUsage, reserveAnalysisAccess } from ".
 import { declaredBodyTooLarge, isSameOriginRequest, operationalErrorCode } from "../../../lib/request-security.mjs";
 import { createReplayUploadToken, MAX_REPLAY_BYTES, REPLAY_CHUNK_BYTES, REPLAY_UPLOAD_TTL_MS, safeReplayFileName, sha256Hex } from "../../../lib/replay-upload.mjs";
 import { subsystemEnabled } from "../../../lib/subsystem-controls.mjs";
+import { authenticatedPlayer } from "../../../lib/player-session";
+import { activeOwnerQaEntitlement } from "../../../lib/owner-qa-entitlement.mjs";
 
 export const runtime = "edge";
 
@@ -42,7 +44,10 @@ export async function POST(request: Request) {
     if (!runtime.BUCKET) return Response.json({ error: "Replay uploads are temporarily unavailable. Your file was not uploaded." }, { status: 503, headers });
 
     const payload = await request.json().catch(() => ({})) as { email?: unknown; fileName?: unknown; fileSize?: unknown; dataConsent?: unknown };
-    const email = cleanText(payload.email, 254).toLowerCase();
+    const database = await getDatabase();
+    const signedIn = await authenticatedPlayer(request, database);
+    const submittedEmail = cleanText(payload.email, 254).toLowerCase();
+    const email = submittedEmail || signedIn?.email.toLowerCase() || "";
     const fileName = safeReplayFileName(cleanText(payload.fileName, 240));
     const fileSize = Number(payload.fileSize);
     if (!emailPattern.test(email)) return Response.json({ error: "Enter a valid email address." }, { status: 400, headers });
@@ -51,7 +56,6 @@ export async function POST(request: Request) {
       return Response.json({ error: "Upload a Rocket League .replay file no larger than 16 MB." }, { status: 400, headers });
     }
 
-    const database = await getDatabase();
     await cleanupExpired(database, runtime.BUCKET);
     const recent = await database.prepare(`SELECT count(*) AS count FROM replay_upload_sessions
       WHERE email = ? AND created_at >= datetime('now', '-1 hour')`).bind(email).first<{ count: number }>();
@@ -59,7 +63,8 @@ export async function POST(request: Request) {
       return Response.json({ error: "Too many replay upload attempts. Wait an hour before starting another." }, { status: 429, headers: { ...headers, "Retry-After": "3600" } });
     }
 
-    const recentAnalyses = await database.prepare(`SELECT count(*) AS count FROM analysis_requests
+    const ownerQa = signedIn?.email.toLowerCase() === email && Boolean(await activeOwnerQaEntitlement(database, signedIn.id));
+    const recentAnalyses = ownerQa ? { count: 0 } : await database.prepare(`SELECT count(*) AS count FROM analysis_requests
       WHERE email = ? AND created_at >= datetime('now', '-24 hours')`).bind(email).first<{ count: number }>();
     if (Number(recentAnalyses?.count || 0) >= 5) {
       return Response.json({ error: "You have reached the five-analysis daily beta limit. Try again tomorrow or contact us if a retry is needed." }, { status: 429, headers: { ...headers, "Retry-After": "3600" } });
