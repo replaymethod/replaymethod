@@ -54,12 +54,13 @@ test("aggregates exactly ten matches and keeps one-off signals out of the plan",
 });
 
 test("batch product reserves one allowance and never counts excluded files as valid", async () => {
-  const [create, upload, process, flow, report] = await Promise.all([
+  const [create, upload, process, flow, report, parser] = await Promise.all([
     readFile(new URL("../app/api/replay-batches/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/replay-batches/[batchId]/uploads/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/replay-batches/[batchId]/process/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/analyze/BatchAnalyzeFlow.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/report-data.ts", import.meta.url), "utf8"),
+    readFile(new URL("../services/rl-engine/parser.mjs", import.meta.url), "utf8"),
   ]);
   assert.equal((create.match(/reserveAnalysisAccess\(/g) || []).length, 1);
   assert.doesNotMatch(upload, /reserveAnalysisAccess/);
@@ -71,4 +72,5 @@ test("batch product reserves one allowance and never counts excluded files as va
   assert.match(flow, /Choose exactly \$\{required\}/);
   assert.match(flow, /replaymethod-ten-replay-upload/);
   assert.match(report, /row\.evidenceType !== "replay_batch" \|\| Boolean\(finding\)/);
+  assert.match(parser, /externalMatchId: matchGuid \|\| undefined/);
 });
