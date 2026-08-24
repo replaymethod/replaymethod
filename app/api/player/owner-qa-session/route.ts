@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   if (!result.ok || !result.cookie) {
     return Response.json({ error: "This verified account is not linked to the owner QA entitlement.", code: result.code }, { status: 403, headers });
   }
-  const response = Response.json({ ok: true, ownerQa: true, redirect: "/#replay-upload" }, { headers });
+  const response = Response.json({ ok: true, ownerQa: true, redirect: "/analyze" }, { headers });
   response.headers.set("Set-Cookie", result.cookie);
   return response;
 }

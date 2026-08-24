@@ -12,7 +12,7 @@ import { episodeTimelineSummary, normalizeEpisodeTimeline } from "./episode-time
 import { frameStateSummary, normalizeFrameState } from "./frame-state.mjs";
 import { buildPerformanceSnapshot } from "./performance-snapshot.mjs";
 
-export const PARSER_VERSION = "subtr-actor@1.2.0";
+export const PARSER_VERSION = "subtr-actor@1.2.1";
 export const NORMALIZER_VERSION = "rocket-league-normalizer@0.4.0";
 
 let initialized = false;
@@ -259,13 +259,29 @@ export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
   const frameState = normalizeFrameState(ndarray, normalizedMeta.meta, 10);
   const statsTimeline = plain(get_stats_timeline(data));
   const episodeTimeline = normalizeEpisodeTimeline(statsTimeline, player.id || player.name);
-  const performanceSnapshot = buildPerformanceSnapshot({
-    meta: normalizedMeta.meta,
-    subject: player,
-    frameState,
-    episodeTimeline,
-    mode: normalizedMeta.mode,
-  });
+  let performanceSnapshot;
+  try {
+    performanceSnapshot = buildPerformanceSnapshot({
+      meta: normalizedMeta.meta,
+      subject: player,
+      frameState,
+      episodeTimeline,
+      mode: normalizedMeta.mode,
+    });
+  } catch (error) {
+    if (error?.code !== "performance_snapshot_insufficient_telemetry") throw error;
+    throw new ReplayInputError(
+      "performance_snapshot_insufficient_telemetry",
+      "We parsed this replay, but it does not contain the complete player-linked telemetry required for a report. Choose another original replay.",
+      error instanceof Error ? error.message : "Required replay telemetry was unavailable.",
+      [],
+      {
+        mode: normalizedMeta.mode,
+        gameVersion: normalizedMeta.gameVersion,
+        occurredAt: normalizedMeta.occurredAt,
+      },
+    );
+  }
 
   const normalized = {
     schemaVersion: "game-data.v1",

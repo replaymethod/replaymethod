@@ -124,6 +124,17 @@ export type PublicReportData = {
     metrics: PerformanceMetric[];
     moments: PerformanceMoment[];
   };
+  batch: null | {
+    version: string;
+    validMatches: number;
+    targetMatches: number;
+    excludedFiles: number;
+    playlist: string | null;
+    confidence: string;
+    oneOffDetectorCount: number;
+    record: { wins: number; losses: number; draws: number; unknown: number };
+    recurrence: { detectorId: string; matches: number; averageConfidence: number }[];
+  };
   earlyAccess: null | {
     badge: "EARLY ACCESS BETA";
     heading: "Built from your real replay. Refined through expert validation.";
@@ -261,6 +272,30 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
   const earlyAccessMetadata = objectValue(matchMetadata.earlyAccess);
   const verifiedMetadata = objectValue(earlyAccessMetadata.verifiedFacts);
   const performance = parsePerformance(matchMetadata.performanceSnapshot);
+  const batchMetadata = objectValue(matchMetadata.batch);
+  const batchRecurrence = Array.isArray(batchMetadata.recurrence) ? batchMetadata.recurrence.flatMap(item => {
+    const entry = objectValue(item);
+    const detectorId = nullableString(entry.detectorId);
+    const matches = nullableNumber(entry.matches);
+    const averageConfidence = nullableNumber(entry.averageConfidence);
+    return detectorId && matches != null && averageConfidence != null ? [{ detectorId, matches, averageConfidence }] : [];
+  }).slice(0, 8) : [];
+  const batch = nullableString(batchMetadata.version) && nullableNumber(batchMetadata.validMatches) === 10 ? {
+    version: String(batchMetadata.version),
+    validMatches: 10,
+    targetMatches: 10,
+    excludedFiles: nullableNumber(batchMetadata.excludedFiles) ?? 0,
+    playlist: nullableString(batchMetadata.playlist),
+    confidence: nullableString(batchMetadata.confidence) || "insufficient",
+    oneOffDetectorCount: nullableNumber(batchMetadata.oneOffDetectorCount) ?? 0,
+    record: {
+      wins: nullableNumber(objectValue(batchMetadata.record).wins) ?? 0,
+      losses: nullableNumber(objectValue(batchMetadata.record).losses) ?? 0,
+      draws: nullableNumber(objectValue(batchMetadata.record).draws) ?? 0,
+      unknown: nullableNumber(objectValue(batchMetadata.record).unknown) ?? 0,
+    },
+    recurrence: batchRecurrence,
+  } : null;
   const rawAssessments = Array.isArray(earlyAccessMetadata.assessments) ? earlyAccessMetadata.assessments : [];
   const persistedEarlyAccess = earlyAccessMetadata.formalValidationStatus === "not_validated" ? {
     badge: "EARLY ACCESS BETA" as const,
@@ -317,7 +352,7 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
         schema: job.schemaVersion
       }
     } : null,
-    report: row.status === "ready" && earlyAccess?.coachingStatus !== "abstained" ? {
+    report: row.status === "ready" && earlyAccess?.coachingStatus !== "abstained" && (row.evidenceType !== "replay_batch" || Boolean(finding)) ? {
       highestImpactMistake: row.highestImpactMistake,
       whyItCosts: row.whyItCosts,
       evidenceMoments: parseLines(row.evidenceMoments),
@@ -345,6 +380,7 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
         ? "verified_replay" : match.rank ? "player_submitted" : "unknown",
     } : null,
     performance,
+    batch,
     earlyAccess,
     feedbackScore: row.feedbackScore
   };

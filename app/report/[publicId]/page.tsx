@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import { getDatabase } from "../../../db";
 import { loadPublicReport } from "../../../lib/report-data";
 import { loadE2eReportFixture } from "../../../lib/e2e-report-fixtures";
-import { paidCheckoutReadiness } from "../../../lib/subsystem-controls.mjs";
 import { subsystemEnabled } from "../../../lib/subsystem-controls.mjs";
 import ReportClient from "./ReportClient";
 import { canAccessAnalysis } from "../../../lib/report-access.mjs";
@@ -13,20 +12,18 @@ import { legacyUtcTimestamp } from "../../../lib/report-date.mjs";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Private match report — Replay Method",
+  title: "Private Replay Method report",
   robots: { index: false, follow: false }
 };
 
 export default async function ReportPage({ params, searchParams }: { params: Promise<{ publicId: string }>; searchParams: Promise<{ delivery?: string; access?: string }> }) {
   const { publicId } = await params;
   let e2eFixturesEnabled = false;
-  let checkoutOpen = false;
   let earlyAccessOutputEnabled = false;
   try {
     const { env } = await import("cloudflare:workers");
     const runtime = env as unknown as Record<string, unknown> & { REPLAYMETHOD_E2E_FIXTURES?: string };
     e2eFixturesEnabled = runtime.REPLAYMETHOD_E2E_FIXTURES === "true";
-    checkoutOpen = paidCheckoutReadiness(runtime).ready;
     earlyAccessOutputEnabled = subsystemEnabled(runtime.RL_EARLY_ACCESS_OUTPUT_ENABLED);
   } catch { /* Only the local E2E server defines this fail-closed binding. */ }
   const query = await searchParams;
@@ -48,5 +45,5 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
       occurredAt: legacyUtcTimestamp(report.verifiedFacts.occurredAt),
     } : null,
   };
-  return <ReportClient initial={normalizedReport} accessToken={accessToken} delivery={query.delivery === "email" ? "email" : "link"} checkoutOpen={checkoutOpen} />;
+  return <ReportClient initial={normalizedReport} accessToken={accessToken} delivery={query.delivery === "email" ? "email" : "link"} />;
 }

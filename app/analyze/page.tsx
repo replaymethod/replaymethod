@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import AnalyzeFlow from "./AnalyzeFlow";
+import BatchAnalyzeFlow from "./BatchAnalyzeFlow";
 import { isAnalysisGame } from "../../lib/analysis";
 import { subsystemEnabled } from "../../lib/subsystem-controls.mjs";
 
 export const metadata: Metadata = {
-  title: "Match evidence & access beta — Replay Method",
-  description: "Upload a Rocket League replay to the evidence-gated beta or preserve an opt-in League or VALORANT request while official Riot access is pending.",
+  title: "Free 10-replay analysis — Replay Method",
+  description: "Upload exactly ten ranked Rocket League PC replays from the same player and playlist to get one evidence-backed cross-match plan.",
   alternates: { canonical: "/analyze" }
 };
 
@@ -23,5 +23,6 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
     engineOpen = subsystemEnabled(runtime.RL_ENGINE_ENABLED);
     videoOpen = subsystemEnabled(runtime.RL_VIDEO_ANALYSIS_ENABLED);
   } catch { /* Local and static previews keep replay intake safely closed. */ }
-  return <AnalyzeFlow initialGame={initialGame} initialHypothesis={initialHypothesis} initialPlatform={initialPlatform} engineOpen={engineOpen} videoOpen={videoOpen} initialFreeAnalysisUsed={initialFreeAnalysisUsed} />;
+  void initialGame; void initialHypothesis; void initialPlatform; void videoOpen;
+  return <BatchAnalyzeFlow engineOpen={engineOpen} initialFreeAnalysisUsed={initialFreeAnalysisUsed} />;
 }

@@ -331,6 +331,74 @@ export const replayUploadParts = sqliteTable("replay_upload_parts", {
   index("replay_upload_parts_session_idx").on(table.uploadSessionId)
 ]);
 
+/**
+ * The free Rocket League product is one resumable, entitlement-backed batch of
+ * exactly ten verified matches. Individual uploads are children of the batch;
+ * replacing an unreadable, duplicate, wrong-player or wrong-playlist file does
+ * not consume another allowance or a valid slot.
+ */
+export const replayBatches = sqliteTable("replay_batches", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  analysisRequestId: integer("analysis_request_id").notNull().references(() => analysisRequests.id, { onDelete: "cascade" }),
+  playerId: integer("player_id").notNull().references(() => players.id),
+  email: text("email").notNull(),
+  status: text("status").notNull().default("collecting"),
+  targetCount: integer("target_count").notNull().default(10),
+  validCount: integer("valid_count").notNull().default(0),
+  excludedCount: integer("excluded_count").notNull().default(0),
+  subjectPlayerId: text("subject_player_id"),
+  subjectDisplayName: text("subject_display_name"),
+  playlist: text("playlist"),
+  currentRank: text("current_rank"),
+  goal: text("goal"),
+  reportingScope: text("reporting_scope").notNull().default("product"),
+  calibrationOptIn: integer("calibration_opt_in", { mode: "boolean" }).notNull().default(false),
+  aggregationVersion: text("aggregation_version"),
+  confidenceLabel: text("confidence_label"),
+  completedAt: text("completed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("replay_batches_public_id_unique").on(table.publicId),
+  uniqueIndex("replay_batches_request_unique").on(table.analysisRequestId),
+  index("replay_batches_player_created_idx").on(table.playerId, table.createdAt),
+  index("replay_batches_status_idx").on(table.status)
+]);
+
+export const replayBatchItems = sqliteTable("replay_batch_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  publicId: text("public_id").notNull(),
+  batchId: integer("batch_id").notNull().references(() => replayBatches.id, { onDelete: "cascade" }),
+  uploadSessionId: integer("upload_session_id").notNull().references(() => replayUploadSessions.id),
+  jobPublicId: text("job_public_id").notNull(),
+  status: text("status").notNull().default("uploading"),
+  validSlot: integer("valid_slot"),
+  fileName: text("file_name").notNull(),
+  fileSha256: text("file_sha256"),
+  externalMatchId: text("external_match_id"),
+  subjectPlayerId: text("subject_player_id"),
+  subjectDisplayName: text("subject_display_name"),
+  playlist: text("playlist"),
+  occurredAt: text("occurred_at"),
+  normalizedObjectKey: text("normalized_object_key"),
+  resultObjectKey: text("result_object_key"),
+  candidatePlayersJson: text("candidate_players_json"),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  attempts: integer("attempts").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`)
+}, table => [
+  uniqueIndex("replay_batch_items_public_id_unique").on(table.publicId),
+  uniqueIndex("replay_batch_items_upload_unique").on(table.uploadSessionId),
+  uniqueIndex("replay_batch_items_slot_unique").on(table.batchId, table.validSlot).where(sql`${table.validSlot} IS NOT NULL`),
+  index("replay_batch_items_batch_status_idx").on(table.batchId, table.status),
+  index("replay_batch_items_hash_idx").on(table.batchId, table.fileSha256),
+  index("replay_batch_items_match_idx").on(table.batchId, table.externalMatchId)
+]);
+
 export const analysisReportAccess = sqliteTable("analysis_report_access", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   tokenHash: text("token_hash").notNull(),

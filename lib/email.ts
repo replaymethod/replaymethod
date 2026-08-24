@@ -1,6 +1,6 @@
 import { getDatabase } from "../db";
 import { gameLabels, isAnalysisGame, reportUrl, type AnalysisGame } from "./analysis";
-import { analysisReadyEmail, analysisReceivedEmail } from "./email-templates.mjs";
+import { analysisReadyEmail, analysisReceivedEmail, replayBatchReadyEmail, replayBatchReceivedEmail } from "./email-templates.mjs";
 import { subsystemEnabled } from "./subsystem-controls.mjs";
 
 type EmailEnv = {
@@ -189,6 +189,14 @@ export async function sendAnalysisReady(input: DeliveryInput & { mistake: string
   }));
 }
 
+export async function sendReplayBatchReceived(input: DeliveryInput) {
+  return deliver(input, "analysis_received", replayBatchReceivedEmail({ url: input.url }));
+}
+
+export async function sendReplayBatchReady(input: DeliveryInput & { focus: string; hasPlan: boolean }) {
+  return deliver(input, "report_ready", replayBatchReadyEmail({ url: input.url, focus: input.focus, hasPlan: input.hasPlan }));
+}
+
 export async function processDueEmailDeliveries(db: D1Database, limit = 10) {
   const config = await emailConfiguration();
   if (!config.enabled) return { processed: 0, activationRequired: true };
@@ -212,7 +220,7 @@ export async function processDueEmailDeliveries(db: D1Database, limit = 10) {
   for (const candidate of due.results || []) {
     const row = await claimDelivery(db, candidate.id);
     if (!row) continue;
-    const analysis = await db.prepare(`SELECT public_id AS publicId, email, game, status,
+    const analysis = await db.prepare(`SELECT public_id AS publicId, email, game, status, evidence_type AS evidenceType,
         highest_impact_mistake AS mistake FROM analysis_requests WHERE id = ? LIMIT 1`)
       .bind(row.analysisRequestId).first<Record<string, unknown>>();
     if (!analysis || !isAnalysisGame(String(analysis.game))) {
@@ -221,15 +229,15 @@ export async function processDueEmailDeliveries(db: D1Database, limit = 10) {
     }
 
     if (row.kind === "report_ready") {
-      if (analysis.status !== "ready" || !analysis.mistake) {
+      if (analysis.status !== "ready" || (!analysis.mistake && analysis.evidenceType !== "replay_batch")) {
         await markFailure(db, row, "report_not_ready", false);
         continue;
       }
-      await sendClaimedDelivery(db, row, config, String(analysis.email), analysisReadyEmail({
-        gameLabel: gameLabels[String(analysis.game) as AnalysisGame],
-        url: reportUrl(config.siteUrl, String(analysis.publicId)),
-        mistake: String(analysis.mistake),
-      }));
+      const url = reportUrl(config.siteUrl, String(analysis.publicId));
+      const content = analysis.evidenceType === "replay_batch"
+        ? replayBatchReadyEmail({ url, focus: String(analysis.mistake || "No recurring focus cleared the evidence gate."), hasPlan: Boolean(analysis.mistake) })
+        : analysisReadyEmail({ gameLabel: gameLabels[String(analysis.game) as AnalysisGame], url, mistake: String(analysis.mistake) });
+      await sendClaimedDelivery(db, row, config, String(analysis.email), content);
     } else {
       await markFailure(db, row, row.kind === "analysis_received" ? "received_retry_not_safe" : "delivery_context_missing", false);
       continue;
