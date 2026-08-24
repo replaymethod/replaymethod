@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function OwnerQaActivate() {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [state, setState] = useState<"hydrating" | "loading" | "error">("hydrating");
+  const [state, setState] = useState<"hydrating" | "idle" | "loading" | "error">("hydrating");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    rootRef.current?.setAttribute("data-hydrated", "true");
-    if (buttonRef.current) buttonRef.current.disabled = false;
+    const timer = window.setTimeout(() => setState("idle"), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   async function activate() {
@@ -27,5 +25,5 @@ export default function OwnerQaActivate() {
     }
   }
 
-  return <div ref={rootRef} className="owner-qa-activate" data-hydrated="false"><button ref={buttonRef} type="button" disabled={state === "hydrating" || state === "loading"} onClick={activate}>{state === "loading" ? "VERIFYING…" : "ACTIVATE OWNER QA ON THIS DEVICE →"}</button>{message && <p role="alert">{message}</p>}</div>;
+  return <div className="owner-qa-activate" data-hydrated={state !== "hydrating"}><button type="button" disabled={state === "hydrating" || state === "loading"} onClick={activate}>{state === "loading" ? "VERIFYING…" : "ACTIVATE OWNER QA ON THIS DEVICE →"}</button>{message && <p role="alert">{message}</p>}</div>;
 }

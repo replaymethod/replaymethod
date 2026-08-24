@@ -33,6 +33,17 @@ function collectBrowserErrors(page: Page) {
   return errors;
 }
 
+test.beforeEach(async ({ page }) => {
+  // metadataBase intentionally points at production. Keep local cross-engine
+  // checks same-origin-equivalent instead of asking WebKit to fetch production.
+  await page.route("https://replaymethod.xyz/manifest.webmanifest", route => route.fulfill({
+    status: 200,
+    contentType: "application/manifest+json",
+    headers: { "Access-Control-Allow-Origin": "*" },
+    body: JSON.stringify({ name: "Replay Method", start_url: "/" }),
+  }));
+});
+
 async function expectQuickReplayHydrated(page: Page) {
   await expect(page.locator('#replay-upload[data-hydrated="true"]')).toBeVisible();
 }
@@ -143,7 +154,8 @@ test.describe("truthful product boundaries", () => {
     await expect(page.getByRole("link", { name: /CHECK CONSOLE STATUS/ })).toBeVisible();
   });
 
-  test("mobile-to-PC handoff survives an isolated desktop session without leaking private query data", async ({ browser, baseURL }) => {
+  test("mobile-to-PC handoff survives an isolated desktop session without leaking private query data", async ({ browser, baseURL }, testInfo) => {
+    test.skip(testInfo.project.name.includes("webkit"), "Playwright WebKit does not expose clipboard-write permission; URL policy is covered by unit tests.");
     const mobile = await browser.newContext({
       viewport: { width: 390, height: 844 },
       permissions: ["clipboard-read", "clipboard-write"],
