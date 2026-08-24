@@ -213,8 +213,8 @@ export default function ReportClient({ initial, accessToken, delivery }: { initi
     const target = document.getElementById("action-plan");
     if (!target) return;
     target.tabIndex = -1;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
     target.focus({ preventScroll: true });
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const saveFeedback = async () => {
@@ -348,7 +348,7 @@ export default function ReportClient({ initial, accessToken, delivery }: { initi
               <article><small>BIGGEST SUPPORTED OPPORTUNITY</small><b>{data.report?.highestImpactMistake || "No coaching focus cleared the evidence gate"}</b><p>{data.report?.whyItCosts || "You still receive the verified match and performance review below; unsupported coaching stays withheld."}</p></article>
               <article><small>NEXT-MATCH RULE</small><b>{data.report?.nextQueueRule || "Do not turn one inconclusive replay into a habit claim."}</b><p>{data.report ? "Use this one if–then cue in your next three representative matches." : "Review the verified moments and use a new representative replay for another independent reading."}</p></article>
             </div>
-            <button className="baseline-primary" type="button" onClick={scrollToFocusPlan}><span>{data.report ? "SHOW MY ONE-FOCUS PLAN" : "REVIEW MY VERIFIED PERFORMANCE"}</span><b>↓</b></button>
+            <button className="baseline-primary" type="button" disabled={!interactive} onClick={scrollToFocusPlan}><span>{data.report ? "SHOW MY ONE-FOCUS PLAN" : "REVIEW MY VERIFIED PERFORMANCE"}</span><b>↓</b></button>
           </div>
           <aside className="marcel-strength" aria-label="Evidence status and sample size"><small>EVIDENCE STATUS</small><b>{data.report ? (experimental ? "EXPERIMENTAL COACHING" : "SUPPORTED COACHING") : "FACTS ONLY"}</b><span>One replay · within-match evidence</span><div><strong>1</strong><small>REPLAY</small></div><p>No rank benchmark, stable-habit claim or calibrated precision is inferred from this single match.</p></aside>
         </section>
