@@ -184,6 +184,29 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.getByText("10 files ready. Each replay will be verified separately; a rejected file will not remove the others.", { exact: true })).toBeVisible();
   });
 
+  test("a ready ten-match session reopens its private report after reload", async ({ page }) => {
+    const saved = {
+      batchId: "ready-batch",
+      batchToken: "ready-token",
+      reportUrl: "/report/ready-batch?token=ready-token",
+      validCount: 10,
+      targetCount: 10,
+      status: "ready",
+    };
+    await page.addInitScript((value) => localStorage.setItem("replaymethod-ten-replay-batch", JSON.stringify(value)), saved);
+    await page.route("**/api/replay-batches", async route => {
+      if (route.request().method() === "POST") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(saved) });
+      return route.continue();
+    });
+    await page.route("**/report/ready-batch?token=ready-token", route => route.fulfill({ status: 200, contentType: "text/html", body: "<main>Ready report</main>" }));
+    await page.goto("/analyze", { waitUntil: "load" });
+    await expect(page.getByText("Your ten-match report is ready.", { exact: true })).toBeVisible();
+    const resume = page.getByRole("button", { name: "CONTINUE SAVED REVIEW · 10/10 →" });
+    await expect(resume).toBeEnabled();
+    await resume.click();
+    await expect(page).toHaveURL(/\/report\/ready-batch\?token=ready-token$/);
+  });
+
   test("Rocket League is active while League and VALORANT are explicitly deferred", async ({ page }) => {
     await page.goto("/rocket-league");
     await expect(page.getByRole("link", { name: /Choose 10 replays/ }).first()).toBeVisible();
