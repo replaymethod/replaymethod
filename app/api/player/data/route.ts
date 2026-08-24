@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const player = await authenticatedPlayer(request, database);
     if (!player) return Response.json({ error: "Verify your email before exporting account data." }, { status: 401, headers: jsonHeaders() });
 
-    const [analyses, accounts, focuses, usage, subscriptions, entitlements] = await Promise.all([
+    const [analyses, batches, accounts, focuses, usage, subscriptions, entitlements] = await Promise.all([
       database.prepare(`SELECT ar.public_id, ar.game, ar.current_rank, ar.target_rank, ar.player_context,
         ar.evidence_type, ar.evidence_url, ar.original_file_name, ar.file_size, ar.goal, ar.notes,
         ar.status, ar.highest_impact_mistake, ar.why_it_costs, ar.evidence_moments,
@@ -26,6 +26,10 @@ export async function GET(request: Request) {
         FROM analysis_requests ar
         JOIN analysis_jobs aj ON aj.analysis_request_id = ar.id
         WHERE aj.player_id = ? ORDER BY ar.created_at DESC`).bind(player.id).all(),
+      database.prepare(`SELECT public_id, status, target_count, valid_count, excluded_count,
+        subject_display_name, playlist, current_rank, reporting_scope, calibration_opt_in,
+        aggregation_version, confidence_label, completed_at, created_at
+        FROM replay_batches WHERE player_id = ? ORDER BY created_at DESC`).bind(player.id).all(),
       database.prepare(`SELECT game, provider, display_name, region, connection_status, last_synced_at, created_at
         FROM game_accounts WHERE player_id = ? ORDER BY created_at`).bind(player.id).all(),
       database.prepare(`SELECT public_id, game, detector_id, status, title, success_metric, metric_key,
@@ -47,6 +51,7 @@ export async function GET(request: Request) {
       service: "Replay Method",
       account: { publicId: player.publicId, email: player.email },
       analyses: analyses.results || [],
+      replayBatches: batches.results || [],
       gameAccounts: accounts.results || [],
       trainingFocuses: focuses.results || [],
       analysisUsage: usage.results || [],
@@ -86,8 +91,10 @@ export async function DELETE(request: Request) {
       UNION SELECT raw_object_key AS object_key FROM matches WHERE player_id = ? AND raw_object_key IS NOT NULL
       UNION SELECT normalized_object_key AS object_key FROM matches WHERE player_id = ? AND normalized_object_key IS NOT NULL
       UNION SELECT object_key FROM replay_upload_sessions WHERE email = ? AND object_key IS NOT NULL
+      UNION SELECT i.normalized_object_key AS object_key FROM replay_batch_items i JOIN replay_batches b ON b.id = i.batch_id WHERE b.player_id = ? AND i.normalized_object_key IS NOT NULL
+      UNION SELECT i.result_object_key AS object_key FROM replay_batch_items i JOIN replay_batches b ON b.id = i.batch_id WHERE b.player_id = ? AND i.result_object_key IS NOT NULL
       UNION SELECT p.object_key FROM replay_upload_parts p JOIN replay_upload_sessions s ON s.id = p.upload_session_id WHERE s.email = ?`)
-      .bind(player.email, player.id, player.id, player.email, player.email).all<{ object_key: string }>();
+      .bind(player.email, player.id, player.id, player.email, player.id, player.id, player.email).all<{ object_key: string }>();
     const objectKeys = [...new Set((storedObjects.results || []).map((row: { object_key: string }) => row.object_key).filter(Boolean))];
     if (objectKeys.length) {
       const { env } = await import("cloudflare:workers");
@@ -111,6 +118,8 @@ export async function DELETE(request: Request) {
       database.prepare("DELETE FROM player_entitlement_audit WHERE player_id = ?").bind(player.id),
       database.prepare("DELETE FROM owner_qa_identities WHERE player_id = ?").bind(player.id),
       database.prepare("DELETE FROM player_entitlements WHERE player_id = ?").bind(player.id),
+      database.prepare("DELETE FROM replay_batch_items WHERE batch_id IN (SELECT id FROM replay_batches WHERE player_id = ?)").bind(player.id),
+      database.prepare("DELETE FROM replay_batches WHERE player_id = ?").bind(player.id),
       database.prepare("DELETE FROM replay_upload_parts WHERE upload_session_id IN (SELECT id FROM replay_upload_sessions WHERE email = ?)").bind(player.email),
       database.prepare("DELETE FROM replay_upload_sessions WHERE email = ?").bind(player.email),
       database.prepare("DELETE FROM analysis_jobs WHERE player_id = ?").bind(player.id),

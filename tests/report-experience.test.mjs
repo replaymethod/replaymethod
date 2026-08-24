@@ -28,7 +28,7 @@ test("makes verification conservative and independent from payment", async () =>
   assert.match(client, /No rank benchmark, stable-habit claim or calibrated precision/);
   assert.match(client, /No coaching plan was released from this replay/);
   assert.match(client, /COMING LATER · NOT FOR SALE/);
-  assert.match(client, /there is no checkout or locked evidence here/);
+  assert.match(client, /there is no checkout, payment link or locked evidence here/);
   assert.doesNotMatch(client, /checkoutOpen \?/);
 });
 
@@ -55,7 +55,7 @@ test("separates Early Access facts, experimental coaching, abstention and produc
   assert.match(client, /No missing match measures were estimated or presented as facts/);
   assert.match(client, /never treated as replay ground truth, detector labels or expert validation/);
   assert.match(client, /Was it clear why coaching was withheld\?/);
-  assert.match(client, /This match did not support a coaching signal/);
+  assert.match(client, /Your free baseline stayed honest/);
   assert.match(client, /feedbackQuestions = data\.report/);
   assert.match(data, /formalValidationStatus: "not_validated"/);
   assert.match(data, /earlyAccess\?\.coachingStatus !== "abstained"/);

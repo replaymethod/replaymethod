@@ -44,8 +44,9 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
-async function expectQuickReplayHydrated(page: Page) {
-  await expect(page.locator('#replay-upload[data-hydrated="true"]')).toBeVisible();
+async function expectTenReplayStart(page: Page) {
+  await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
+  await expect(page.locator('#ten-replay-start')).toBeVisible();
 }
 
 test.describe("first-time visitor funnel", () => {
@@ -60,30 +61,30 @@ test.describe("first-time visitor funnel", () => {
     });
   }
 
-  test("the landing page explains one problem and exposes one immediate replay action", async ({ page }) => {
+  test("the landing page explains one cross-match problem and exposes one immediate replay action", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Stop grinding blind/i })).toBeVisible();
-    await expect(page.getByText("First report included · Private · No card", { exact: true })).toBeVisible();
-    await expect(page.getByText("Drop a replay. Let the match fill in the rest.", { exact: true })).toBeVisible();
-    await expect(page.locator('input[type="file"]')).toHaveCount(1);
-    await expect(page.getByLabel("Exact in-game name")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: /10 games in/i })).toBeVisible();
+    await expect(page.getByText("One free 10-match baseline · Private · No card", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ten representative matches. One supported focus." })).toBeVisible();
+    await expect(page.locator('input[type="file"]')).toHaveCount(0);
     await expect(page.getByRole("button", { name: /League of Legends|VALORANT/i })).toHaveCount(0);
-    await expect(page.getByText("Drop one replay", { exact: true })).toBeVisible();
-    await expect(page.getByText("See the decision that mattered", { exact: true })).toBeVisible();
+    await expect(page.getByText("Add ten ranked replays", { exact: true })).toBeVisible();
+    await expect(page.getByText("Separate recurrence from noise", { exact: true })).toBeVisible();
     await expect(page.getByText("Take one rule into your next 3", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /ANALYZE MY REPLAY/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /CHOOSE MY 10 REPLAYS/ })).toHaveAttribute("href", "/analyze");
     await expect(page.locator(".marcel-faq details")).toHaveCount(5);
   });
 
   test("the illustrative product loop supports pointer, keyboard and swipe before returning focus to upload", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
-    await expectQuickReplayHydrated(page);
+    await expectTenReplayStart(page);
     await expect(page.getByRole("tab", { name: "MATCH", exact: true })).toHaveAttribute("aria-selected", "true");
     await page.getByRole("tab", { name: "DECISION", exact: true }).click();
-    await expect(page.getByText("You enter the same channel.", { exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "DECISION", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#loop-stage-panel")).toContainText("You enter the same channel.");
     await page.getByRole("tab", { name: "DECISION", exact: true }).press("ArrowRight");
     await expect(page.getByRole("tab", { name: "RULE", exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByText("Hold one layer deeper.", { exact: true })).toBeVisible();
+    await expect(page.locator("#loop-stage-panel")).toContainText("Hold one layer deeper.");
     const demo = page.locator(".marcel-demo");
     await demo.evaluate((element) => {
       const swipe = (type: string, clientX: number) => {
@@ -96,38 +97,36 @@ test.describe("first-time visitor funnel", () => {
     });
     await expect(page.getByRole("tab", { name: "CHECK AGAIN", exact: true })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByText("NOT A LIVE FINDING", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: /RUN THIS ON MY REPLAY/ }).click();
-    await expect(page.locator("#replay-upload")).toBeFocused();
+    await page.getByRole("button", { name: /BUILD MY 10-MATCH BASELINE/ }).click();
+    await expect(page.locator("#ten-replay-start")).toBeFocused();
   });
 
   test("reduced motion keeps the product loop legible without animated state", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/", { waitUntil: "load" });
-    await expectQuickReplayHydrated(page);
+    await expectTenReplayStart(page);
     await expect(page.locator(".marcel-demo-stages button").first()).toHaveCSS("animation-name", "none");
     await expect(page.locator(".marcel-demo .scan-line")).toHaveCSS("display", "none");
-    await page.getByRole("button", { name: /RUN THIS ON MY REPLAY/ }).click();
-    await expect(page.locator("#replay-upload")).toBeFocused();
+    await page.getByRole("button", { name: /BUILD MY 10-MATCH BASELINE/ }).click();
+    await expect(page.locator("#ten-replay-start")).toBeInViewport();
   });
 
-  test("context appears only after an original replay is selected", async ({ page }) => {
-    await page.goto("/", { waitUntil: "load" });
-    await expectQuickReplayHydrated(page);
-    await page.locator('input[type="file"]').setInputFiles({
-      name: "representative-match.replay",
-      mimeType: "application/octet-stream",
-      buffer: Buffer.from("playwright-calibration-fixture"),
-    });
-    await expect(page.getByText("REPLAY READY ✓", { exact: true })).toBeVisible();
-    await expect(page.locator(".replay-value-facts")).toHaveCount(0);
-    await expect(page.getByLabel("Where should we send your result?")).toBeVisible();
-    await expect(page.locator('.quick-check input[type="checkbox"]')).toBeVisible();
-    await expect(page.getByRole("button", { name: /Analyze this replay/i })).toBeVisible();
+  test("the intake requires exactly ten originals and one shared context", async ({ page }) => {
+    await page.goto("/analyze", { waitUntil: "load" });
+    await expect(page.locator('main.batch-intake-page[data-hydrated="true"]')).toBeVisible();
+    await expect(page.locator(".intake-card")).toBeVisible();
+    await expect(page.getByText("Choose your ten representative replays.", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("0 of 10 verified replays")).toBeVisible();
+    await expect(page.getByText(/same player and playlist/i).first()).toBeVisible();
+    await expect(page.getByLabel("Email for the private report *")).toBeVisible();
+    await expect(page.getByLabel("Current playlist rank *")).toBeVisible();
+    await expect(page.locator('input[type="file"][multiple]')).toHaveCount(1);
+    await expect(page.getByRole("button", { name: /START MY FREE 10-REPLAY BASELINE/ })).toBeVisible();
   });
 
   test("Rocket League is active while League and VALORANT are explicitly deferred", async ({ page }) => {
     await page.goto("/rocket-league");
-    await expect(page.locator('input[type="file"]')).toHaveCount(1);
+    await expect(page.getByRole("link", { name: /CHOOSE MY 10 REPLAYS/ })).toBeVisible();
     for (const [route, game] of [["/league", "League of Legends"], ["/valorant", "VALORANT"]] as const) {
       await page.goto(route);
       await expect(page.getByText(`${game.toUpperCase()} · COMING LATER`, { exact: true })).toBeVisible();
@@ -149,70 +148,48 @@ test.describe("first-time visitor funnel", () => {
 });
 
 test.describe("truthful product boundaries", () => {
-  test("Rocket League PC accepts original replays while console lanes stop before unusable evidence", async ({ page }) => {
+  test("Rocket League accepts only original ranked PC replays and makes the boundary explicit", async ({ page }) => {
     await page.goto("/analyze?game=rocket-league&platform=pc", { waitUntil: "load" });
-    await expect(page.locator('.intake-card[data-hydrated="true"]')).toBeVisible();
-    await expect(page.getByText(/Original PC \.replay file when the public quality gate opens/i)).toBeVisible();
+    await expect(page.locator('main.batch-intake-page[data-hydrated="true"]')).toBeVisible();
+    await expect(page.locator(".intake-card")).toBeVisible();
+    await expect(page.getByText(/ten original ranked PC replays/i).first()).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(1);
-    await page.getByRole("button", { name: /PS5/ }).click();
-    await expect(page.getByText(/Console video analysis is not live yet/i)).toBeVisible();
-    await expect(page.getByText("This evidence lane is not open yet.", { exact: true })).toBeVisible();
-    await expect(page.locator('input[type="file"]')).toHaveCount(0);
-    await expect(page.getByLabel("Current rank *")).toHaveCount(0);
+    await expect(page.getByText(/same ranked 1v1, 2v2 or 3v3 playlist/i)).toBeVisible();
+    await expect(page.getByText(/Console video analysis/i)).toHaveCount(0);
   });
 
-  test("landing console cards describe research and route to the closed status lane", async ({ page }) => {
+  test("landing FAQ explains replacement and abstention without opening another product lane", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
-    await expectQuickReplayHydrated(page);
-    await page.getByText("On console—or browsing on your phone?", { exact: true }).click();
-    await page.getByRole("button", { name: "PS5 video path →" }).click();
-    await expect(page.getByText("Capture research—not a live analysis.", { exact: true })).toBeVisible();
-    await expect(page.getByText("NOT LIVE", { exact: true })).toHaveCount(1);
-    await expect(page.getByRole("link", { name: /CHECK CONSOLE STATUS/ })).toBeVisible();
+    await expectTenReplayStart(page);
+    await page.locator("summary").filter({ hasText: "What if one file is invalid?" }).click();
+    await expect(page.getByText(/does not consume a valid slot/i)).toBeVisible();
+    await page.locator("summary").filter({ hasText: "Why might Replay Method abstain?" }).click();
+    await expect(page.getByText(/withholds the coaching plan/i)).toBeVisible();
   });
 
-  test("mobile-to-PC handoff survives an isolated desktop session without leaking private query data", async ({ browser, baseURL }, testInfo) => {
-    test.skip(testInfo.project.name.includes("webkit"), "Playwright WebKit does not expose clipboard-write permission; URL policy is covered by unit tests.");
-    const mobile = await browser.newContext({
-      viewport: { width: 390, height: 844 },
-      permissions: ["clipboard-read", "clipboard-write"],
-    });
-    const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    try {
-      const mobilePage = await mobile.newPage();
-      await mobilePage.goto(`${baseURL}/?utm_source=community&utm_medium=social&utm_campaign=rl-phase3&token=private`, { waitUntil: "load" });
-      await expectQuickReplayHydrated(mobilePage);
-      await mobilePage.getByText("On console—or browsing on your phone?", { exact: true }).click();
-      await mobilePage.getByRole("button", { name: "Copy this page for your PC" }).click();
-      await expect(mobilePage.getByRole("button", { name: "PC link copied ✓" })).toBeVisible();
-      const handoff = await mobilePage.evaluate(() => navigator.clipboard.readText());
-
-      const desktopPage = await desktop.newPage();
-      await desktopPage.goto(handoff, { waitUntil: "load" });
-      const transferred = new URL(desktopPage.url());
-      expect(transferred.searchParams.get("utm_source")).toBe("community");
-      expect(transferred.searchParams.get("utm_medium")).toBe("social");
-      expect(transferred.searchParams.get("utm_campaign")).toBe("rl-phase3");
-      expect(transferred.searchParams.get("handoff")).toBe("mobile_to_pc");
-      expect(transferred.searchParams.has("token")).toBe(false);
-      await expect(desktopPage.getByText("Drop a replay. Let the match fill in the rest.", { exact: true })).toBeVisible();
-    } finally {
-      await mobile.close();
-      await desktop.close();
-    }
+  test("the public start link reaches the same 10-replay intake on mobile and desktop", async ({ page }) => {
+    await page.goto("/?utm_source=community&token=private", { waitUntil: "load" });
+    await expectTenReplayStart(page);
+    await page.getByRole("link", { name: /CHOOSE MY 10 REPLAYS/ }).click();
+    await expect(page).toHaveURL(/\/analyze$/);
+    await expect(page.getByRole("heading", { name: /10 games in/i })).toBeVisible();
+    expect(new URL(page.url()).searchParams.has("token")).toBe(false);
   });
 
   test("League and VALORANT are described as official-access requests, not live analysis", async ({ page }) => {
     for (const game of ["league", "valorant"] as const) {
-      await page.goto(`/analyze?game=${game}`);
-      await expect(page.getByText(/Automated Riot match analysis is not live yet/i)).toBeVisible();
-      await expect(page.getByText("WAITLIST", { exact: true })).toBeVisible();
+      await page.goto(`/${game}`);
+      await expect(page.getByText(new RegExp(`${game === "league" ? "LEAGUE OF LEGENDS" : "VALORANT"} · COMING LATER`))).toBeVisible();
+      await expect(page.getByRole("heading", { name: /Evidence before expansion/i })).toBeVisible();
+      await expect(page.locator('input[type="file"]')).toHaveCount(0);
     }
   });
 
   test("the commercial landing does not distract with pricing or checkout", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("#pricing")).toHaveCount(0);
+    await expect(page.locator("#pricing")).toHaveCount(1);
+    await expect(page.getByText("PREMIUM PREVIEW · COMING LATER", { exact: true })).toBeVisible();
+    await expect(page.getByText(/35 representative replays per week/i)).toBeVisible();
     await expect(page.locator('[data-plan="monthly"]')).toHaveCount(0);
     await expect(page.getByRole("button", { name: /buy|subscribe|checkout/i })).toHaveCount(0);
   });

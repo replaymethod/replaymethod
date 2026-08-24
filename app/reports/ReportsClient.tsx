@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { trackProductEvent } from "../../lib/client-analytics";
+import { canonicalUtcTimestamp } from "../../lib/report-date.mjs";
 
 type ReportSummary = {
   publicId: string;
@@ -142,7 +143,7 @@ export default function ReportsClient() {
                   ? `${billing.cancelAtPeriodEnd ? "Access ends" : "Current billing period ends"} ${new Date(billing.currentPeriodEnd || billing.windowEnd || "").toLocaleDateString("en-GB", { dateStyle: "medium" })}`
                   : billing.hasBillingAccount
                     ? "Paid access is inactive. Your completed reports remain readable."
-                    : "Your first completed single-replay analysis is free. No card or renewal."}
+                    : "Your first completed ten-replay baseline is free. No card or renewal."}
               </small>
               {billing.paymentGrace && <p role="alert">Payment recovery is in progress. Update your payment method to keep access uninterrupted.</p>}
             </div>
@@ -150,7 +151,7 @@ export default function ReportsClient() {
               <button type="button" onClick={openPortal} disabled={portalState === "loading"}>
                 {portalState === "loading" ? "Opening secure portal…" : "Manage subscription"}
               </button>
-            ) : <Link href="/#pricing" onClick={() => trackProductEvent("upgrade_intent", "general", "history_billing")}>Compare paid plans →</Link>}
+            ) : <Link href="/#pricing" onClick={() => trackProductEvent("upgrade_intent", "general", "history_billing")}>Preview the future premium concept →</Link>}
             {portalError && <p className="billing-error" role="alert">{portalError}</p>}
           </aside>
         )}
@@ -158,14 +159,14 @@ export default function ReportsClient() {
         {reports === null ? <div className="reports-empty">Loading reports…</div> : reports.length === 0 ? (
           <div className="reports-empty">
             <b>No reports available here yet.</b>
-            <p>Submit one real match and the private report will appear here. Email verification connects later reports on this device.</p>
-            <Link href="/analyze" onClick={trackNewAnalysis}>Start my first analysis →</Link>
+            <p>Complete one ten-replay baseline and the private report will appear here. Email verification connects later reports on this device.</p>
+            <Link href="/analyze" onClick={trackNewAnalysis}>Start my free 10-replay baseline →</Link>
           </div>
         ) : (
           <div className="reports-list">
             {reports.map(report => (
               <Link key={report.publicId} href={`/report/${report.publicId}${report.accessToken ? `?access=${encodeURIComponent(report.accessToken)}` : ""}`}>
-                <div><span>{report.gameLabel}</span><b>{statusTitle(report)}</b><small>{report.currentRank}{report.targetRank ? ` → ${report.targetRank}` : ""} · {new Date(`${report.createdAt}Z`).toLocaleDateString("en-GB", { dateStyle: "medium" })}</small></div>
+                <div><span>{report.gameLabel}</span><b>{statusTitle(report)}</b><small>{report.currentRank}{report.targetRank ? ` → ${report.targetRank}` : ""} · {new Date(canonicalUtcTimestamp(report.createdAt) || report.createdAt).toLocaleDateString("en-GB", { dateStyle: "medium", timeZone: "UTC" })}</small></div>
                 <i className={report.status}>{report.status} →</i>
               </Link>
             ))}

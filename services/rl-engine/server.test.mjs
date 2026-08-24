@@ -155,6 +155,47 @@ test("analysis rejects invalid replay safely", async () => withServer(async (bas
   assert.equal(body.kind, "blocked");
 }));
 
+test("a parsed replay without complete report telemetry is a replaceable input, not a retry loop", async () => withServer(async (base) => {
+  const accepted = await fetch(`${base}/v1/analyze/rocket-league`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/octet-stream",
+      "X-Replay-Method-Request": requestId,
+      "X-Replay-Method-Player": "Player",
+    },
+    body: new Uint8Array([1]),
+  });
+  assert.equal(accepted.status, 202);
+  let response;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    response = await fetch(`${base}/v1/jobs/${requestId}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (response.status !== 202) break;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  assert.equal(response.status, 422);
+  assert.deepEqual(await response.json(), {
+    kind: "blocked",
+    code: "performance_snapshot_insufficient_telemetry",
+    publicMessage: "Choose another original replay.",
+    internalMessage: "Required telemetry was unavailable.",
+    candidatePlayers: [],
+    replayContext: { mode: "Ranked Doubles", gameVersion: null, occurredAt: "2025-08-31" },
+    retryable: false,
+  });
+}, {
+  token,
+  processReplay: async () => {
+    throw new ReplayInputError(
+      "performance_snapshot_insufficient_telemetry",
+      "Choose another original replay.",
+      "Required telemetry was unavailable.",
+      [],
+      { mode: "Ranked Doubles", occurredAt: "2025-08-31" },
+    );
+  },
+}));
+
 test("long analysis is accepted once and polled idempotently", async () => {
   let finish;
   let calls = 0;

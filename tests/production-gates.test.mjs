@@ -22,9 +22,9 @@ test("production landing opens replay processing independently from detector pub
   assert.match(home, /RL_EARLY_ACCESS_OUTPUT_ENABLED/);
   assert.match(home, /RL_CALIBRATION_INTAKE_ENABLED/);
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
-  assert.match(landing, /<QuickReplayStart placement="marcel_hero"/);
-  assert.match(landing, /engineOpen \? <QuickReplayStart/);
-  assert.match(landing, /Stop grinding blind/);
+  assert.match(landing, /<TenReplayStart/);
+  assert.match(landing, /engineOpen \? <TenReplayStart/);
+  assert.match(landing, /10 games in/);
   assert.doesNotMatch(landing, /Choose my game|Contribute one replay/);
 });
 
@@ -46,11 +46,13 @@ test("calibration collection is independently gated before private storage", asy
   assert.match(controls, /rocketLeagueCalibrationIntake/);
 });
 
-test("paid checkout is coupled to the complete product-readiness gate", async () => {
+test("public pre-chapter funnel cannot begin checkout while the legacy endpoint stays gated", async () => {
   const home = await read("../app/page.tsx");
   const game = await read("../app/[game]/page.tsx");
   const checkout = await read("../app/api/billing/checkout/route.ts");
-  for (const source of [home, game, checkout]) assert.match(source, /paidCheckoutReadiness/);
+  assert.doesNotMatch(home, /paidCheckoutReadiness|checkoutOpen/);
+  assert.doesNotMatch(game, /paidCheckoutReadiness|checkoutOpen/);
+  assert.match(checkout, /paidCheckoutReadiness/);
 });
 
 test("verified player data controls require auth, origin and explicit deletion confirmation", async () => {

@@ -72,6 +72,7 @@ function base(publicId: string): PublicReportData {
     report: null,
     verifiedFacts: null,
     performance: null,
+    batch: null,
     earlyAccess: null,
     feedbackScore: null,
   };

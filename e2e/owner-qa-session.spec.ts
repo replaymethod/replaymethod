@@ -9,7 +9,7 @@ test("verified owner activation produces the dedicated server-session UI state",
     status: 200,
     contentType: "application/json",
     headers: { "Set-Cookie": "__Host-rm_player_session=e2e; Path=/; HttpOnly; Secure; SameSite=Lax" },
-    body: JSON.stringify({ ok: true, ownerQa: true, redirect: "/#replay-upload" }),
+    body: JSON.stringify({ ok: true, ownerQa: true, redirect: "/analyze" }),
   }));
   await page.route("**/api/player/access", route => route.fulfill({
     status: 200,
@@ -20,6 +20,7 @@ test("verified owner activation produces the dedicated server-session UI state",
   await expect(page.getByRole("heading", { name: "Activate owner QA." })).toBeVisible();
   await expect(page.locator('.owner-qa-activate[data-hydrated="true"]')).toBeVisible();
   await page.getByRole("button", { name: /ACTIVATE OWNER QA/ }).click();
-  await expect(page).toHaveURL(/\/#replay-upload$/);
-  await expect(page.getByText("Drop a replay. Let the match fill in the rest.", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/analyze$/);
+  await expect(page.getByRole("heading", { name: /10 games in/i })).toBeVisible();
+  await expect(page.getByText("OWNER QA VERIFIED", { exact: true })).toBeVisible();
 });

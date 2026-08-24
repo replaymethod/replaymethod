@@ -3,22 +3,22 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://replaymethod.xyz"),
-  title: "Replay Method — Stop grinding blind",
-  description: "Send a Rocket League replay and help build an evidence-first improvement system that finds one decision to fix next.",
+  title: "Replay Method — 10 games in. One clear plan out.",
+  description: "Upload ten ranked Rocket League PC replays from the same player and playlist. Get one evidence-backed cross-match focus, or an honest abstention.",
   applicationName: "Replay Method",
   alternates: { canonical: "/" },
   keywords: ["competitive gaming improvement", "League of Legends coaching", "VALORANT coaching", "Rocket League replay analysis", "replay review", "VOD review"],
   openGraph: {
     type: "website",
     siteName: "Replay Method",
-    title: "Replay Method — Stop grinding blind",
-    description: "Rocket League replay → one focus → one next-match rule. Evidence before advice.",
+    title: "Replay Method — 10 games in. One clear plan out.",
+    description: "Ten verified Rocket League replays → recurring pattern → one next-match plan. Evidence before advice.",
     images: [{ url: "/brand/og-replay-method-v12-1200x630.png", width: 1200, height: 630, alt: "Replay Method — Stop grinding blind." }]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Replay Method — Stop grinding blind",
-    description: "Rocket League replay → one focus → one next-match rule. Evidence before advice.",
+    title: "Replay Method — 10 games in. One clear plan out.",
+    description: "Ten verified Rocket League replays → recurring pattern → one next-match plan. Evidence before advice.",
     images: ["/brand/og-replay-method-v12-1200x630.png"]
   },
   icons: {

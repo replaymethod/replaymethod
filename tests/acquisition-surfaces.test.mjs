@@ -30,26 +30,23 @@ test("routes free hypotheses into the honest beta intake", async () => {
   assert.doesNotMatch(guide, /#join-beta/);
 });
 
-test("distinguishes Riot access requests from evidence-gated replay outcomes", async () => {
-  const [landing, intake, quickReplay, metadata] = await Promise.all([
+test("distinguishes future games from the ten-replay Rocket League product", async () => {
+  const [landing, intake, batchFlow, metadata] = await Promise.all([
     source("../app/components/Landing.tsx"),
     source("../app/analyze/AnalyzeFlow.tsx"),
-    source("../app/components/QuickReplayStart.tsx"),
+    source("../app/analyze/BatchAnalyzeFlow.tsx"),
     source("../app/analyze/page.tsx"),
   ]);
   assert.match(landing, /if \(game === "league" \|\| game === "valorant"\) return <FutureGame/);
   assert.match(landing, /authorized match evidence can support the same standard/);
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
-  assert.match(landing, /<QuickReplayStart placement="marcel_hero"/);
+  assert.match(landing, /<TenReplayStart/);
   assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
-  assert.match(quickReplay, /ANALYZE THIS REPLAY →/);
-  assert.match(quickReplay, /REPLAY READY ✓/);
-  assert.doesNotMatch(quickReplay, /replay-value-facts/);
+  assert.match(batchFlow, /START MY FREE 10-REPLAY BASELINE/);
+  assert.match(batchFlow, /\{validCount\}\/10/);
   assert.match(intake, /Automated League and VALORANT analysis is not live/);
-  assert.match(quickReplay, /Capture research—not a live analysis/);
-  assert.match(quickReplay, /CHECK CONSOLE STATUS/);
-  assert.doesNotMatch(quickReplay, /START CONSOLE VIDEO BETA/);
-  assert.doesNotMatch(quickReplay, /Get one priority|START FREE ANALYSIS/);
+  assert.match(batchFlow, /same player and playlist/i);
+  assert.doesNotMatch(batchFlow, /START CONSOLE VIDEO BETA/);
   assert.doesNotMatch(metadata, /get one focused Replay Method diagnosis/i);
 });
 
@@ -60,9 +57,9 @@ test("puts the product action before explanatory browsing", async () => {
   ]);
   assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
-  assert.match(landing, /engineOpen \? <QuickReplayStart/);
-  assert.match(landing, /Stop grinding blind/);
-  assert.match(landing, /Drop one replay/);
+  assert.match(landing, /engineOpen \? <TenReplayStart/);
+  assert.match(landing, /10 games in/);
+  assert.match(landing, /Add ten ranked replays/);
   assert.match(contribution, /replay && <section className="rl-intake-context"/);
   assert.match(contribution, /Choose the original PC file\. The next step appears instantly/);
 });
