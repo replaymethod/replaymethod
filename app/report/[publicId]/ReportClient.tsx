@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { PublicReportData } from "../../../lib/report-data";
 import { trackProductEvent } from "../../../lib/client-analytics";
+import { canonicalUtcTimestamp, utcTimestampMillis } from "../../../lib/report-date.mjs";
 
 const stages = [
   { key: "queued", label: "Received" },
@@ -33,9 +34,11 @@ const rocketLeagueRanks = [
   "Grand Champion I", "Grand Champion II", "Grand Champion III",
 ];
 
-function utcTimestamp(value: string) {
-  const normalized = value.includes("T") ? value : value.replace(" ", "T");
-  return new Date(/[zZ]$|[+-]\d{2}:?\d{2}$/.test(normalized) ? normalized : `${normalized}Z`).getTime();
+function reportDate(value: string | null | undefined) {
+  const canonical = canonicalUtcTimestamp(value);
+  return canonical
+    ? new Date(canonical).toLocaleDateString("en-GB", { dateStyle: "medium", timeZone: "UTC" })
+    : "Date unavailable";
 }
 
 function stopCopy(data: PublicReportData) {
@@ -274,7 +277,7 @@ export default function ReportClient({ initial, accessToken, delivery }: { initi
   };
 
   const statusIndex = data.status === "ready" ? stages.length - 1 : stageOrder[data.processing?.stage || "queued"] ?? 0;
-  const processingTime = data.processing?.updatedAt ? utcTimestamp(data.processing.updatedAt) : 0;
+  const processingTime = utcTimestampMillis(data.processing?.updatedAt) || 0;
   const stale = clock !== null && processingTime > 0 && !["ready", "blocked", "failed"].includes(data.status) && clock - processingTime >= 180_000;
   const stopped = data.status === "blocked" || data.status === "failed" || stale;
   const stoppedCopy = stale ? {
@@ -336,7 +339,7 @@ export default function ReportClient({ initial, accessToken, delivery }: { initi
   return <main className="report-page">
     <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><button type="button" onClick={copyLink}>{copied ? "Copied ✓" : "Copy private link"}</button></div></nav>
     <section className="report-shell shell">
-      <header className="report-top"><div><span>PRIVATE · OWNER-VERIFIED REPORT ACCESS</span><h1>{data.verifiedFacts?.subjectDisplayName || data.gameLabel}</h1><p>{data.verifiedFacts?.mode || data.processing?.replayContext.mode || "Playlist reading"}{data.verifiedFacts?.rank ? ` · ${data.verifiedFacts.rank} (${data.verifiedFacts.rankProvenance === "verified_replay" ? "verified" : "player-submitted"})` : ""} · {new Date(`${data.verifiedFacts?.occurredAt || data.createdAt}Z`).toLocaleDateString("en-GB", { dateStyle: "medium", timeZone: "UTC" })}</p></div><i className={data.status}>{data.status === "ready" ? "READY" : stopped ? "PAUSED" : "PROCESSING"}</i></header>
+      <header className="report-top"><div><span>PRIVATE · OWNER-VERIFIED REPORT ACCESS</span><h1>{data.verifiedFacts?.subjectDisplayName || data.gameLabel}</h1><p>{data.verifiedFacts?.mode || data.processing?.replayContext.mode || "Playlist reading"}{data.verifiedFacts?.rank ? ` · ${data.verifiedFacts.rank} (${data.verifiedFacts.rankProvenance === "verified_replay" ? "verified" : "player-submitted"})` : ""} · {reportDate(data.verifiedFacts?.occurredAt || data.createdAt)}</p></div><i className={data.status}>{data.status === "ready" ? "READY" : stopped ? "PAUSED" : "PROCESSING"}</i></header>
 
       {data.status !== "ready" ? <div className={`report-pending ${stopped ? "stopped" : ""}`}><div className="scan-orb"><i /><b>{stopped ? "!" : "↻"}</b></div><span>{stoppedCopy?.kicker || (data.processing?.stageLabel ? "AUTOMATED MATCH ANALYSIS" : "MATCH SECURED")}</span><h2>{stoppedCopy?.title || data.processing?.stageLabel || "Your match is queued."}</h2><p>{stoppedCopy?.body || "Replay Method is reading the submitted match, measuring repeated patterns and selecting one evidence-backed coaching focus."}</p>{identityResolvable && <section className="player-resolution" aria-labelledby="player-resolution-title"><div><span>{data.processing?.replayContext.mode ? `${data.processing.replayContext.mode.toUpperCase()} · PLAYERS FOUND` : "PLAYERS FOUND IN THIS REPLAY"}</span><h3 id="player-resolution-title">Which one is you?</h3><p>Choose your exact player and current playlist rank. The original private replay is reused automatically.</p></div><div className="player-resolution-options" role="radiogroup" aria-label="Players identified in the replay">{data.processing?.candidatePlayers.map(player => <button type="button" role="radio" disabled={!interactive} aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} key={player} onClick={() => { setSelectedPlayer(player); setIdentityRetryState("idle"); }}>{player}</button>)}</div><label className="player-resolution-rank"><span>Your current {data.processing?.replayContext.mode || "playlist"} rank</span><select value={selectedRank} onChange={event => { setSelectedRank(event.target.value); setIdentityRetryState("idle"); }}><option value="">Choose rank</option>{rocketLeagueRanks.map(rank => <option value={rank} key={rank}>{rank}</option>)}</select></label><button className="player-resolution-submit" type="button" disabled={!interactive || !selectedPlayer || !selectedRank || identityRetryState === "saving"} onClick={retryWithPlayer}>{identityRetryState === "saving" ? "Starting…" : identityRetryState === "queued" ? "Analysis queued ✓" : "Analyze this saved replay →"}</button>{identityRetryState === "error" && <p role="alert">The replay could not be queued. Refresh this private report and try again.</p>}</section>}<div className="status-track">{stages.map((stage, index) => <div className={index <= statusIndex && !stopped ? "active" : index < statusIndex ? "complete" : ""} key={stage.key}><i>{index < statusIndex ? "✓" : index + 1}</i><span>{stage.label}</span></div>)}</div><aside>{stopped ? <><b>No fake certainty.</b><span>We stop when the available data cannot support a reliable report.</span></> : delivery === "email" ? <><b>Confirmation sent.</b><span>We’ll send another email when the report is ready.</span></> : <><b>Keep this private link.</b><span>Your report will appear here automatically when it is ready.</span></>}</aside></div> : (data.report || data.earlyAccess || data.performance) && <>
         <section className={`match-in-20 ${data.report ? "has-focus" : "facts-only"}`} aria-labelledby="report-reveal-title">

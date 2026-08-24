@@ -3,6 +3,7 @@ import { getDb } from "../db";
 import { analysisFindings, analysisJobs, analysisRequests, matches } from "../db/schema";
 import { gameLabels, isAnalysisGame, parseLines, publicIdPattern } from "./analysis";
 import { decodePlayerResolutionContext } from "./player-resolution.mjs";
+import { canonicalUtcTimestamp } from "./report-date.mjs";
 
 type EvidenceDetail = {
   label: string;
@@ -293,8 +294,8 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
     currentRank: row.currentRank,
     targetRank: row.targetRank,
     status: row.status,
-    createdAt: row.createdAt,
-    readyAt: row.readyAt,
+    createdAt: canonicalUtcTimestamp(row.createdAt) || row.createdAt,
+    readyAt: canonicalUtcTimestamp(row.readyAt),
     processing: job ? {
       jobPublicId: job.publicId,
       status: job.status,
@@ -304,8 +305,8 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
       errorCode: job.errorCode,
       durationMs: job.durationMs,
       estimatedCostMicros: job.estimatedCostMicros,
-      nextRetryAt: job.nextRetryAt,
-      updatedAt: job.updatedAt,
+      nextRetryAt: canonicalUtcTimestamp(job.nextRetryAt),
+      updatedAt: canonicalUtcTimestamp(job.updatedAt) || job.updatedAt,
       candidatePlayers: resolution.candidatePlayers,
       replayContext: resolution.replayContext,
       versions: {
@@ -334,7 +335,7 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
       mode: nullableString(verifiedMetadata.mode) || match.mode,
       rank: nullableString(verifiedMetadata.rank) || match.rank,
       gameVersion: nullableString(verifiedMetadata.gameVersion) || match.gameVersion,
-      occurredAt: nullableString(verifiedMetadata.occurredAt) || match.occurredAt,
+      occurredAt: canonicalUtcTimestamp(nullableString(verifiedMetadata.occurredAt) || match.occurredAt),
       playerCount: nullableNumber(verifiedMetadata.playerCount) ?? nullableNumber(matchMetadata.playerCount),
       sampledFrames: nullableNumber(verifiedMetadata.sampledFrames) ?? nullableNumber(objectValue(objectValue(matchMetadata.evidenceEngine).frameState).frameCount),
       parserEvents: nullableNumber(verifiedMetadata.parserEvents) ?? nullableNumber(objectValue(objectValue(matchMetadata.evidenceEngine).episodeTimeline).rawEventCount),

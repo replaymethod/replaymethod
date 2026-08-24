@@ -2,7 +2,9 @@ import { createServer as createHttpServer } from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { Worker } from "node:worker_threads";
-import { PARSER_VERSION, ReplayInputError } from "./parser.mjs";
+import { ANALYZER_VERSION } from "./analyzer.mjs";
+import { NORMALIZER_VERSION, PARSER_VERSION, ReplayInputError } from "./parser.mjs";
+import { PERFORMANCE_SNAPSHOT_VERSION } from "./performance-snapshot.mjs";
 
 export { PARSER_VERSION };
 
@@ -291,6 +293,9 @@ export function createServer(options = {}) {
         status: ready ? "ready" : "not_ready",
         engineVersion: ENGINE_VERSION,
         parserVersion: PARSER_VERSION,
+        normalizerVersion: NORMALIZER_VERSION,
+        analyzerVersion: ANALYZER_VERSION,
+        performanceSnapshotVersion: PERFORMANCE_SNAPSHOT_VERSION,
         activeRequests,
         maxConcurrency: concurrencyLimit,
       });
