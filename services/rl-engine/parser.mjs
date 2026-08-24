@@ -12,7 +12,7 @@ import { episodeTimelineSummary, normalizeEpisodeTimeline } from "./episode-time
 import { frameStateSummary, normalizeFrameState } from "./frame-state.mjs";
 import { buildPerformanceSnapshot } from "./performance-snapshot.mjs";
 
-export const PARSER_VERSION = "subtr-actor@1.2.1";
+export const PARSER_VERSION = "subtr-actor@1.2.2";
 export const NORMALIZER_VERSION = "rocket-league-normalizer@0.4.0";
 
 let initialized = false;
@@ -259,6 +259,7 @@ export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
   const frameState = normalizeFrameState(ndarray, normalizedMeta.meta, 10);
   const statsTimeline = plain(get_stats_timeline(data));
   const episodeTimeline = normalizeEpisodeTimeline(statsTimeline, player.id || player.name);
+  const matchGuid = scalarText(headerValue(normalizedMeta.meta, "MatchGUID")) || null;
   let performanceSnapshot;
   try {
     performanceSnapshot = buildPerformanceSnapshot({
@@ -287,6 +288,7 @@ export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
     schemaVersion: "game-data.v1",
     game: "rocket-league",
     source: "rocket-league-replay",
+    externalMatchId: matchGuid || undefined,
     subjectPlayerId: player.id || player.name,
     subjectDisplayName: player.name,
     mode: normalizedMeta.mode || undefined,
