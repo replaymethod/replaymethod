@@ -122,6 +122,14 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.getByLabel("Current playlist rank *")).toBeVisible();
     await expect(page.locator('input[type="file"][multiple]')).toHaveCount(1);
     await expect(page.getByRole("button", { name: /START MY FREE 10-REPLAY BASELINE/ })).toBeVisible();
+    const uploadLayout = await page.locator(".file-drop").evaluate(element => {
+      const label = element.querySelector("b")?.getBoundingClientRect();
+      const helper = element.querySelector("small")?.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return { display: style.display, direction: style.flexDirection, separation: label && helper ? helper.top - label.bottom : -1 };
+    });
+    expect(uploadLayout).toMatchObject({ display: "flex", direction: "column" });
+    expect(uploadLayout.separation).toBeGreaterThanOrEqual(0);
   });
 
   test("Rocket League is active while League and VALORANT are explicitly deferred", async ({ page }) => {
