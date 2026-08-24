@@ -30,8 +30,13 @@ test.describe("private report states", () => {
     await expect(page.getByText("Invalid Date", { exact: true })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Your match in 20 seconds." })).toBeVisible();
     await expect(page.getByLabel("Evidence status and sample size").getByText("EXPERIMENTAL COACHING", { exact: true })).toBeVisible();
-    await expect(page.getByText("VERIFIED PERFORMANCE", { exact: true })).toBeVisible();
-    await expect(page.getByText("REPORT STATUS & VERIFIED FACTS", { exact: true })).toBeVisible();
+    await expect(page.getByText("FULL MATCH STATS", { exact: true })).toBeVisible();
+    await expect(page.getByText("CONFIDENCE & LIMITATIONS", { exact: true })).toBeVisible();
+    await expect(page.getByText("THE DECISION TO FIX FIRST", { exact: true })).toBeVisible();
+    await expect(page.getByText("YOUR NEXT 3 MATCHES", { exact: true })).toBeVisible();
+    await expect(page.getByText("Advanced details", { exact: true })).toBeVisible();
+    const sectionOrder = await page.locator("#report-strength, #decision-first, #moments, #action-plan, #performance, #confidence, #feedback").evaluateAll(sections => sections.map(section => section.id));
+    expect(sectionOrder).toEqual(["report-strength", "decision-first", "moments", "action-plan", "performance", "confidence", "feedback"]);
     await expect(page.getByText(/not been human-reviewed/i)).toBeVisible();
     await expect(page.getByText("At 3:47, both teammates cross the ball line").first()).toBeVisible();
     await expect(page.getByText(/protect back post until the play resets/i).first()).toBeVisible();
@@ -61,8 +66,8 @@ test.describe("private report states", () => {
     await page.goto(reports.abstained);
     await expect(page.getByText("READY", { exact: true })).toBeVisible();
     await expect(page.getByText("Invalid Date", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("VERIFIED PERFORMANCE", { exact: true })).toBeVisible();
-    await expect(page.getByText("LOCAL ABSTENTION", { exact: true })).toBeVisible();
+    await expect(page.getByText("FULL MATCH STATS", { exact: true })).toBeVisible();
+    await expect(page.getByText("YOUR NEXT 3 MATCHES · ABSTAINED", { exact: true })).toBeVisible();
     await expect(page.getByText(/did not turn neutral measurements into a fake mistake or generic drill/i)).toBeVisible();
     await expect(page.getByText("EARLY ACCESS PRODUCT FEEDBACK", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Evidence status and sample size").getByText("FACTS ONLY", { exact: true })).toBeVisible();

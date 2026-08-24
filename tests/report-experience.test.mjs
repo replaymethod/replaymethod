@@ -8,8 +8,9 @@ const dataPath = new URL("../lib/report-data.ts", import.meta.url);
 test("keeps the private report centered on one evidence-backed finding", async () => {
   const [client, data] = await Promise.all([readFile(clientPath, "utf8"), readFile(dataPath, "utf8")]);
   assert.match(client, /BIGGEST SUPPORTED OPPORTUNITY/);
-  assert.match(client, /DEEP DIVE · ONE AREA/);
-  assert.match(client, /ONE-FOCUS PLAN/);
+  assert.match(client, /THE DECISION TO FIX FIRST/);
+  assert.match(client, /YOUR NEXT 3 MATCHES/);
+  assert.match(client, /FULL MATCH STATS/);
   assert.match(data, /orderBy\(asc\(analysisFindings\.priority\)\)\.get\(\)/);
   assert.match(data, /\.slice\(0, 5\)/);
 });
@@ -33,7 +34,7 @@ test("makes verification conservative and independent from payment", async () =>
 
 test("keeps confidence, limitations and feedback controls accessible", async () => {
   const client = await readFile(clientPath, "utf8");
-  assert.match(client, /Evidence &amp; methodology/);
+  assert.match(client, /Advanced details/);
   assert.match(client, /KNOWN LIMITATIONS/);
   assert.match(client, /aria-pressed=\{feedbackSignals\[key\] === value\}/);
   assert.match(client, /product feedback only/);
@@ -47,9 +48,9 @@ test("separates Early Access facts, experimental coaching, abstention and produc
   assert.match(data, /badge: "EARLY ACCESS BETA"/);
   assert.match(data, /heading: "Built from your real replay\. Refined through expert validation\."/);
   assert.match(client, /data\.earlyAccess\.badge/);
-  assert.match(client, /REPORT STATUS &amp; VERIFIED FACTS/);
+  assert.match(client, /VERIFIED MATCH CONTEXT/);
   assert.match(client, /EXPERIMENTAL COACHING/);
-  assert.match(client, /LOCAL ABSTENTION/);
+  assert.match(client, /YOUR NEXT 3 MATCHES · ABSTAINED/);
   assert.match(client, /never treated as replay ground truth, detector labels or expert validation/);
   assert.match(data, /formalValidationStatus: "not_validated"/);
   assert.match(data, /earlyAccess\?\.coachingStatus !== "abstained"/);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type TouchEvent } from "react";
 import Link from "next/link";
 import ReplayContribution from "../rocket-league-beta/ReplayContribution";
 import QuickReplayStart from "./QuickReplayStart";
@@ -26,41 +26,89 @@ function FutureGame({ game }: { game: "league" | "valorant" }) {
 
 function MethodStrip() {
   return <section className="marcel-loop shell" aria-label="How Replay Method works">
-    <article><i>01</i><div><b>Drop the replay</b><span>Your real match, not a quiz.</span></div></article>
-    <article><i>02</i><div><b>Reveal one pattern</b><span>Evidence first. No stat wall.</span></div></article>
-    <article><i>03</i><div><b>Play with one rule</b><span>Then check if it changed.</span></div></article>
+    <article><i>01</i><div><b>Drop one replay</b><span>Your original PC match file.</span></div></article>
+    <article><i>02</i><div><b>See the decision that mattered</b><span>Verified moments before advice.</span></div></article>
+    <article><i>03</i><div><b>Take one rule into your next 3</b><span>Then let the next replay check it.</span></div></article>
   </section>;
 }
 
+function focusReplayUploader(source: string) {
+  const uploader = document.getElementById("replay-upload");
+  if (!uploader) return;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  uploader.focus({ preventScroll: true });
+  uploader.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+  trackProductEvent("cta_click", "rocket-league", source);
+}
+
+function HeroProof() {
+  return <details className="marcel-hero-proof">
+    <summary><span>10-SECOND EXAMPLE</span><b>See how one decision becomes one rule</b><i>+</i></summary>
+    <div>
+      <span><i>01</i><b>Decision</b><small>You follow your teammate into the same lane.</small></span>
+      <span><i>02</i><b>Consequence</b><small>The safe layer disappears before possession is clear.</small></span>
+      <span><i>03</i><b>One rule</b><small>If your teammate crosses the ball line, hold one layer deeper.</small></span>
+    </div>
+    <p>Illustration—not a live analysis.</p>
+  </details>;
+}
+
+const loopStages = [
+  { key: "match", label: "MATCH", title: "Your teammate crosses the ball line.", body: "2v2 · 2:41 left. The replay fixes the moment in time before any advice appears." },
+  { key: "decision", label: "DECISION", title: "You enter the same channel.", body: "Both cars commit to one lane, leaving no safe layer behind the play." },
+  { key: "rule", label: "RULE", title: "Hold one layer deeper.", body: "If your teammate crosses the ball line, protect the safe layer until possession is clear." },
+  { key: "check", label: "CHECK AGAIN", title: "Measure the next three matches.", body: "The next replay checks whether the same overlap appears in a comparable game state." },
+] as const;
+
 function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
-  function focusUploader() {
-    const uploader = document.getElementById("replay-upload");
-    if (!uploader) return;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    uploader.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
-    uploader.focus({ preventScroll: true });
-    trackProductEvent("cta_click", "rocket-league", "product_loop_to_uploader");
+  const [activeStage, setActiveStage] = useState(0);
+  const touchStart = useRef<number | null>(null);
+  const stage = loopStages[activeStage];
+
+  function chooseStage(index: number) {
+    setActiveStage((index + loopStages.length) % loopStages.length);
+  }
+
+  function handleStageKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const keys: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: loopStages.length - 1 };
+    if (!(event.key in keys)) return;
+    event.preventDefault();
+    const next = (keys[event.key] + loopStages.length) % loopStages.length;
+    chooseStage(next);
+    document.getElementById(`loop-stage-${next}`)?.focus();
+  }
+
+  function beginSwipe(event: TouchEvent<HTMLElement>) {
+    touchStart.current = event.changedTouches[0]?.clientX ?? null;
+  }
+
+  function endSwipe(event: TouchEvent<HTMLElement>) {
+    if (touchStart.current == null) return;
+    const distance = (event.changedTouches[0]?.clientX ?? touchStart.current) - touchStart.current;
+    touchStart.current = null;
+    if (Math.abs(distance) < 45) return;
+    chooseStage(activeStage + (distance < 0 ? 1 : -1));
   }
 
   return <section className="marcel-moment shell" id="product">
     <div className="marcel-moment-copy">
       <span>THE IMPROVEMENT LOOP</span>
-      <h2>See the moment.<br />Queue with one rule.</h2>
-      <p>Replay Method turns supported match evidence into one focus you can carry into the next game. If the evidence is not strong enough, it stops instead of filling the screen with guesses.</p>
+      <h2>One match.<br />One decision. One test.</h2>
+      <p>Move through the same four steps your report follows: what happened, the decision that mattered, one rule to try, and what the next replay should check.</p>
       <div className="marcel-truth"><i>✓</i><span><b>Truth before hype</b>{earlyAccessOpen ? "Experimental Early Access coaching is clearly marked while formal detector validation continues independently." : "Coaching stays off until the current release gate opens."}</span></div>
     </div>
-    <div className="marcel-demo" aria-label="Illustrative Replay Method product loop">
+    <div className={`marcel-demo stage-${stage.key}`} aria-label="Illustrative Replay Method product loop" onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
       <header><span>ILLUSTRATIVE FLOW</span><em>NOT A LIVE FINDING</em></header>
-      <ol className="marcel-demo-stages" aria-label="Product loop stages">
-        <li>MATCH LOADED</li><li>SCAN</li><li>MOMENT</li><li>MOVEMENT PATH</li><li>EVIDENCE</li><li>ONE FOCUS</li><li>NEXT-MATCH RULE</li>
-      </ol>
-      <div className="marcel-demo-screen">
-        <div className="marcel-demo-meta"><span>2V2 · 02:41</span><b>SUPPORTED MOMENT</b></div>
-        <div className="marcel-field" aria-hidden="true"><i className="scan-line" /><i className="ball" /><i className="car one" /><i className="car two" /><i className="path" /><i className="evidence-pin">01</i></div>
-        <p><b>EVIDENCE 01</b>Your teammate crosses the ball line while your path enters the same channel.</p>
+      <div className="marcel-demo-stages" role="tablist" aria-label="Improvement loop stages">
+        {loopStages.map((item, index) => <button id={`loop-stage-${index}`} type="button" role="tab" aria-selected={activeStage === index} aria-controls="loop-stage-panel" tabIndex={activeStage === index ? 0 : -1} onClick={() => chooseStage(index)} onKeyDown={event => handleStageKey(event, index)} key={item.key}>{item.label}</button>)}
       </div>
-      <div className="marcel-demo-decision"><span>ONE FOCUS</span><b>Protect the safe layer.</b><small>NEXT-MATCH RULE · Hold one layer deeper until possession is clear.</small></div>
-      <button type="button" onClick={focusUploader}>RUN THIS ON MY REPLAY <span>→</span></button>
+      <div className="marcel-demo-screen" id="loop-stage-panel" role="tabpanel" aria-live="polite" aria-labelledby={`loop-stage-${activeStage}`}>
+        <div className="marcel-demo-meta"><span>{stage.label}</span><b>{activeStage < 2 ? "VERIFIED MOMENT" : activeStage === 2 ? "ONE FOCUS" : "NEXT TEST"}</b></div>
+        <div className="marcel-field" aria-hidden="true"><i className="scan-line" /><i className="ball" /><i className="car one" /><i className="car two" /><i className="path" /><i className="evidence-pin">01</i></div>
+        <p><b>{stage.title}</b>{stage.body}</p>
+      </div>
+      <div className="marcel-demo-progress" aria-hidden="true"><i style={{ width: `${((activeStage + 1) / loopStages.length) * 100}%` }} /></div>
+      <button type="button" onClick={() => focusReplayUploader("product_loop_to_uploader")}>RUN THIS ON MY REPLAY <span>→</span></button>
     </div>
   </section>;
 }
@@ -86,8 +134,9 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
       <div className="marcel-hero-copy">
         <span className="marcel-status"><i /> ROCKET LEAGUE · {engineOpen && earlyAccessOpen ? "EARLY ACCESS BETA" : engineOpen ? "PC REPLAY BETA" : "PRIVATE BETA"}</span>
         <h1>Stop grinding blind.<br /><em>Find the decision costing you games.</em></h1>
-        <p>{engineOpen && earlyAccessOpen ? "Drop one original PC replay. Choose your player, receive verified match facts and—only when the evidence clears the Early Access policy—one clearly marked experimental coaching insight." : engineOpen ? "Drop one original PC replay. The engine reads the playlist and players, then asks only which player is you. If evidence has not earned a coaching claim, it stops and tells you." : "Drop one original PC replay. Replay Method securely captures the match and the exact player to follow—so real evidence can replace generic advice."}</p>
-        <div className="marcel-trust-row"><span>First analysis included · Private · No card</span></div>
+        <p>{engineOpen && earlyAccessOpen ? "Upload one original PC replay, choose yourself, and get one evidence-backed focus to test in your next three matches." : engineOpen ? "Upload one original PC replay, choose yourself, and see the decision the evidence can actually support." : "Upload one original PC replay so real match evidence can replace generic advice."}</p>
+        <div className="marcel-trust-row"><span>First report included · Private · No card</span></div>
+        <HeroProof />
       </div>
       <div className="marcel-upload-stage">
         {engineOpen ? <QuickReplayStart placement="marcel_hero" /> : <ReplayContribution intakeOpen={calibrationOpen} compact />}
@@ -98,17 +147,24 @@ export default function Landing({ game = "general", checkoutOpen = false, engine
     <ProductMoment earlyAccessOpen={earlyAccessOpen} />
     {checkoutOpen && <PricingLadder analysisHref="#replay-upload" game="rocket-league" checkoutOpen replayReady />}
 
-    <section className="marcel-beta-truth shell">
-      <span>{earlyAccessOpen ? "WHY THIS IS EARLY ACCESS" : "WHY THIS IS A PRIVATE BETA"}</span>
-      <h2>{engineOpen && earlyAccessOpen ? "Verified facts first. Experimental coaching only where this replay supports it." : engineOpen ? "The engine can read the match. Coaching still has to earn the right to speak." : "Your replay helps build the proof. It does not buy a promise."}</h2>
-      <p>{engineOpen && earlyAccessOpen ? "Your report separates parser-backed facts, experimental coaching and local abstentions. Expert review continues independently and no Early Access result is represented as formally validated or individually human-reviewed." : engineOpen ? "Every replay enters the real parser and evidence pipeline. Exact detector scopes stay private until qualified independent review and holdout performance pass. A safe stop is a product result—not a failed promise." : "Uploads can open before coaching does. Every replay is stored with consent, player identity and rank context. Qualified reviewers then label detector moments independently. Only patterns that survive that process may appear in a future report."}</p>
-      <Link href="/rocket-league-beta">{engineOpen ? "Contribute a calibration replay separately →" : "See how replay validation works →"}</Link>
+    <section className="marcel-beta-truth shell" aria-labelledby="trust-title">
+      <span>{earlyAccessOpen ? "EARLY ACCESS · CLEAR BOUNDARIES" : "PRIVATE BETA · CLEAR BOUNDARIES"}</span>
+      <h2 id="trust-title">What your replay gets—and what we never pretend to know.</h2>
+      <div className="marcel-promises">
+        <article><i>01</i><b>What happened</b><p>Verified facts and timestamps read from the original replay.</p></article>
+        <article><i>02</i><b>What to try next</b><p>Experimental coaching appears only when this match provides enough evidence.</p></article>
+        <article><i>03</i><b>When evidence is weak</b><p>Replay Method says so and withholds the coaching instead of guessing.</p></article>
+      </div>
     </section>
 
-    <section className="marcel-faq shell">
+    <section className="marcel-faq shell" aria-labelledby="faq-title">
+      <header><span>BEFORE YOU UPLOAD</span><h2 id="faq-title">Straight answers.</h2></header>
       <details><summary>Where is my Rocket League replay?<b>+</b></summary><p>On Windows: Documents → My Games → Rocket League → TAGame → Demos. Choose the original file ending in .replay.</p></details>
       <details><summary>Will I get an analysis now?<b>+</b></summary><p>{engineOpen && earlyAccessOpen ? "Yes. You receive a complete private report with verified match facts. A coaching insight appears only if it clears the conservative Early Access evidence policy; otherwise that part abstains locally and explains why." : engineOpen ? "The live engine parses the replay, identifies its playlist and lets you choose your player. You receive a real report only when a detector has passed its exact evidence gate; otherwise you receive an honest evidence-status result." : "Not yet. Intake is for the private validation corpus. You receive a secure reference immediately; public coaching remains off until the evidence gate passes."}</p></details>
       <details><summary>What happens to the file?<b>+</b></summary><p>It is stored privately to deliver your requested report. Customer analysis replays are not used for detector calibration, training or evaluation without a separate explicit opt-in.</p></details>
+      <details><summary>What does “experimental coaching” mean?<b>+</b></summary><p>The replay facts are parser-backed, while the coaching interpretation is still being independently validated. It is clearly labelled and never presented as a stable habit from one match.</p></details>
+      <details><summary>Why might Replay Method abstain?<b>+</b></summary><p>If the file parses but the available moments cannot support a defensible recommendation, you still receive the verified match review and an honest explanation instead of generic advice.</p></details>
+      <button className="marcel-faq-cta" type="button" onClick={() => focusReplayUploader("trust_faq_to_uploader")}>ANALYZE MY REPLAY <span>↑</span></button>
     </section>
 
     <footer className="marcel-footer shell">

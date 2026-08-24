@@ -63,21 +63,38 @@ test.describe("first-time visitor funnel", () => {
   test("the landing page explains one problem and exposes one immediate replay action", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /Stop grinding blind/i })).toBeVisible();
-    await expect(page.getByText("First analysis included · Private · No card", { exact: true })).toBeVisible();
+    await expect(page.getByText("First report included · Private · No card", { exact: true })).toBeVisible();
     await expect(page.getByText("Drop a replay. Let the match fill in the rest.", { exact: true })).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(1);
     await expect(page.getByLabel("Exact in-game name")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /League of Legends|VALORANT/i })).toHaveCount(0);
-    await expect(page.getByText("Drop the replay", { exact: true })).toBeVisible();
-    await expect(page.getByText("Reveal one pattern", { exact: true })).toBeVisible();
-    await expect(page.getByText("Play with one rule", { exact: true })).toBeVisible();
+    await expect(page.getByText("Drop one replay", { exact: true })).toBeVisible();
+    await expect(page.getByText("See the decision that mattered", { exact: true })).toBeVisible();
+    await expect(page.getByText("Take one rule into your next 3", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /ANALYZE MY REPLAY/ })).toBeVisible();
+    await expect(page.locator(".marcel-faq details")).toHaveCount(5);
   });
 
-  test("the illustrative product loop returns keyboard focus to the real uploader", async ({ page }) => {
+  test("the illustrative product loop supports pointer, keyboard and swipe before returning focus to upload", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     await expectQuickReplayHydrated(page);
-    await expect(page.getByText("MATCH LOADED", { exact: true })).toBeVisible();
-    await expect(page.getByText("MOVEMENT PATH", { exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "MATCH", exact: true })).toHaveAttribute("aria-selected", "true");
+    await page.getByRole("tab", { name: "DECISION", exact: true }).click();
+    await expect(page.getByText("You enter the same channel.", { exact: true })).toBeVisible();
+    await page.getByRole("tab", { name: "DECISION", exact: true }).press("ArrowRight");
+    await expect(page.getByRole("tab", { name: "RULE", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByText("Hold one layer deeper.", { exact: true })).toBeVisible();
+    const demo = page.locator(".marcel-demo");
+    await demo.evaluate((element) => {
+      const swipe = (type: string, clientX: number) => {
+        const event = new Event(type, { bubbles: true });
+        Object.defineProperty(event, "changedTouches", { value: [{ clientX }] });
+        element.dispatchEvent(event);
+      };
+      swipe("touchstart", 320);
+      swipe("touchend", 120);
+    });
+    await expect(page.getByRole("tab", { name: "CHECK AGAIN", exact: true })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByText("NOT A LIVE FINDING", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: /RUN THIS ON MY REPLAY/ }).click();
     await expect(page.locator("#replay-upload")).toBeFocused();
@@ -87,7 +104,7 @@ test.describe("first-time visitor funnel", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/", { waitUntil: "load" });
     await expectQuickReplayHydrated(page);
-    await expect(page.locator(".marcel-demo-stages li").first()).toHaveCSS("animation-name", "none");
+    await expect(page.locator(".marcel-demo-stages button").first()).toHaveCSS("animation-name", "none");
     await expect(page.locator(".marcel-demo .scan-line")).toHaveCSS("display", "none");
     await page.getByRole("button", { name: /RUN THIS ON MY REPLAY/ }).click();
     await expect(page.locator("#replay-upload")).toBeFocused();
