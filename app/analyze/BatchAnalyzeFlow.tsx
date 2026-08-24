@@ -223,6 +223,10 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
     event.preventDefault();
     setFreeUsed(false); setOwnerVerificationRequired(false);
     if (!engineOpen) return setMessage("Replay processing is temporarily paused.");
+    if (session?.status === "ready" && validCount === TARGET) {
+      location.href = session.reportUrl;
+      return;
+    }
     if (!ownerQa && !/^\S+@\S+\.\S+$/.test(email)) return setMessage("Enter a valid email for the private report.");
     if (!rank) return setMessage("Choose the rank for this playlist.");
     if (!consent) return setMessage("Confirm private processing of these ten replays.");
@@ -274,6 +278,7 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
   const queuedCount = rows.filter(row => ["ready", "error"].includes(row.status)).length;
   const selectionRemaining = Math.max(0, remaining - queuedCount);
   const displayedExcluded = Math.max(excludedCount, rows.filter(row => row.status === "excluded").length);
+  const reportReady = session?.status === "ready" && validCount === TARGET;
   return <main ref={pageRef} className="intake-page batch-intake-page" data-hydrated="false">
     <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><Link href="/">Exit</Link></div></nav>
     <section className="intake-shell shell">
@@ -293,7 +298,7 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
           <label className="check wide"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} required /><span>I agree that Replay Method may privately process these ten original replay files to deliver my report. <a href="/privacy" target="_blank">Privacy</a></span></label>
         </div></section>
         {candidates.length > 0 && <section className="player-resolution" aria-labelledby="batch-player-title"><div><span>PLAYER IDENTITY · LOCK ONCE</span><h3 id="batch-player-title">Which player is you?</h3><p>Every accepted replay must contain this exact verified player.</p></div><div className="player-resolution-options" role="radiogroup" aria-label="Players found in replay 1">{candidates.map(player => <button type="button" role="radio" aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} onClick={() => setSelectedPlayer(player)} key={player}>{player}</button>)}</div><button className="player-resolution-submit" type="button" disabled={!selectedPlayer || !rank} onClick={lockPlayer}>Lock this player for all 10 →</button></section>}
-        <button className="submit-analysis" disabled={busy || remaining === 0 || candidates.length > 0}><span>{busy ? candidates.length ? "WAITING FOR PLAYER…" : `VERIFYING ${validCount}/10…` : session ? `CONTINUE SAVED REVIEW · ${validCount}/10 →` : "VERIFY MY 10 REPLAYS →"}</span></button>
+        <button className="submit-analysis" formNoValidate={reportReady} disabled={busy || (remaining === 0 && !reportReady) || candidates.length > 0}><span>{busy ? candidates.length ? "WAITING FOR PLAYER…" : `VERIFYING ${validCount}/10…` : session ? `CONTINUE SAVED REVIEW · ${validCount}/10 →` : "VERIFY MY 10 REPLAYS →"}</span></button>
         <small className="submission-note">One free ten-replay batch · No card · Invalid replacements do not consume valid slots.</small>
         {freeUsed && <FreeAnalysisUsed />}{ownerVerificationRequired && <OwnerVerificationRequired />}{message && <p className="intake-message" role="alert">{message}</p>}
       </form>
