@@ -66,11 +66,22 @@ test.describe("private report states", () => {
     await page.goto(reports.abstained);
     await expect(page.getByText("READY", { exact: true })).toBeVisible();
     await expect(page.getByText("Invalid Date", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("FULL MATCH STATS", { exact: true })).toBeVisible();
+    await expect(page.getByText("FULL MATCH STATS · UNAVAILABLE", { exact: true })).toBeVisible();
     await expect(page.getByText("YOUR NEXT 3 MATCHES · ABSTAINED", { exact: true })).toBeVisible();
     await expect(page.getByText(/did not turn neutral measurements into a fake mistake or generic drill/i)).toBeVisible();
     await expect(page.getByText("EARLY ACCESS PRODUCT FEEDBACK", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Evidence status and sample size").getByText("FACTS ONLY", { exact: true })).toBeVisible();
+  });
+
+  test("missing detailed measures keep the Stats destination truthful and navigable", async ({ page }) => {
+    await page.goto(reports.abstained);
+    await page.getByRole("button", { name: /Stats/ }).click();
+    await expect(page.locator("#performance")).toBeFocused();
+    await expect(page.getByText("FULL MATCH STATS · UNAVAILABLE", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Detailed match measures were not available/i })).toBeVisible();
+    await expect(page.getByText(/did not estimate or fill in missing metrics/i)).toBeVisible();
+    await expect(page.getByText("Detailed measures unavailable", { exact: true })).toBeVisible();
+    await expect(page.getByText(/No missing match measures were estimated/i)).toBeVisible();
   });
 
   test("a mismatched player can select a parsed identity without re-uploading", async ({ page }) => {
