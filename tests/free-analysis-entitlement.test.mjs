@@ -13,6 +13,8 @@ test("used free analysis is a distinct entitlement state with the binding Swedis
   ]);
   assert.match(entitlements, new RegExp(exactMessage.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(entitlements, /"free_analysis_used"/);
+  assert.match(entitlements, /"free_analysis_in_progress"/);
+  assert.match(entitlements, /Resume the saved batch or open its private report link/);
   for (const route of [uploadRoute, analysisRoute]) {
     assert.match(route, /code: error\.code/);
     assert.match(route, /error instanceof EntitlementError/);

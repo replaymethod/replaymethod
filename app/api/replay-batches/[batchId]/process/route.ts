@@ -110,9 +110,13 @@ async function finalizeBatch(database: D1Database, bucket: R2Bucket, batch: Reco
   }
   const readyAt = new Date().toISOString();
   const report = aggregate.report;
+  const usageUpdate = report
+    ? database.prepare(`UPDATE analysis_usage SET status = 'consumed', consumed_at = ?, released_at = NULL,
+        updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(readyAt, batch.analysisRequestId)
+    : database.prepare(`UPDATE analysis_usage SET status = 'released', released_at = ?, consumed_at = NULL,
+        updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(readyAt, batch.analysisRequestId);
   await database.batch([
-    database.prepare(`UPDATE analysis_usage SET status = 'consumed', consumed_at = ?, released_at = NULL,
-      updated_at = CURRENT_TIMESTAMP WHERE analysis_request_id = ? AND status = 'reserved'`).bind(readyAt, batch.analysisRequestId),
+    usageUpdate,
     database.prepare(`UPDATE analysis_requests SET status = 'ready', highest_impact_mistake = ?, why_it_costs = ?,
       evidence_moments = ?, next_queue_rule = ?, practice_plan = ?, coach_note = ?, ready_at = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`).bind(

@@ -28,7 +28,7 @@ test("makes verification conservative and independent from payment", async () =>
   assert.match(client, /No rank benchmark, stable-habit claim or calibrated precision/);
   assert.match(client, /No coaching plan was released from this replay/);
   assert.match(client, /COMING LATER · NOT FOR SALE/);
-  assert.match(client, /there is no checkout, payment link or locked evidence here/);
+  assert.match(client, /there is no checkout or locked evidence here/);
   assert.doesNotMatch(client, /checkoutOpen \?/);
 });
 
@@ -50,14 +50,24 @@ test("separates Early Access facts, experimental coaching, abstention and produc
   assert.match(client, /data\.earlyAccess\.badge/);
   assert.match(client, /VERIFIED MATCH CONTEXT/);
   assert.match(client, /EXPERIMENTAL COACHING/);
-  assert.match(client, /YOUR NEXT 3 MATCHES · ABSTAINED/);
+  assert.match(client, /HONEST RESULT/);
   assert.match(client, /FULL MATCH STATS · UNAVAILABLE/);
   assert.match(client, /No missing match measures were estimated or presented as facts/);
-  assert.match(client, /never treated as replay ground truth, detector labels or expert validation/);
+  assert.match(client, /They never change what the replay itself proved/);
   assert.match(client, /Was it clear why coaching was withheld\?/);
-  assert.match(client, /Your free baseline stayed honest/);
+  assert.match(client, /Free: find the pattern\. Premium: prove you fixed it\./);
   assert.match(client, /feedbackQuestions = data\.report/);
   assert.match(data, /formalValidationStatus: "not_validated"/);
   assert.match(data, /earlyAccess\?\.coachingStatus !== "abstained"/);
   assert.match(data, /Experimental coaching display is temporarily paused by the Early Access kill switch/);
+});
+
+test("facts-only abstention releases the free allowance while preserving the ready report", async () => {
+  const pipeline = await readFile(new URL("../lib/core/pipeline.ts", import.meta.url), "utf8");
+  const start = pipeline.indexOf('result.abstention && result.outputTier === "experimental_early_access"');
+  const end = pipeline.indexOf("if (result.abstention)", start + 1);
+  const branch = pipeline.slice(start, end);
+  assert.match(branch, /analysis_usage SET status = 'released'/);
+  assert.match(branch, /analysis_requests SET status = 'ready'/);
+  assert.doesNotMatch(branch, /analysis_usage SET status = 'consumed'/);
 });

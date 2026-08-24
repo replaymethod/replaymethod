@@ -59,6 +59,12 @@ export async function reserveAnalysisAccess(request: Request, playerId: number, 
   }
 
   if (window.accessKind === "free") {
+    const active = await db.prepare(`SELECT status FROM analysis_usage WHERE player_id = ? AND access_kind = 'free'
+      AND window_start = ? AND status IN ('reserved', 'consumed') ORDER BY id DESC LIMIT 1`)
+      .bind(playerId, window.windowStart).first<{ status: string }>();
+    if (active?.status === "reserved") {
+      throw new EntitlementError("Your free review is still in progress. Resume the saved batch or open its private report link; no second allowance was used.", 409, "free_analysis_in_progress");
+    }
     throw new EntitlementError("Den här mejladressen har redan använt sin kostnadsfria analys.", 409, "free_analysis_used");
   }
   throw new EntitlementError("You have used all four analyses in this 30-day window. Your next allowance opens automatically when the window resets.", 429, "analysis_allowance_used");

@@ -42,10 +42,10 @@ test("distinguishes future games from the ten-replay Rocket League product", asy
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
   assert.match(landing, /<TenReplayStart/);
   assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
-  assert.match(batchFlow, /START MY FREE 10-REPLAY BASELINE/);
+  assert.match(batchFlow, /VERIFY MY 10 REPLAYS/);
   assert.match(batchFlow, /\{validCount\}\/10/);
   assert.match(intake, /Automated League and VALORANT analysis is not live/);
-  assert.match(batchFlow, /same player and playlist/i);
+  assert.match(batchFlow, /same player.*same ranked.*playlist/is);
   assert.doesNotMatch(batchFlow, /START CONSOLE VIDEO BETA/);
   assert.doesNotMatch(metadata, /get one focused Replay Method diagnosis/i);
 });
@@ -58,8 +58,8 @@ test("puts the product action before explanatory browsing", async () => {
   assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
   assert.match(landing, /<ReplayContribution intakeOpen=\{calibrationOpen\} compact/);
   assert.match(landing, /engineOpen \? <TenReplayStart/);
-  assert.match(landing, /10 games in/);
-  assert.match(landing, /Add ten ranked replays/);
+  assert.match(landing, /Upload 10 ranked replays/);
+  assert.match(landing, /See the mistake you keep repeating/);
   assert.match(contribution, /replay && <section className="rl-intake-context"/);
   assert.match(contribution, /Choose the original PC file\. The next step appears instantly/);
 });
