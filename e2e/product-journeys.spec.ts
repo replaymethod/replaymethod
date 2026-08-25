@@ -109,10 +109,11 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".car-you span")).toHaveCount(0);
     expect(await page.locator(".car-you").evaluate(element => getComputedStyle(element, "::after").content)).toBe("none");
     const goldOutline = await page.locator(".car-you").evaluate(element => getComputedStyle(element).boxShadow);
-    expect(goldOutline).toContain("255, 247, 194");
-    expect(goldOutline).toContain("255, 230, 109");
+    expect(goldOutline).toContain("8, 17, 27");
+    expect(goldOutline).toContain("255, 224, 106");
+    expect(goldOutline).not.toContain("255, 247, 194");
     await expect(page.locator(".reveal-zone, .reveal-path")).toHaveCount(0);
-    await expect(page.locator(".reveal-motion-trail")).toHaveCount(2);
+    await expect(page.locator(".reveal-motion-trail")).toHaveCount(0);
     await expect(page.locator(".reveal-ball-trail")).toHaveCount(1);
     await page.locator("#product").scrollIntoViewIfNeeded();
     await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeVisible();
@@ -121,7 +122,14 @@ test.describe("first-time visitor funnel", () => {
     await page.getByRole("tab", { name: /^02 / }).click();
     await expect(page.getByRole("tab", { name: /^02 / })).toHaveAttribute("aria-selected", "true");
     await expect(page.locator("#loop-stage-panel")).toContainText("Both of you committed.");
+    await page.waitForTimeout(800);
     const mistakeOpponent = await page.locator(".car-opp").boundingBox();
+    const mistakeBall = await page.locator(".reveal-ball").boundingBox();
+    const mistakeField = await page.locator(".reveal-field").boundingBox();
+    expect(mistakeOpponent && mistakeBall && mistakeField).toBeTruthy();
+    expect(mistakeOpponent!.x).toBeGreaterThan(mistakeBall!.x);
+    expect(mistakeOpponent!.y).toBeLessThan(mistakeBall!.y);
+    expect(Math.hypot(mistakeOpponent!.x - mistakeBall!.x, mistakeOpponent!.y - mistakeBall!.y)).toBeLessThan(mistakeField!.width * 0.13);
     await page.getByRole("tab", { name: /^02 / }).press("ArrowRight");
     await expect(page.getByRole("tab", { name: /^03 / })).toHaveAttribute("aria-selected", "true");
     await expect(page.locator("#loop-stage-panel")).toContainText("Nobody covered the next ball.");
@@ -134,9 +142,9 @@ test.describe("first-time visitor funnel", () => {
     expect(consequenceOpponent!.x).toBeLessThan(mistakeOpponent!.x - consequenceField!.width * 0.05);
     expect(consequenceBall!.x).toBeLessThan(consequenceOpponent!.x);
     expect(consequenceBall!.x).toBeLessThan(consequenceField!.x + consequenceField!.width * 0.25);
-    expect(Number(await page.locator(".trail-opp").evaluate(element => getComputedStyle(element).opacity))).toBeGreaterThan(0.6);
+    expect(consequenceBall!.y).toBeGreaterThan(mistakeBall!.y + consequenceField!.height * 0.08);
     expect(Number(await page.locator(".reveal-ball-trail").evaluate(element => getComputedStyle(element).opacity))).toBeGreaterThan(0.6);
-    expect(Number(await page.locator(".trail-you").evaluate(element => getComputedStyle(element).opacity))).toBe(0);
+    expect(await page.locator(".reveal-ball-trail").evaluate(element => getComputedStyle(element).transform)).not.toBe("none");
     const demo = page.locator(".reveal-demo");
     await demo.evaluate((element) => {
       const swipe = (type: string, clientX: number) => {
@@ -149,6 +157,24 @@ test.describe("first-time visitor funnel", () => {
     });
     await expect(page.getByRole("tab", { name: /^04 / })).toHaveAttribute("aria-selected", "true");
     await expect(page.locator("#loop-stage-panel")).toContainText("Run the same moment again.");
+    await page.getByRole("tab", { name: /^05 / }).click();
+    await page.waitForTimeout(800);
+    const decisionOpponent = await page.locator(".car-opp").boundingBox();
+    const decisionBall = await page.locator(".reveal-ball").boundingBox();
+    expect(decisionOpponent && decisionBall && consequenceField).toBeTruthy();
+    expect(decisionOpponent!.x).toBeGreaterThan(decisionBall!.x);
+    expect(decisionOpponent!.y).toBeLessThan(decisionBall!.y);
+    expect(Math.hypot(decisionOpponent!.x - decisionBall!.x, decisionOpponent!.y - decisionBall!.y)).toBeLessThan(consequenceField!.width * 0.14);
+    await page.getByRole("tab", { name: /^06 / }).click();
+    await page.waitForTimeout(800);
+    const resultOpponent = await page.locator(".car-opp").boundingBox();
+    const resultUser = await page.locator(".car-you").boundingBox();
+    const resultBall = await page.locator(".reveal-ball").boundingBox();
+    expect(resultOpponent && resultUser && resultBall).toBeTruthy();
+    expect(resultOpponent!.x).toBeGreaterThan(resultBall!.x);
+    expect(Math.abs(resultBall!.x - (resultUser!.x + resultUser!.width))).toBeLessThanOrEqual(8);
+    expect(Math.abs((resultBall!.y + resultBall!.height / 2) - (resultUser!.y + resultUser!.height / 2))).toBeLessThanOrEqual(8);
+    expect(Number(await page.locator(".reveal-ball-trail").evaluate(element => getComputedStyle(element).opacity))).toBeGreaterThan(0.55);
     await expect(page.getByText("Illustrative example, not your analysis.", { exact: true })).toBeVisible();
     await page.getByRole("link", { name: /Open full upload page/ }).click();
     await expect(page).toHaveURL(/\/analyze$/);
