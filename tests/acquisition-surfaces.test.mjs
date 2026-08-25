@@ -57,7 +57,7 @@ test("puts the product action before explanatory browsing", async () => {
   ]);
   assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
   assert.match(landing, /Replay Method finds the mistake <em>you keep repeating\.<\/em>/);
-  assert.match(landing, /className="reveal-report-card"[\s\S]*href="\/analyze"/);
+  assert.match(landing, /className="reveal-report-card[^\"]*"[\s\S]*href="\/analyze"/);
   assert.match(landing, /Analyze my 10 replays/);
   assert.ok(landing.indexOf("reveal-report-card") < landing.indexOf("<ProductMoment"));
   assert.match(contribution, /replay && <section className="rl-intake-context"/);
