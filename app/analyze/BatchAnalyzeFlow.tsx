@@ -40,7 +40,13 @@ async function apiError(response: Response, fallback: string) {
   return typeof payload.error === "string" ? payload.error : fallback;
 }
 
-export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed = false }: { engineOpen: boolean; initialFreeAnalysisUsed?: boolean }) {
+type BatchAnalyzeFlowProps = {
+  engineOpen: boolean;
+  initialFreeAnalysisUsed?: boolean;
+  variant?: "page" | "hero";
+};
+
+export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed = false, variant = "page" }: BatchAnalyzeFlowProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const playerResolver = useRef<(() => void) | null>(null);
   const [ownerQa, setOwnerQa] = useState(false);
@@ -63,7 +69,7 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
 
   useEffect(() => {
     pageRef.current?.setAttribute("data-hydrated", "true");
-    trackProductEvent("analysis_start", "rocket-league", "ten_replay_intake");
+    if (variant === "page") trackProductEvent("analysis_start", "rocket-league", "ten_replay_intake");
     fetch("/api/player/access", { cache: "no-store" }).then(response => response.json())
       .then((access: { ownerQa?: boolean }) => setOwnerQa(access.ownerQa === true)).catch(() => {});
     const saved = storedSession();
@@ -79,7 +85,7 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
       localStorage.setItem("replaymethod-ten-replay-batch", JSON.stringify(merged));
       setMessage(merged.status === "ready" ? "Your ten-match report is ready." : `Saved batch resumed at ${merged.validCount}/10.`);
     }).catch(() => {});
-  }, []);
+  }, [variant]);
 
   const updateRow = (key: string, status: FileRow["status"], rowMessage = "") => setRows(current => current.map(row => row.key === key ? { ...row, status, message: rowMessage } : row));
 
@@ -279,6 +285,44 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
   const selectionRemaining = Math.max(0, remaining - queuedCount);
   const displayedExcluded = Math.max(excludedCount, rows.filter(row => row.status === "excluded").length);
   const reportReady = session?.status === "ready" && validCount === TARGET;
+  const hasStarted = rows.length > 0 || session !== null;
+  const readyToSubmit = reportReady || (queuedCount === remaining && queuedCount > 0);
+
+  if (variant === "hero") return <section ref={pageRef} className="reveal-report-card reveal-card reveal-home-intake" id="ten-replay-start" data-hydrated="false" tabIndex={-1} aria-label="Upload ten replays from the home page">
+    <form onSubmit={submit} aria-busy={busy}>
+      <header>
+        <div><small>Your replay set</small><strong>{reportReady ? "Your private report is ready" : hasStarted ? "Complete your private analysis" : "Start your private analysis"}</strong></div>
+        <span>{validCount}/10</span>
+      </header>
+      {selectionRemaining > 0 && <label className={`reveal-home-drop ${queuedCount ? "has-files" : ""} ${dragActive ? "drag-active" : ""}`} onDragEnter={event => { event.preventDefault(); setDragActive(true); }} onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; setDragActive(true); }} onDragLeave={event => { if (event.currentTarget === event.target) setDragActive(false); }} onDrop={dropFiles}>
+        <input ref={inputRef} type="file" multiple accept=".replay,application/octet-stream" onChange={event => chooseFiles(event.target.files)} disabled={busy} />
+        <i aria-hidden="true">↑</i>
+        <b>{selectionRemaining === 10 ? "Drop your 10 replays here" : `Add ${selectionRemaining} more replay${selectionRemaining === 1 ? "" : "s"}`}</b>
+        <small>or tap to choose · original PC .replay files</small>
+      </label>}
+      {hasStarted && <>
+        <div className="reveal-home-status" aria-live="polite">
+          <span><i aria-hidden="true">01</i> Replays selected</span><b>{queuedCount + validCount} of 10</b>
+          <span><i aria-hidden="true">02</i> Verified replays</span><b>{validCount} of 10</b>
+        </div>
+        <div className="reveal-report-progress" aria-label={`${validCount} of 10 verified replays`}><i style={{ width: `${validCount * 10}%` }} /></div>
+        {rows.length > 0 && <div className="reveal-home-files" aria-label="Replay verification list" aria-live="polite">{rows.map((row, index) => <article className={row.status} key={row.key}><i>{row.status === "valid" ? "✓" : row.status === "excluded" ? "×" : String(index + 1).padStart(2, "0")}</i><div><b>{row.file.name}</b><small>{row.message}</small></div></article>)}</div>}
+        {!reportReady && <div className="reveal-home-fields">
+          {!ownerQa && <label className="wide"><span>Email for your private report</span><input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required /></label>}
+          {ownerQa && <div className="quick-owner-verified wide" role="status"><i>✓</i><div><b>OWNER QA VERIFIED</b><span>Unlimited QA · excluded from product metrics and calibration</span></div></div>}
+          <label><span>Current playlist rank</span><select value={rank} onChange={event => setRank(event.target.value)} required><option value="">Choose rank</option>{RANKS.map(item => <option value={item} key={item}>{item}</option>)}</select></label>
+          <label className="wide"><span>What do you want to stop repeating? <small>Optional</small></span><textarea value={goal} onChange={event => setGoal(event.target.value)} maxLength={500} placeholder="Replay evidence still decides what is supported." /></label>
+          <label className="check wide"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} required /><span>I agree to private processing of these ten replay files. <a href="/privacy" target="_blank">Privacy</a></span></label>
+        </div>}
+        {candidates.length > 0 && <section className="reveal-home-player" aria-labelledby="home-player-title"><span>PLAYER IDENTITY · LOCK ONCE</span><h3 id="home-player-title">Which player is you?</h3><p>Every accepted replay must contain this exact verified player.</p><div role="radiogroup" aria-label="Players found in replay 1">{candidates.map(player => <button type="button" role="radio" aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} onClick={() => setSelectedPlayer(player)} key={player}>{player}</button>)}</div><button type="button" disabled={!selectedPlayer || !rank} onClick={lockPlayer}>Lock this player for all 10 →</button></section>}
+        <button className="reveal-primary reveal-home-submit" formNoValidate={reportReady} disabled={busy || !readyToSubmit || candidates.length > 0}><span>{busy ? candidates.length ? "Waiting for player…" : `Verifying ${validCount}/10…` : reportReady ? "Open my private report →" : selectionRemaining ? `Add ${selectionRemaining} more replay${selectionRemaining === 1 ? "" : "s"}` : "Verify my 10 replays →"}</span></button>
+      </>}
+      {!hasStarted && <p>Same player and ranked playlist. Duplicates are blocked automatically.</p>}
+      <div className="reveal-home-help"><Link href="/replay-upload" target="_blank" rel="noreferrer">Where are my replay files?</Link><Link href="/analyze">Open full upload page</Link></div>
+      {freeUsed && <FreeAnalysisUsed />}{ownerVerificationRequired && <OwnerVerificationRequired />}{message && <p className="reveal-home-message" role="alert">{message}</p>}
+    </form>
+  </section>;
+
   return <main ref={pageRef} className="intake-page batch-intake-page" data-hydrated="false">
     <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><Link href="/">Exit</Link></div></nav>
     <section className="intake-shell shell">

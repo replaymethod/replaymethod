@@ -32,7 +32,10 @@ test("renders production social metadata and the fail-closed product-first path"
   const html = await response.text();
   assert.match(html, socialImageMeta);
   assert.match(html, /Replay Method finds the mistake/i);
-  assert.doesNotMatch(html, /type="file"/i);
+  assert.match(html, /type="file"[^>]*multiple/i);
+  assert.match(html, /Drop your 10 replays here/i);
+  assert.match(html, /Start your private analysis/i);
+  assert.doesNotMatch(html, /Your private report is ready|10 matches compared/i);
   assert.doesNotMatch(html, /Choose my game|Contribute one replay/i);
   assert.match(html, /Analyze my 10 replays/i);
   assert.match(html, /Not while the deterministic replay engine is unavailable/i);
