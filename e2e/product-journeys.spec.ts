@@ -93,6 +93,10 @@ test.describe("first-time visitor funnel", () => {
     await expect(startCard.getByLabel("Email for your private report")).toBeVisible();
     await expect(startCard.getByLabel("Current playlist rank")).toBeVisible();
     await expect(startCard.getByRole("button", { name: /Verify my 10 replays/i })).toBeEnabled();
+    const consentRow = await startCard.locator(".reveal-home-fields .check").boundingBox();
+    const submitButton = await startCard.locator(".reveal-home-submit").boundingBox();
+    expect(consentRow && submitButton).toBeTruthy();
+    expect(submitButton!.y - (consentRow!.y + consentRow!.height)).toBeGreaterThanOrEqual(12);
   });
 
   test("the illustrative product loop supports autoplay, pointer, keyboard and swipe before opening upload", async ({ page }) => {
@@ -104,7 +108,12 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".reveal-car")).toHaveCount(4);
     await expect(page.locator(".car-you span")).toHaveCount(0);
     expect(await page.locator(".car-you").evaluate(element => getComputedStyle(element, "::after").content)).toBe("none");
-    expect(await page.locator(".car-you").evaluate(element => getComputedStyle(element).boxShadow)).toContain("255, 212, 90");
+    const goldOutline = await page.locator(".car-you").evaluate(element => getComputedStyle(element).boxShadow);
+    expect(goldOutline).toContain("255, 247, 194");
+    expect(goldOutline).toContain("255, 230, 109");
+    await expect(page.locator(".reveal-zone, .reveal-path")).toHaveCount(0);
+    await expect(page.locator(".reveal-motion-trail")).toHaveCount(2);
+    await expect(page.locator(".reveal-ball-trail")).toHaveCount(1);
     await page.locator("#product").scrollIntoViewIfNeeded();
     await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeVisible();
     await page.getByRole("tab", { name: /^01 / }).click();
@@ -125,6 +134,9 @@ test.describe("first-time visitor funnel", () => {
     expect(consequenceOpponent!.x).toBeLessThan(mistakeOpponent!.x - consequenceField!.width * 0.05);
     expect(consequenceBall!.x).toBeLessThan(consequenceOpponent!.x);
     expect(consequenceBall!.x).toBeLessThan(consequenceField!.x + consequenceField!.width * 0.25);
+    expect(Number(await page.locator(".trail-opp").evaluate(element => getComputedStyle(element).opacity))).toBeGreaterThan(0.6);
+    expect(Number(await page.locator(".reveal-ball-trail").evaluate(element => getComputedStyle(element).opacity))).toBeGreaterThan(0.6);
+    expect(Number(await page.locator(".trail-you").evaluate(element => getComputedStyle(element).opacity))).toBe(0);
     const demo = page.locator(".reveal-demo");
     await demo.evaluate((element) => {
       const swipe = (type: string, clientX: number) => {
