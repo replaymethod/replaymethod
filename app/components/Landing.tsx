@@ -32,31 +32,63 @@ const loopStages = [
 
 function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
   const [activeStage, setActiveStage] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [playback, setPlayback] = useState<"idle" | "playing" | "paused" | "complete">("idle");
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [variant, setVariant] = useState<"tactical" | "focus">("tactical");
+  const [reviewControls, setReviewControls] = useState(false);
+  const [autoplayDisabled, setAutoplayDisabled] = useState(false);
   const touchStart = useRef<number | null>(null);
+  const demoRef = useRef<HTMLDivElement>(null);
+  const hasAutoplayed = useRef(false);
   const stage = loopStages[activeStage];
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const applyPreference = () => {
-      setReducedMotion(preference.matches);
-      if (preference.matches) setPaused(true);
-    };
+    const applyPreference = () => setReducedMotion(preference.matches);
     applyPreference();
     preference.addEventListener("change", applyPreference);
     return () => preference.removeEventListener("change", applyPreference);
   }, []);
 
   useEffect(() => {
-    if (paused || reducedMotion) return;
-    const timer = window.setInterval(() => setActiveStage(current => (current + 1) % loopStages.length), 2000);
-    return () => window.clearInterval(timer);
-  }, [paused, reducedMotion]);
+    const frame = window.requestAnimationFrame(() => {
+      const query = new URLSearchParams(window.location.search);
+      const localReview = ["localhost", "127.0.0.1"].includes(window.location.hostname) && query.get("demoReview") === "1";
+      setReviewControls(localReview);
+      setAutoplayDisabled(localReview && query.get("demoAutoplay") === "off");
+      if (localReview && query.get("demoVariant") === "focus") setVariant("focus");
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const target = demoRef.current;
+    const query = new URLSearchParams(window.location.search);
+    const localAutoplayOff = ["localhost", "127.0.0.1"].includes(window.location.hostname) && query.get("demoReview") === "1" && query.get("demoAutoplay") === "off";
+    if (!target || reducedMotion || autoplayDisabled || localAutoplayOff || hasAutoplayed.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting || hasAutoplayed.current) return;
+      hasAutoplayed.current = true;
+      setActiveStage(0);
+      setPlayback("playing");
+      observer.disconnect();
+    }, { threshold: 0.35 });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [autoplayDisabled, reducedMotion]);
+
+  useEffect(() => {
+    if (playback !== "playing") return;
+    const timer = window.setTimeout(() => {
+      if (activeStage === loopStages.length - 1) setPlayback("complete");
+      else setActiveStage(current => current + 1);
+    }, 2600);
+    return () => window.clearTimeout(timer);
+  }, [activeStage, playback]);
 
   function chooseStage(index: number, manual = true) {
     setActiveStage((index + loopStages.length) % loopStages.length);
-    if (manual) setPaused(true);
+    if (manual) setPlayback("paused");
   }
 
   function handleStageKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -80,17 +112,22 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
     chooseStage(activeStage + (distance < 0 ? 1 : -1));
   }
 
+  function play() {
+    if (playback === "complete") setActiveStage(0);
+    setPlayback("playing");
+  }
+
   return <section className="reveal-section" id="product">
     <div className="reveal-shell">
-      <header className="reveal-section-intro"><span className="reveal-kicker">12-second illustrative product demo</span><h2>Same mistake. Ten matches. Now you can see it.</h2><p>Watch how one extra step forward leaves the next play open — and what the better decision looks like.</p></header>
-      <div className="reveal-demo" aria-label="Illustrative Replay Method product loop" onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
+      <header className="reveal-section-intro"><span className="reveal-kicker">16-second illustrative product demo</span><h2>Same mistake. Ten matches. Now you can see it.</h2><p>Watch how one extra step forward leaves the next play open — and what the better decision looks like.</p></header>
+      {reviewControls && <div className="reveal-review-controls" aria-label="Local demo review controls"><span>Local review</span><button type="button" aria-pressed={variant === "tactical"} onClick={() => setVariant("tactical")}>A · Tactical board</button><button type="button" aria-pressed={variant === "focus"} onClick={() => setVariant("focus")}>B · Focus mode</button></div>}
+      <div ref={demoRef} className={`reveal-demo reveal-card reveal-variant-${variant}`} data-playback={playback} aria-label={`Illustrative Replay Method product loop, ${variant === "tactical" ? "tactical board" : "focus mode"} variant`} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
         <div className="reveal-field-wrap">
-          <header><div className="reveal-legend"><span className="you">You</span><span className="mate">Teammate</span><span className="opp">Opponents</span></div><div className="reveal-demo-controls" aria-label="Example playback controls"><button type="button" onClick={() => setPaused(value => !value)}>{paused ? "Play" : "Pause"}</button><button type="button" onClick={() => { setActiveStage(0); setPaused(reducedMotion); }}>Replay</button></div></header>
-          <div className={`reveal-field stage-${stage.key}`} role="img" aria-label="Illustrative top-down 2v2 scenario with four cars, a ball, goal, movement path and defensive cover zone"><i className="reveal-goal" /><i className="reveal-zone" /><i className="reveal-path" /><i className="reveal-ball" /><i className="reveal-car car-you" /><i className="reveal-car car-mate" /><i className="reveal-car car-opp" /><i className="reveal-car car-opp-two" /></div>
+          <div className={`reveal-field stage-${stage.key}`} role="img" aria-label="Illustrative flat top-down 2v2 scenario with a blue team, a red team, neutral ball, two goals, movement path and defensive cover zone"><i className="reveal-goal reveal-goal-left" /><i className="reveal-goal reveal-goal-right" /><i className="reveal-zone" /><i className="reveal-path" /><i className="reveal-ball" /><i className="reveal-car car-you"><span>YOU</span></i><i className="reveal-car car-mate" /><i className="reveal-car car-opp" /><i className="reveal-car car-opp-two" /></div>
         </div>
-        <div className="reveal-demo-copy" id="loop-stage-panel" role="tabpanel" aria-live={paused ? "polite" : "off"} aria-labelledby={`loop-stage-${activeStage}`}>
-          <div><span className="reveal-step-index">{stage.label}</span><h3>{stage.title}</h3><p>{stage.body}</p><div className="reveal-before-after"><div><small>The mistake</small><b>Follow the same ball</b></div><div><small>Better decision</small><b>Protect the next ball</b></div></div></div>
-          <div className="reveal-timeline" role="tablist" aria-label="Demo steps">{loopStages.map((item,index)=><button id={`loop-stage-${index}`} type="button" role="tab" aria-selected={activeStage===index} aria-controls="loop-stage-panel" tabIndex={activeStage===index?0:-1} onClick={()=>chooseStage(index)} onKeyDown={event=>handleStageKey(event,index)} key={item.key}>{String(index+1).padStart(2,"0")}</button>)}</div>
+        <div className="reveal-demo-copy reveal-card" id="loop-stage-panel" role="tabpanel" aria-live={playback === "playing" ? "off" : "polite"} aria-labelledby={`loop-stage-${activeStage}`}>
+          <div><div className="reveal-demo-meta"><span className="reveal-step-index">{stage.label}</span><div className="reveal-demo-controls" aria-label="Example playback control">{playback === "playing" ? <button type="button" onClick={() => setPlayback("paused")}>Pause</button> : playback === "complete" ? <button type="button" onClick={play}>Replay</button> : <button type="button" onClick={play}>Play demo</button>}</div></div><h3>{stage.title}</h3><p>{stage.body}</p><div className="reveal-before-after"><div><small>The mistake</small><b>Follow the same ball</b></div><div><small>Better decision</small><b>Protect the next ball</b></div></div></div>
+          <div className="reveal-timeline" role="tablist" aria-label="Demo steps">{loopStages.map((item,index)=><button id={`loop-stage-${index}`} type="button" role="tab" aria-label={`${String(index+1).padStart(2,"0")} ${item.label.replace(/^\d+ · /, "")}`} aria-selected={activeStage===index} aria-controls="loop-stage-panel" tabIndex={activeStage===index?0:-1} onClick={()=>chooseStage(index)} onKeyDown={event=>handleStageKey(event,index)} key={item.key}>{String(index+1).padStart(2,"0")}</button>)}</div>
         </div>
       </div>
       <p className="reveal-demo-truth"><b>Illustrative example, not your analysis.</b> {earlyAccessOpen ? "Your real review only uses moments verified across your own ten replays." : "Your real review opens only while every match can be verified safely."}</p>
@@ -100,7 +137,7 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
 
 const infoPanels = {
   free: ["Included free", "See what keeps holding you back.", "Replay Method analyzes all ten matches together, ignores one-off chaos, and finds the mistake that actually repeats.", ["10 matches together", "Your repeated mistake", "What to try next"]],
-  premium: ["Coming later", "See whether you are actually fixing it.", "Premium will later follow one priority across four weeks and show whether the habit improved, slipped back, or stayed unclear.", ["One monthly focus", "Up to 35 each week", "Progress you can see"]],
+  premium: ["Planned for Premium", "See whether you are actually fixing it.", "Premium will later follow one priority across four weeks and show whether the habit improved, slipped back, or stayed unclear.", ["One monthly focus", "Up to 35 each week", "Progress you can see"]],
   honest: ["An honest result", "No clear pattern means no made-up advice.", "If the ten matches do not support one repeated mistake, you get the verified facts and keep your free analysis for another set.", ["Files still checked", "No invented coaching", "Free analysis remains"]],
   privacy: ["Private by default", "Your replays stay yours.", "Your files and report stay tied to your private access. Duplicates are blocked, replacements keep your progress, and reports are private by default.", ["Private report", "Safe resume", "Duplicate protection"]],
   faq: ["Quick answer", "What needs to match?", "Use ten replays from the same player and playlist. If one file is wrong, replace only that file — you do not start over.", ["Same player", "Same playlist", "Replace one file"]],
@@ -111,7 +148,7 @@ function RevealInfo() {
   const [active, setActive] = useState<keyof typeof infoPanels>("free");
   const panel = infoPanels[active];
   const labels: Array<[keyof typeof infoPanels,string]> = [["free","What you get"],["premium","Keep improving"],["honest","When it is unclear"],["privacy","Your files"],["faq","Quick answers"],["advanced","How it works"]];
-  return <section className="reveal-section reveal-info-section"><div className="reveal-shell"><header className="reveal-section-intro"><span className="reveal-kicker">What Replay Method does</span><h2>One bad game is noise. A repeated mistake is the clue.</h2><p>We compare all ten matches, find what keeps happening, and turn it into one clear thing to try next.</p></header><div className="reveal-info"><div className="reveal-info-nav" aria-label="Product information">{labels.map(([key,label])=><button type="button" aria-pressed={active===key} onClick={()=>setActive(key)} key={key}>{label}<span>→</span></button>)}</div><article className="reveal-info-panel" aria-live="polite"><span className="reveal-kicker">{panel[0]}</span><h3>{panel[1]}</h3><p>{panel[2]}</p><div>{panel[3].map(point=><span key={point}>{point}</span>)}</div></article></div></div></section>;
+  return <section className="reveal-section reveal-info-section"><div className="reveal-shell"><header className="reveal-section-intro"><span className="reveal-kicker">What Replay Method Does</span><h2>One bad game is noise. A repeated mistake is the clue.</h2><p>We compare all ten matches, find what keeps happening, and turn it into one clear thing to try next.</p></header><div className="reveal-info"><div className="reveal-info-nav" aria-label="Product information">{labels.map(([key,label])=><button type="button" aria-pressed={active===key} onClick={()=>setActive(key)} key={key}>{label}<span>→</span></button>)}</div><article className="reveal-info-panel reveal-card" aria-live="polite"><span className="reveal-kicker">{panel[0]}</span><h3>{panel[1]}</h3><p>{panel[2]}</p><div>{panel[3].map(point=><span key={point}>{point}</span>)}</div></article></div></div></section>;
 }
 
 export default function Landing({ game = "general", engineOpen = false, earlyAccessOpen = false }: { game?: GameKey; engineOpen?: boolean; calibrationOpen?: boolean; earlyAccessOpen?: boolean }) {
@@ -139,9 +176,9 @@ export default function Landing({ game = "general", engineOpen = false, earlyAcc
         <span className="reveal-kicker">Hardstuck in Rocket League?</span>
         <h1>Replay Method finds the mistake <em>you keep repeating.</em></h1>
         <p>Upload ten ranked replays. We compare them together, spot what keeps going wrong, and show you what to try next.</p>
-        <div className="reveal-promises marcel-trust-row"><span>One free 10-match review · Private · No card</span><span>No card</span><span>Files stay private</span></div>
+        <div className="reveal-promises marcel-trust-row"><span>Free first analysis · No card required · Replays stay private</span></div>
       </div>
-      <section className="reveal-report-card" id="ten-replay-start" tabIndex={-1} aria-label="Illustrative private report preview">
+      <section className="reveal-report-card reveal-card" id="ten-replay-start" tabIndex={-1} aria-label="Illustrative private report preview">
         <header>
           <div><small>Your replay set</small><strong>Your private report is ready</strong></div>
           <span>Complete</span>
@@ -158,7 +195,7 @@ export default function Landing({ game = "general", engineOpen = false, earlyAcc
     <ProductMoment earlyAccessOpen={earlyAccessOpen} />
     <RevealInfo />
 
-    <section className="reveal-section" id="pricing"><div className="reveal-shell reveal-premium"><div><span className="reveal-kicker">Future value</span><h2>Free finds the pattern. Premium tracks the climb.</h2><p>Ten replays reveal what keeps repeating. Premium will later compare up to 35 each week to show whether it is actually changing.</p><span className="reveal-coming">Premium · Coming later</span></div><div className="reveal-climb" role="img" aria-label="Illustrative future Premium journey from baseline through focus and recheck to a next move"><svg viewBox="0 0 520 150" aria-hidden="true"><defs><linearGradient id="revealClimbGradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#8753ff"/><stop offset="1" stopColor="#18cde3"/></linearGradient></defs><path className="track" d="M24 116 C110 116 126 78 188 82 S287 104 334 70 S420 42 496 34"/><path className="line" d="M24 116 C110 116 126 78 188 82 S287 104 334 70 S420 42 496 34"/><circle cx="24" cy="116" r="6"/><circle cx="188" cy="82" r="6"/><circle cx="334" cy="70" r="6"/><circle cx="496" cy="34" r="6"/></svg><div className="reveal-climb-labels"><div><small>01</small><b>Baseline</b></div><div><small>02</small><b>Focus</b></div><div><small>03</small><b>Recheck</b></div><div><small>04</small><b>Next move</b></div></div><small>Illustrative tracking flow · improvement is measured, never promised</small></div></div></section>
+    <section className="reveal-section" id="pricing"><div className="reveal-shell reveal-premium reveal-card"><div><span className="reveal-kicker">Future value</span><h2>Free finds the pattern. Premium tracks the climb.</h2><p>Ten replays reveal what keeps repeating. Premium will later compare up to 35 each week to show whether it is actually changing.</p><span className="reveal-coming">Planned for Premium</span></div><div className="reveal-climb" role="img" aria-label="Illustrative future Premium journey from baseline through focus and recheck to a next move"><svg viewBox="0 0 520 150" aria-hidden="true"><defs><linearGradient id="revealClimbGradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#8753ff"/><stop offset="1" stopColor="#18cde3"/></linearGradient></defs><path className="track" d="M24 116 C110 116 126 78 188 82 S287 104 334 70 S420 42 496 34"/><path className="line" d="M24 116 C110 116 126 78 188 82 S287 104 334 70 S420 42 496 34"/><circle cx="24" cy="116" r="6"/><circle cx="188" cy="82" r="6"/><circle cx="334" cy="70" r="6"/><circle cx="496" cy="34" r="6"/></svg><div className="reveal-climb-labels"><div><small>01</small><b>Baseline</b></div><div><small>02</small><b>Focus</b></div><div><small>03</small><b>Recheck</b></div><div><small>04</small><b>Next move</b></div></div><small>Illustrative tracking flow · improvement is measured, never promised</small></div></div></section>
 
     <section className="reveal-section reveal-trust" aria-labelledby="trust-title"><div className="reveal-shell"><span className="reveal-kicker">{earlyAccessOpen ? "Early access · Clear answers" : "Private beta · Clear answers"}</span><h2 id="trust-title">Useful when the pattern is clear. Honest when it is not.</h2><div><article><i>01</i><b>Your ten matches</b><p>Every accepted replay stays visible and contributes to one combined review.</p></article><article><i>02</i><b>Your next move</b><p>You get one focus only when the same supported pattern appears across matches.</p></article><article><i>03</i><b>If the pattern is weak</b><p>You still see what was analyzed, the neutral facts, and what to do next. No invented coaching.</p></article></div></div></section>
 
