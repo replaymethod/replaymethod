@@ -119,11 +119,11 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
 
   return <section className="reveal-section" id="product">
     <div className="reveal-shell">
-      <header className="reveal-section-intro"><span className="reveal-kicker">16-second illustrative product demo</span><h2>Same mistake. Ten matches. Now you can see it.</h2><p>Watch how one extra step forward leaves the next play open — and what the better decision looks like.</p></header>
+      <header className="reveal-section-intro"><span className="reveal-kicker">16-second replay example</span><h2>You both go. No one covers.</h2><p>See why following the same ball leaves the next play open — and what to do instead.</p></header>
       {reviewControls && <div className="reveal-review-controls" aria-label="Local demo review controls"><span>Local review</span><button type="button" aria-pressed={variant === "tactical"} onClick={() => setVariant("tactical")}>A · Tactical board</button><button type="button" aria-pressed={variant === "focus"} onClick={() => setVariant("focus")}>B · Focus mode</button></div>}
       <div ref={demoRef} className={`reveal-demo reveal-card reveal-variant-${variant}`} data-playback={playback} aria-label={`Illustrative Replay Method product loop, ${variant === "tactical" ? "tactical board" : "focus mode"} variant`} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
         <div className="reveal-field-wrap">
-          <div className={`reveal-field stage-${stage.key}`} role="img" aria-label="Illustrative flat top-down 2v2 scenario with a blue team, a red team, neutral ball, two goals, movement path and defensive cover zone"><i className="reveal-goal reveal-goal-left" /><i className="reveal-goal reveal-goal-right" /><i className="reveal-zone" /><i className="reveal-path" /><i className="reveal-ball" /><i className="reveal-car car-you"><span>YOU</span></i><i className="reveal-car car-mate" /><i className="reveal-car car-opp" /><i className="reveal-car car-opp-two" /></div>
+          <div className={`reveal-field stage-${stage.key}`} role="img" aria-label="Illustrative flat top-down 2v2 scenario. Your blue car is identified by a warm yellow position marker; the other blue car is your teammate."><i className="reveal-goal reveal-goal-left" /><i className="reveal-goal reveal-goal-right" /><i className="reveal-zone" /><i className="reveal-path" /><i className="reveal-ball" /><i className="reveal-car car-you" /><i className="reveal-car car-mate" /><i className="reveal-car car-opp" /><i className="reveal-car car-opp-two" /></div>
         </div>
         <div className="reveal-demo-copy reveal-card" id="loop-stage-panel" role="tabpanel" aria-live={playback === "playing" ? "off" : "polite"} aria-labelledby={`loop-stage-${activeStage}`}>
           <div><div className="reveal-demo-meta"><span className="reveal-step-index">{stage.label}</span><div className="reveal-demo-controls" aria-label="Example playback control">{playback === "playing" ? <button type="button" onClick={() => setPlayback("paused")}>Pause</button> : playback === "complete" ? <button type="button" onClick={play}>Replay</button> : <button type="button" onClick={play}>Play demo</button>}</div></div><h3>{stage.title}</h3><p>{stage.body}</p><div className="reveal-before-after"><div><small>The mistake</small><b>Follow the same ball</b></div><div><small>Better decision</small><b>Protect the next ball</b></div></div></div>
@@ -176,19 +176,18 @@ export default function Landing({ game = "general", engineOpen = false, earlyAcc
         <span className="reveal-kicker">Hardstuck in Rocket League?</span>
         <h1>Replay Method finds the mistake <em>you keep repeating.</em></h1>
         <p>Upload ten ranked replays. We compare them together, spot what keeps going wrong, and show you what to try next.</p>
-        <div className="reveal-promises marcel-trust-row"><span>Free first analysis · No card required · Replays stay private</span></div>
       </div>
-      <section className="reveal-report-card reveal-card" id="ten-replay-start" tabIndex={-1} aria-label="Illustrative private report preview">
+      <section className="reveal-report-card reveal-report-empty reveal-card" id="ten-replay-start" tabIndex={-1} aria-label="Start a new ten-replay analysis">
         <header>
-          <div><small>Your replay set</small><strong>Your private report is ready</strong></div>
-          <span>Complete</span>
+          <div><small>Your replay set</small><strong>Start your private analysis</strong></div>
+          <span>0/10</span>
         </header>
-        <div className="reveal-report-summary"><i aria-hidden="true">↑</i><b>One recurring pattern found</b><p>Open the report to see the evidence and next move</p></div>
-        <div className="reveal-report-row"><i aria-hidden="true">✓</i><span>10 matches compared</span><small>Complete</small></div>
-        <div className="reveal-report-row"><i aria-hidden="true">→</i><span>Your next-match focus</span><small>Ready</small></div>
+        <div className="reveal-report-summary"><i aria-hidden="true">↑</i><b>Choose your 10 ranked replays</b><p>Your report begins after ten valid matches have been verified</p></div>
+        <div className="reveal-report-row"><i aria-hidden="true">01</i><span>Replays selected</span><small>0 of 10</small></div>
+        <div className="reveal-report-row"><i aria-hidden="true">02</i><span>Private report</span><small>Not started</small></div>
         <div className="reveal-report-progress" aria-hidden="true"><i /></div>
         <p>Same player · Same playlist · Duplicates blocked automatically<br />Your files stay private, and this verified set can be resumed later.</p>
-        <Link className="reveal-primary" href="/analyze" onClick={() => trackProductEvent("analysis_start", "rocket-league", "home_ten_replay_start")}>Analyze my 10 replays <span>→</span></Link>
+        <Link className="reveal-primary" href="/analyze" onClick={() => trackProductEvent("analysis_start", "rocket-league", "home_ten_replay_start")}>Choose my 10 replays <span>→</span></Link>
       </section>
     </section>
 
@@ -201,8 +200,8 @@ export default function Landing({ game = "general", engineOpen = false, earlyAcc
 
     <section className="reveal-section reveal-faq" aria-labelledby="faq-title"><div className="reveal-shell"><header><span className="reveal-kicker">Before you upload</span><h2 id="faq-title">Straight answers.</h2></header><details><summary>Where is my Rocket League replay?<b>+</b></summary><p>On Windows: Documents → My Games → Rocket League → TAGame → Demos. Choose the original file ending in .replay.</p></details><details><summary>Will I get an analysis now?<b>+</b></summary><p>{engineOpen ? "Yes, after ten valid replays. Each file is verified for the same player and ranked playlist. The report is released only at 10/10." : "Not while the deterministic replay engine is unavailable. No files are accepted into a dead end."}</p></details><details><summary>What if one file is invalid?<b>+</b></summary><p>It is excluded with a concrete reason and does not consume a valid slot. Add a replacement until the batch reaches exactly ten verified matches.</p></details><details><summary>What happens to the files?<b>+</b></summary><p>They are stored privately to deliver the requested report. Customer replays are excluded from calibration, training and evaluation unless you separately opt in.</p></details><details><summary>Why might Replay Method abstain?<b>+</b></summary><p>If no supported pattern repeats across the ten matches, the report shows the verified facts and explains why it cannot name a habit yet.</p></details></div></section>
 
-    <section className="reveal-final reveal-shell"><h2>You may not see the pattern. Replay Method can.</h2><Link className="reveal-primary" href="/analyze" onClick={() => trackProductEvent("analysis_start","rocket-league","home_final")}>Analyze my 10 replays <span>→</span></Link><p>One free analysis · no card · private report</p></section>
+    <section className="reveal-final reveal-shell"><h2>You may not see the pattern. Replay Method can.</h2><Link className="reveal-primary" href="/analyze" onClick={() => trackProductEvent("analysis_start","rocket-league","home_final")}>Analyze my 10 replays <span>→</span></Link></section>
 
-    <footer className="reveal-footer reveal-shell"><span>Replay Method · Experimental early access</span><Link href="/privacy">Privacy</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a><span>Evidence boundaries</span></footer>
+    <footer className="reveal-footer reveal-shell"><span>Replay Method</span><Link href="/privacy">Privacy</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a><span>Evidence boundaries</span></footer>
   </main>;
 }

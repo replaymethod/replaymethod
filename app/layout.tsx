@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   verification: { google: process.env.GOOGLE_SITE_VERIFICATION }
 };
 
-export const viewport: Viewport = { themeColor: "#03040a", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#f3f2ee", colorScheme: "light" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return <html lang="en"><body id="top">{children}</body></html>;

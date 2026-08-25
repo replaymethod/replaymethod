@@ -12,7 +12,7 @@
 .admin-funnel-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:25px 0}.admin-panel{padding:22px;border:1px solid #222b45;border-radius:14px;background:#080b14}.admin-panel h2{margin:0 0 18px;font-size:16px}.admin-funnel-row{display:grid;grid-template-columns:1fr repeat(3,.55fr);gap:12px;align-items:center;padding:12px 0;border-top:1px solid #1b2338;font-size:10px}.admin-funnel-row span{font-weight:800}.admin-funnel-row b{text-align:right;color:#8894ad}.admin-funnel-row b:last-child{color:var(--cyan)}.admin-source-list{display:flex;flex-wrap:wrap;gap:8px}.admin-source-list span{padding:8px 10px;border:1px solid #293250;border-radius:7px;background:#0d1221;color:#a9b2c7;font-size:9px}.admin-source-list b{color:#fff}.admin-table-head.analytics,.admin-row.analytics{grid-template-columns:1.35fr .7fr .7fr .85fr}.admin-row em{color:#69738c;font-size:9px;font-style:normal}
 
 @media(max-width:900px){.nav-links{display:none}.product-demo{grid-template-columns:210px 1fr}.demo-main{padding:38px 32px}.method-grid{grid-template-columns:1fr}.method-grid article{min-height:260px}.compare-head,.compare-row{grid-template-columns:1.4fr repeat(3,.8fr)}.faq{grid-template-columns:1fr;gap:35px}.admin-funnel-grid{grid-template-columns:1fr}}
-@media(max-width:590px){body{padding-bottom:72px}.hero{gap:78px}.game-picker{justify-content:center}.game-picker>span{width:100%;margin:0 0 3px}.game-picker a{flex:1;justify-content:center;min-width:96px}.example-tag{right:0}.proof-ribbon .shell{min-height:93px;gap:9px;justify-content:space-between}.proof-ribbon span{max-width:94px;font-size:7px;line-height:1.35;text-align:center}.proof-ribbon i{font-size:9px}.product-section,.method,.faq{padding-block:82px}.section-intro{text-align:center}.section-intro h2{font-size:39px}.section-intro>p{font-size:13px}.product-demo{grid-template-columns:1fr;min-height:0;margin-top:35px}.demo-sidebar{padding:18px;border-right:0;border-bottom:1px solid #242c49}.demo-sidebar>strong{margin:7px 0 15px}.demo-tabs{display:grid;grid-template-columns:repeat(3,1fr)}.demo-tabs button{padding:11px 5px;text-align:center;font-size:8px}.demo-sidebar>small{margin-top:12px}.demo-main{padding:27px 20px 30px}.demo-panel h3{margin-top:24px;font-size:29px}.demo-status{flex-direction:column;gap:5px}.timeline{gap:4px}.timeline span{padding:10px 2px;font-size:6px}.coach-note{align-items:flex-start}.verify-chart{padding-inline:8px;gap:7px}.method-grid{margin-top:32px}.compare{padding-block:80px}.compare .section-intro{text-align:left}.compare-table{overflow-x:auto}.compare-head,.compare-row{min-width:620px}.compare-head>*{padding:14px 11px}.compare-row>*{padding:16px 11px}.faq .section-intro h2{font-size:39px}.faq summary{font-size:13px}.final .waitlist{margin-top:24px}.mobile-join{position:fixed;z-index:50;left:0;right:0;bottom:0;height:72px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:rgba(5,7,14,.94);border-top:1px solid #303957;backdrop-filter:blur(16px);box-shadow:0 -15px 40px rgba(0,0,0,.45)}.mobile-join>div{display:flex;flex-direction:column;gap:3px}.mobile-join span{color:#8a94ac;font-size:7px;font-weight:900;letter-spacing:.13em}.mobile-join b{font-size:10px}.mobile-join button{border:0;border-radius:8px;background:linear-gradient(105deg,#9149ff,#4977ff);color:#fff;padding:13px 16px;font-size:10px;font-weight:900}.admin-funnel-row{grid-template-columns:1fr repeat(3,.5fr);font-size:8px}.admin-table-head.analytics{display:none}.admin-row.analytics{grid-template-columns:1fr}.signup-success{text-align:left}}
+@media(max-width:590px){.hero{gap:78px}.game-picker{justify-content:center}.game-picker>span{width:100%;margin:0 0 3px}.game-picker a{flex:1;justify-content:center;min-width:96px}.example-tag{right:0}.proof-ribbon .shell{min-height:93px;gap:9px;justify-content:space-between}.proof-ribbon span{max-width:94px;font-size:7px;line-height:1.35;text-align:center}.proof-ribbon i{font-size:9px}.product-section,.method,.faq{padding-block:82px}.section-intro{text-align:center}.section-intro h2{font-size:39px}.section-intro>p{font-size:13px}.product-demo{grid-template-columns:1fr;min-height:0;margin-top:35px}.demo-sidebar{padding:18px;border-right:0;border-bottom:1px solid #242c49}.demo-sidebar>strong{margin:7px 0 15px}.demo-tabs{display:grid;grid-template-columns:repeat(3,1fr)}.demo-tabs button{padding:11px 5px;text-align:center;font-size:8px}.demo-sidebar>small{margin-top:12px}.demo-main{padding:27px 20px 30px}.demo-panel h3{margin-top:24px;font-size:29px}.demo-status{flex-direction:column;gap:5px}.timeline{gap:4px}.timeline span{padding:10px 2px;font-size:6px}.coach-note{align-items:flex-start}.verify-chart{padding-inline:8px;gap:7px}.method-grid{margin-top:32px}.compare{padding-block:80px}.compare .section-intro{text-align:left}.compare-table{overflow-x:auto}.compare-head,.compare-row{min-width:620px}.compare-head>*{padding:14px 11px}.compare-row>*{padding:16px 11px}.faq .section-intro h2{font-size:39px}.faq summary{font-size:13px}.final .waitlist{margin-top:24px}.mobile-join{position:fixed;z-index:50;left:0;right:0;bottom:0;height:72px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:rgba(5,7,14,.94);border-top:1px solid #303957;backdrop-filter:blur(16px);box-shadow:0 -15px 40px rgba(0,0,0,.45)}.mobile-join>div{display:flex;flex-direction:column;gap:3px}.mobile-join span{color:#8a94ac;font-size:7px;font-weight:900;letter-spacing:.13em}.mobile-join b{font-size:10px}.mobile-join button{border:0;border-radius:8px;background:linear-gradient(105deg,#9149ff,#4977ff);color:#fff;padding:13px 16px;font-size:10px;font-weight:900}.admin-funnel-row{grid-template-columns:1fr repeat(3,.5fr);font-size:8px}.admin-table-head.analytics{display:none}.admin-row.analytics{grid-template-columns:1fr}.signup-success{text-align:left}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.floating-chip{animation:none}.demo-panel{animation:none}.waitlist button,.reveal-copy button,.price-card button,.final button{transition:none}}
 
 /* Owner-only waitlist dashboard */
@@ -1106,4 +1106,184 @@ button.focus-mission{width:100%;color:#fff;text-align:left;cursor:pointer}button
 }
 @media(prefers-reduced-motion:reduce){
   .reveal-car,.reveal-ball,.reveal-path,.reveal-zone{transition:none!important}
+}
+
+/* 01 Reveal product-wide light system. Customer surfaces share the approved
+   editorial canvas while internal admin tooling keeps its operational theme. */
+body{background:#f3f2ee;color:#090b13}
+body:before{background:#f3f2ee}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell,.billing-result-page,.product-review-page,.owner-qa-page,.admin-denied){
+  --rm-light-bg:#f3f2ee;
+  --rm-light-surface:#fff;
+  --rm-light-surface-2:#e9e7e1;
+  --rm-light-ink:#090b13;
+  --rm-light-muted:#5f6673;
+  --rm-light-line:rgba(9,11,19,.13);
+  --rm-light-violet:#7351f5;
+  --rm-light-cyan:#17cce3;
+  --rm-light-good:#16a875;
+  --rm-light-accent:linear-gradient(115deg,#8753ff,#5d55f2 50%,#18cde3);
+  min-height:100vh;
+  background:var(--rm-light-bg)!important;
+  color:var(--rm-light-ink);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell,.billing-result-page,.product-review-page,.owner-qa-page,.admin-denied) :is(h1,h2,h3,h4){color:var(--rm-light-ink)}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell,.billing-result-page,.product-review-page,.owner-qa-page,.admin-denied) :is(b,strong){color:inherit}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell,.billing-result-page,.product-review-page,.owner-qa-page,.admin-denied) :is(p,li,small){color:var(--rm-light-muted)}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell,.product-review-page,.rl-beta-page) :is(.kicker,.intake-kicker,header>span,.reports-shell>span,.report-top>div>span,.guide-scorecard>span,.rl-beta-trust>span){color:var(--rm-light-violet)}
+
+/* Shared light navigation and brand treatment. */
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell) :is(.tool-nav,.legal-nav,.marcel-nav,.rl-beta-nav,.report-top){border-color:var(--rm-light-line);background:transparent}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell) .brand{color:var(--rm-light-ink)}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell) .brand>span:last-child>span{color:inherit}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell) .brand>span:last-child{font-size:0}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell) .brand>span:last-child:after{content:"Replay Method";font-size:15px;font-weight:600;letter-spacing:-.03em}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell) :is(.tool-nav,.legal-nav,.marcel-nav,.rl-beta-nav) a:not(.brand),
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell) .tool-nav button{color:var(--rm-light-muted)}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell) :is(.tool-nav,.legal-nav,.marcel-nav,.rl-beta-nav) a:hover,
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.legal-shell) .tool-nav button:hover{color:var(--rm-light-ink)}
+
+/* Upload, history, guides and utility cards. */
+:is(.intake-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.billing-result-page,.owner-qa-page,.admin-denied) :is(
+  .intake-header>aside,.intake-card,.reports-empty,.reports-list>a,.replay-upload-route,
+  .replay-find-grid article,.replay-next,.replay-review-separate>a,.tool-card,.tool-options button,
+  .guide-library-grid>a,.library-cta,.guide-scorecard>div,.guide-body>aside,.next-rule,
+  .rl-intake,.rl-intake-success,.rl-intake-closed,.rl-beta-trust,.billing-result-page>section,
+  .owner-qa-page>section,.admin-denied>div
+){
+  border-color:var(--rm-light-line);
+  background:var(--rm-light-surface);
+  box-shadow:0 18px 52px rgba(20,24,42,.08);
+  color:var(--rm-light-ink);
+}
+:is(.intake-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page) :is(.reports-list>a,.guide-library-grid>a,.tool-options button){color:var(--rm-light-ink)}
+:is(.intake-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page) :is(.reports-list>a,.guide-library-grid>a,.tool-options button):hover{border-color:rgba(115,81,245,.42);background:var(--rm-light-surface);box-shadow:0 22px 58px rgba(115,81,245,.1)}
+.intake-header>aside{box-shadow:0 18px 52px rgba(20,24,42,.08)}
+.intake-header>div>span,.intake-header>aside span,.reports-empty a,.reports-list span,.replay-upload-copy>.kicker,.replay-find>header>span,.replay-next>div>span,.replay-review-separate>div>span,.replay-upload-route>span,.tool-step>span,.result-head span,.result-focus span,.result-review>span{color:var(--rm-light-violet)}
+.intake-progress{background:var(--rm-light-surface-2)}
+.intake-progress i{box-shadow:none}
+.intake-card{box-shadow:0 24px 70px rgba(20,24,42,.09)}
+.batch-intake>section,.rl-intake-context,.replay-find,.tool-footer,.intake-footer,.guide-scorecard,.guide-body>div>section,.legal-grid article,.legal-grid article section{border-color:var(--rm-light-line)}
+.file-drop,.replay-file-help,.rl-replay-drop,.quick-replay,.quick-drop{
+  border-color:rgba(115,81,245,.32);
+  background:linear-gradient(145deg,rgba(115,81,245,.035),rgba(23,204,227,.02)),var(--rm-light-surface);
+  color:var(--rm-light-ink);
+}
+.file-drop:hover,.file-drop:focus-within,.replay-file-help:hover,.rl-replay-drop.dragging{border-color:var(--rm-light-violet);background:#f8f7ff;color:var(--rm-light-ink)}
+.file-drop>i,.quick-upload-help>a span,.replay-file-help span,.replay-file-help,.rl-replay-drop>button>b{color:var(--rm-light-violet)}
+.replay-file-help{box-shadow:none}
+.replay-requirements>span,.replay-folder-note,.rl-intake-success>div{border-color:var(--rm-light-line);background:var(--rm-light-surface);color:var(--rm-light-muted)}
+.replay-upload-route li i,.rl-replay-drop>button>i{border-color:var(--rm-light-line);background:#f4f1ff;color:var(--rm-light-violet)}
+.replay-upload-route li{color:var(--rm-light-muted)}
+.replay-upload-route li.active{color:var(--rm-light-ink)}
+.replay-upload-route li:not(:last-child):after{background:var(--rm-light-line)}
+
+/* Forms stay high-contrast without reverting to the old dark panels. */
+:is(.intake-page,.rl-beta-page,.product-review-page,.report-page) :is(input:not([type=checkbox]):not([type=radio]),textarea,select){
+  border-color:var(--rm-light-line);
+  background:var(--rm-light-surface);
+  color:var(--rm-light-ink);
+  box-shadow:none;
+}
+:is(.intake-page,.rl-beta-page,.product-review-page,.report-page) :is(input:not([type=checkbox]):not([type=radio]),textarea,select):focus{
+  border-color:var(--rm-light-violet);
+  box-shadow:0 0 0 3px rgba(115,81,245,.1);
+}
+.batch-file-list article,.delivery-summary>div,.intake-games button,.product-review-issues>article{
+  border-color:var(--rm-light-line);
+  background:var(--rm-light-surface);
+  color:var(--rm-light-ink);
+}
+.batch-file-list article.valid{background:#eef9f5}.batch-file-list article.excluded{background:#fff4f1}
+.honesty-box,.intake-hypothesis,.quick-owner-verified{border-color:rgba(115,81,245,.24);background:rgba(115,81,245,.045)}
+.intake-message{background:#fff2f5}
+
+/* Reports use the same cards and evidence hierarchy on the light canvas. */
+.report-page{--coach-surface:#fff;--coach-panel:#fff;--coach-line:rgba(9,11,19,.13);--coach-muted:#5f6673;--coach-accent:#7351f5;--coach-success:#16a875}
+.report-page :is(
+  .marcel-reveal,.facts-only-reveal,.match-in-20,.marcel-strength,.facts-only-reveal>aside,
+  .moment-list article,.moment-disclosure,.queue-rule,.practice-plan article,.verify-next,
+  .verify-next>aside,.verified-match-facts,.report-method,.report-method-grid>aside,
+  .method-decisions article,.report-deep-dive,.report-deep-dive article,.report-strength,
+  .performance-category,.performance-metric,.one-focus-grid article,.one-focus-plan>aside,
+  .one-focus-plan.abstained,.feedback-questions fieldset,.premium-bridge,.report-section-nav,
+  .confidence-status article,.report-confidence .verified-match-facts,.report-confidence .report-method
+){
+  border-color:var(--rm-light-line);
+  background:var(--rm-light-surface);
+  box-shadow:0 14px 42px rgba(20,24,42,.06);
+  color:var(--rm-light-ink);
+}
+.report-page :is(.report-evidence,.practice-plan,.performance-review,.one-focus-plan,.report-confidence){border-color:var(--rm-light-line)}
+.report-page :is(.moment-disclosure>summary,.report-method>summary,.report-section-nav button,.feedback-questions button){color:var(--rm-light-muted)}
+.report-page :is(.report-section-nav button:hover,.feedback-questions button.active){border-color:rgba(115,81,245,.36);background:rgba(115,81,245,.07);color:var(--rm-light-violet)}
+.report-page :is(.marcel-badges span,.facts-only-reveal>div>span,.match-in-20-grid small,.performance-review>header>span,.report-deep-dive>header>span,.report-strength>span,.one-focus-plan>header>span,.premium-bridge>span,.report-confidence>header>span){color:var(--rm-light-violet)}
+.report-page .marcel-badges em{border-color:rgba(22,168,117,.28);background:#eef9f5;color:var(--rm-light-good)}
+.report-page :is(.marcel-why p,.facts-only-reveal>div>p,.performance-metric>div p,.report-deep-dive article p,.one-focus-plan>aside p){color:var(--rm-light-muted)}
+
+/* Legal, private access, review and future-game pages. */
+.legal-grid aside,.product-review-form>section,.product-review-hero aside,.product-review-brief,.product-review-issues>article{
+  border-color:var(--rm-light-line);
+  background:var(--rm-light-surface);
+  box-shadow:0 14px 42px rgba(20,24,42,.055);
+}
+.legal-grid article a,.legal-grid aside a,.future-game-page>section>a,.product-review-access a{color:var(--rm-light-violet)}
+.product-review-nav,.product-review-hero,.product-review-checklist>article{border-color:var(--rm-light-line)}
+.product-review-nav>a{color:var(--rm-light-ink)}
+.product-review-actions button:not(:last-child),.product-add-issue{border-color:var(--rm-light-line);background:var(--rm-light-surface);color:var(--rm-light-violet)}
+.access-mark{border-color:rgba(115,81,245,.24);background:#f1edff;color:var(--rm-light-violet)}
+.access-card>span,.billing-result-page>section>span,.future-game-page>section>span,.owner-qa-page>section>span{color:var(--rm-light-violet)}
+
+/* One product-wide action language. */
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.billing-result-page,.product-review-page,.owner-qa-page) :is(
+  .submit-analysis,.access-card button,.access-primary,.replay-next>a,.result-actions a,
+  .library-cta>a,.baseline-primary,.rl-submit,.rl-intake-success>button,.rl-intake-closed>a,
+  .billing-result-page a:first-child,.product-review-actions button:last-child,.owner-qa-activate button
+){
+  border-color:transparent;
+  background:var(--rm-light-accent);
+  color:#fff;
+  box-shadow:0 14px 34px rgba(103,79,237,.22);
+}
+:is(.intake-page,.report-page,.reports-page,.replay-upload-page,.access-page,.tool-page,.guide-library,.guide-page,.future-game-page,.rl-beta-page,.billing-result-page,.product-review-page,.owner-qa-page) :is(
+  .submit-analysis,.access-card button,.access-primary,.replay-next>a,.result-actions a,
+  .library-cta>a,.baseline-primary,.rl-submit,.rl-intake-success>button,.rl-intake-closed>a,
+  .billing-result-page a:first-child,.product-review-actions button:last-child,.owner-qa-activate button
+) *{color:inherit}
+
+/* The landing hero always depicts the user's real starting state. */
+.reveal-report-empty>header>span{background:#f1edff;color:var(--reveal-violet)}
+.reveal-report-empty .reveal-report-row i{background:#f1edff;color:var(--reveal-violet);font-size:8px;font-weight:700}
+.reveal-report-empty .reveal-report-progress i{width:0}
+
+/* Owner-reviewed mobile refinement: quiet copy, precise player identity and
+   balanced decision states on the light editorial canvas. */
+html{min-height:100%;background:#f3f2ee}
+body{min-height:100%;background:#f3f2ee}
+.reveal-home{min-height:100svh;background:#f3f2ee}
+.reveal-car.car-you::after{
+  content:"";
+  position:absolute;
+  right:-8px;
+  top:-9px;
+  width:8px;
+  height:8px;
+  border:2px solid #0a1420;
+  border-radius:50%;
+  background:#ffd45a;
+  box-shadow:0 0 0 3px rgba(255,212,90,.22),0 0 13px rgba(255,212,90,.88);
+}
+.reveal-before-after>div:first-child{
+  border:1px solid rgba(195,54,75,.1);
+  background:#fbe9eb;
+}
+.reveal-before-after>div:first-child b{color:#c3364b}
+.reveal-before-after>div:last-child{border:1px solid rgba(22,168,117,.1)}
+.reveal-footer>span:first-child{color:var(--reveal-ink);font-weight:600}
+
+@media(max-width:700px){
+  .intake-header{grid-template-columns:1fr;gap:24px}
+  .intake-header>aside{min-height:0}
+  .product-review-hero{grid-template-columns:1fr}
 }
