@@ -1069,15 +1069,18 @@ button.focus-mission{width:100%;color:#fff;text-align:left;cursor:pointer}button
 .reveal-car.car-opp{left:72%;top:53%;transform:rotate(173deg)}
 .reveal-car.car-opp-two{left:78%;top:23%;transform:rotate(160deg)}
 .reveal-field.stage-mistake .car-you{left:40%;top:46%;transform:rotate(-24deg)}
-.reveal-field.stage-mistake .car-opp{left:64%;top:49%;transform:rotate(166deg)}
+.reveal-field.stage-mistake .car-opp{left:65%;top:40%;transform:rotate(166deg)}
 .reveal-field.stage-consequence .car-you{left:47%;top:36%;transform:rotate(-24deg)}
 .reveal-field.stage-consequence .car-mate{left:52%;top:30%}
-.reveal-field.stage-consequence .car-opp{left:52%;top:46%;transform:rotate(174deg)}
-.reveal-field.stage-consequence .reveal-ball{left:15%;top:50%}
+.reveal-field.stage-consequence .car-opp{left:56%;top:42%;transform:rotate(166deg)}
+.reveal-field.stage-consequence .reveal-ball{left:14%;top:56%}
 .reveal-field.stage-rewind .car-you{left:25%;top:67%;transform:rotate(-7deg)}
 .reveal-field.stage-decision .car-you{left:24%;top:70%;transform:rotate(-7deg)}
+.reveal-field.stage-decision .car-opp{left:61%;top:50%;transform:rotate(166deg)}
+.reveal-field.stage-decision .reveal-ball{left:58%;top:52%}
 .reveal-field.stage-result .car-you{left:28%;top:60%;transform:rotate(-7deg)}
-.reveal-field.stage-result .reveal-ball{left:39%;top:62%}
+.reveal-field.stage-result .car-opp{left:55%;top:45%;transform:rotate(166deg)}
+.reveal-field.stage-result .reveal-ball{left:calc(28% + 30px);top:61%}
 .reveal-variant-focus .reveal-field{background:linear-gradient(90deg,rgba(76,130,244,.035),rgba(255,255,255,.008) 50%,rgba(226,79,99,.035)),#08111b}
 .reveal-variant-focus .reveal-field .reveal-goal,.reveal-variant-focus .reveal-field::before,.reveal-variant-focus .reveal-field::after{opacity:.42}
 .reveal-variant-focus .stage-setup .car-opp-two,.reveal-variant-focus .stage-mistake .car-opp-two,.reveal-variant-focus .stage-rewind .car-opp-two,.reveal-variant-focus .stage-decision .car-opp-two{opacity:.18}
@@ -1135,22 +1138,19 @@ button.focus-mission{width:100%;color:#fff;text-align:left;cursor:pointer}button
   .reveal-car,.reveal-ball{transition:none!important}
 }
 
-/* Demo motion language: short car wakes communicate movement, while the
-   separate red ball trail appears only when the opponent shoots. */
+/* Demo motion language: cars stay visually clean; only a shot in motion leaves
+   a short, fading ball trail. */
 .reveal-home-fields .check{align-items:flex-start;padding-block:3px 5px}
 .reveal-home-submit{margin-top:16px}
-.reveal-motion-trail,.reveal-ball-trail{position:absolute;z-index:3;height:6px;border-radius:999px;opacity:0;filter:blur(.15px);pointer-events:none;transform-origin:left center;transition:left .7s cubic-bezier(.2,.8,.2,1),top .7s cubic-bezier(.2,.8,.2,1),width .7s cubic-bezier(.2,.8,.2,1),opacity .28s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
-.reveal-motion-trail.trail-you{left:12%;top:80%;width:15%;opacity:.8;background:linear-gradient(90deg,transparent,rgba(106,188,255,.12) 28%,rgba(106,188,255,.78));box-shadow:0 0 9px rgba(106,188,255,.2);transform:rotate(-22deg)}
-.reveal-motion-trail.trail-opp{left:54%;top:49%;width:12%;background:linear-gradient(90deg,rgba(242,91,124,.72),rgba(242,91,124,.12) 68%,transparent);box-shadow:0 0 8px rgba(242,91,124,.16);transform:rotate(2deg)}
-.reveal-ball-trail{left:16%;top:52%;width:36%;height:3px;background:linear-gradient(90deg,rgba(242,91,124,.62),rgba(242,91,124,.2) 42%,transparent);box-shadow:0 0 7px rgba(242,91,124,.18)}
-.reveal-car.car-you{box-shadow:0 0 0 1px #fff7c2,0 0 0 2px rgba(255,230,109,.96),0 0 12px 3px rgba(255,224,88,.72),0 0 26px 8px rgba(255,210,54,.26),0 5px 10px rgba(0,0,0,.24)}
-.reveal-field.stage-mistake .trail-you{left:28%;top:65%;width:15%;transform:rotate(-34deg)}
-.reveal-field.stage-consequence .trail-you{opacity:0}
-.reveal-field.stage-consequence .trail-opp,.reveal-field.stage-consequence .reveal-ball-trail{opacity:.72}
-.reveal-field.stage-rewind .trail-you{left:12%;top:75%;width:15%;transform:rotate(-8deg)}
-.reveal-field.stage-decision .trail-you{left:12%;top:77%;width:14%;transform:rotate(-9deg)}
-.reveal-field.stage-result .trail-you{left:16%;top:65%;width:14%;transform:rotate(-5deg)}
-@media(prefers-reduced-motion:reduce){.reveal-motion-trail,.reveal-ball-trail{transition:none!important}}
+.reveal-ball-trail{position:absolute;left:16%;top:58%;z-index:3;width:48%;height:3px;border-radius:999px;background:linear-gradient(90deg,rgba(242,91,124,.64),rgba(242,91,124,.22) 43%,transparent);box-shadow:0 0 7px rgba(242,91,124,.16);opacity:0;filter:blur(.12px);pointer-events:none;transform:rotate(-14deg);transform-origin:left center;transition:left .7s cubic-bezier(.2,.8,.2,1),top .7s cubic-bezier(.2,.8,.2,1),width .7s cubic-bezier(.2,.8,.2,1),opacity .28s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
+.reveal-car.car-you{box-shadow:0 0 0 2px #08111b,0 0 0 3px rgba(255,224,106,.96),0 0 8px 2px rgba(255,215,65,.38),0 0 16px 4px rgba(255,205,42,.1),0 5px 10px rgba(0,0,0,.24)}
+.reveal-field.stage-consequence .reveal-ball-trail{opacity:.72}
+.reveal-field.stage-result .reveal-ball-trail{left:calc(28% + 38px);top:63%;width:29%;opacity:.64;transform:rotate(-19deg)}
+@media(max-width:590px){
+  .reveal-field.stage-result .reveal-ball{left:calc(28% + 25px)}
+  .reveal-field.stage-result .reveal-ball-trail{left:calc(28% + 33px);width:27%}
+}
+@media(prefers-reduced-motion:reduce){.reveal-ball-trail{transition:none!important}}
 
 /* 01 Reveal product-wide light system. Customer surfaces share the approved
    editorial canvas while internal admin tooling keeps its operational theme. */
