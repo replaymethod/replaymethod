@@ -1052,37 +1052,64 @@ button.focus-mission{width:100%;color:#fff;text-align:left;cursor:pointer}button
 .reveal-demo.reveal-card{grid-template-columns:minmax(0,1.28fr) minmax(280px,.72fr);gap:12px;padding:12px;border-radius:22px}
 .reveal-field-wrap{border:0;border-radius:14px;background:#0a1420}
 .reveal-field-wrap>header{display:none}
-.reveal-field{min-height:388px;background:linear-gradient(90deg,rgba(46,113,214,.055),rgba(255,255,255,.012) 50%,rgba(226,65,88,.055)),#0a1420}
-.reveal-field::before{left:50%;border-left-color:rgba(255,255,255,.12)}
-.reveal-field::after{width:96px;height:96px;border-color:rgba(255,255,255,.1)}
-.reveal-goal{top:31%;width:8%;height:38%;border:2px solid rgba(255,255,255,.28);border-radius:9px}
-.reveal-goal-left{left:1%;right:auto;border-left:0;border-right:2px solid rgba(255,255,255,.28);border-radius:0 9px 9px 0}
-.reveal-goal-right{right:1%;border-right:0;border-left:2px solid rgba(255,255,255,.28);border-radius:9px 0 0 9px}
+.reveal-field{--reveal-center-size:96px;--reveal-edge-gap:20px;min-height:388px;background:linear-gradient(90deg,rgba(46,113,214,.055),rgba(255,255,255,.012) 50%,rgba(226,65,88,.055)),#0a1420}
+.reveal-scene{position:absolute;inset:0;z-index:0}
+.reveal-field::before,.reveal-field::after{content:none}
+.reveal-pitch{position:absolute;inset:var(--reveal-edge-gap);z-index:1;pointer-events:none}
+.reveal-pitch::before{content:"";position:absolute;z-index:1;left:50%;top:0;bottom:0;border-left:1px solid rgba(255,255,255,.12)}
+.reveal-pitch::after{content:"";position:absolute;z-index:2;left:50%;top:50%;width:var(--reveal-center-size);height:var(--reveal-center-size);border:1px solid rgba(255,255,255,.1);border-radius:50%;transform:translate(-50%,-50%)}
+.reveal-pitch-boundary{position:absolute;inset:0 7.3333%;z-index:1;padding:2px;background:linear-gradient(90deg,rgba(76,130,244,.64) 0%,rgba(76,130,244,.58) 24%,rgba(129,106,196,.55) 50%,rgba(226,79,99,.58) 76%,rgba(226,79,99,.64) 100%);clip-path:polygon(11.25% 0,88.75% 0,100% 14.0625%,100% 85.9375%,88.75% 100%,11.25% 100%,0 85.9375%,0 14.0625%);pointer-events:none;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.reveal-goal{z-index:3;top:39.099%;width:calc(7.3333% + 2px);height:21.802%;border:0;border-radius:0;pointer-events:none}
+.reveal-goal::after{content:"";position:absolute;background:#0a1420}
+.reveal-goal-left{left:0;right:auto;background:rgba(76,130,244,.64);clip-path:polygon(0 18%,18% 0,100% 0,100% 100%,18% 100%,0 82%)}
+.reveal-goal-left::after{inset:2px 0 2px 2px;clip-path:polygon(0 18%,18% 0,100% 0,100% 100%,18% 100%,0 82%)}
+.reveal-goal-right{right:0;background:rgba(226,79,99,.64);clip-path:polygon(0 0,82% 0,100% 18%,100% 82%,82% 100%,0 100%)}
+.reveal-goal-right::after{inset:2px 2px 2px 0;clip-path:polygon(0 0,82% 0,100% 18%,100% 82%,82% 100%,0 100%)}
+.reveal-goal-arc{position:absolute;top:25%;z-index:1;width:17.0667%;height:50%;border:1px solid;pointer-events:none}
+.reveal-goal-arc-left{left:7.3333%;border-color:rgba(255,255,255,.12);border-left:0;border-radius:0 999px 999px 0}
+.reveal-goal-arc-right{right:7.3333%;border-color:rgba(255,255,255,.12);border-right:0;border-radius:999px 0 0 999px}
 .reveal-ball{left:62%;top:43%;width:18px;height:18px;border:2px solid rgba(255,255,255,.7);border-radius:50%;background:#d8dee5;box-shadow:0 0 0 3px rgba(216,222,229,.08),0 5px 10px rgba(0,0,0,.3)}
 .reveal-car{width:34px;height:22px;border:0;border-radius:5px;background:currentColor;box-shadow:0 5px 10px rgba(0,0,0,.24);transition:opacity .45s ease,left .7s cubic-bezier(.2,.8,.2,1),top .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1)}
-.reveal-car::before,.reveal-car::after{content:none}
+.reveal-car::before{content:"";position:absolute;right:2px;top:3px;bottom:3px;width:4px;border-radius:2px;background:rgba(255,255,255,.2)}
+.reveal-car::after{content:none}
 .reveal-car.car-you,.reveal-car.car-mate{color:#4c82f4}
-.reveal-car.car-you{left:25%;top:67%;box-shadow:0 0 0 2px #0a1420,0 0 0 4px rgba(255,212,90,.94),0 0 17px rgba(255,212,90,.54),0 5px 10px rgba(0,0,0,.24)}
+.reveal-car.car-you{left:24%;top:26%;box-shadow:0 0 0 2px #0a1420,0 0 0 4px rgba(255,212,90,.94),0 0 17px rgba(255,212,90,.54),0 5px 10px rgba(0,0,0,.24);transform:rotate(12deg)}
 .reveal-car.car-you span{position:absolute;left:50%;top:-25px;padding:3px 6px;border-radius:999px;background:#edf2ff;color:#3159aa;font-size:8px;font-style:normal;font-weight:800;letter-spacing:.08em;transform:translateX(-50%)}
-.reveal-car.car-mate{left:47%;top:31%;transform:rotate(-17deg)}
+.reveal-car.car-mate{left:39%;top:34%;transform:rotate(12deg)}
 .reveal-car.car-opp,.reveal-car.car-opp-two{color:#e24f63}
-.reveal-car.car-opp{left:72%;top:53%;transform:rotate(173deg)}
-.reveal-car.car-opp-two{left:78%;top:23%;transform:rotate(160deg)}
-.reveal-field.stage-mistake .car-you{left:40%;top:46%;transform:rotate(-24deg)}
-.reveal-field.stage-mistake .car-opp{left:65%;top:40%;transform:rotate(166deg)}
-.reveal-field.stage-consequence .car-you{left:47%;top:36%;transform:rotate(-24deg)}
-.reveal-field.stage-consequence .car-mate{left:52%;top:30%}
-.reveal-field.stage-consequence .car-opp{left:56%;top:42%;transform:rotate(166deg)}
-.reveal-field.stage-consequence .reveal-ball{left:14%;top:56%}
-.reveal-field.stage-rewind .car-you{left:25%;top:67%;transform:rotate(-7deg)}
-.reveal-field.stage-decision .car-you{left:24%;top:70%;transform:rotate(-7deg)}
-.reveal-field.stage-decision .car-opp{left:61%;top:50%;transform:rotate(166deg)}
-.reveal-field.stage-decision .reveal-ball{left:58%;top:52%}
-.reveal-field.stage-result .car-you{left:28%;top:60%;transform:rotate(-7deg)}
-.reveal-field.stage-result .car-opp{left:55%;top:45%;transform:rotate(166deg)}
-.reveal-field.stage-result .reveal-ball{left:calc(28% + 30px);top:61%}
+.reveal-car.car-opp{left:72%;top:53%;transform:rotate(225deg)}
+.reveal-car.car-opp-two{left:78%;top:23%;transform:rotate(129deg)}
+.reveal-field{--reveal-ball-x:62%;--reveal-ball-y:43%;container-type:inline-size}
+.reveal-field .reveal-ball{left:var(--reveal-ball-x);top:var(--reveal-ball-y);border:0;border-radius:0;background:none;box-shadow:none}
+.reveal-ball-core{position:absolute;inset:0;z-index:2;border:2px solid rgba(255,255,255,.78);border-radius:50%;background:#eef3f8;box-shadow:0 4px 9px rgba(0,0,0,.18)}
+.reveal-field.stage-mistake{--reveal-ball-x:64%;--reveal-ball-y:40%}
+.reveal-field.stage-mistake .car-you{left:47%;top:25%;transform:rotate(40deg)}
+.reveal-field.stage-mistake .car-mate{left:56.5%;top:31%;transform:rotate(29deg)}
+.reveal-field.stage-mistake .car-opp{left:calc(var(--reveal-ball-x) + 18px);top:calc(var(--reveal-ball-y) - 14px);transform:rotate(112deg)}
+.reveal-field.stage-mistake .car-opp-two{left:80%;top:28%;transform:rotate(68deg)}
+.reveal-field.stage-consequence{--reveal-ball-x:5%;--reveal-ball-y:52%}
+.reveal-field.stage-consequence .reveal-ball{left:var(--reveal-ball-x);top:var(--reveal-ball-y)}
+.reveal-field.stage-consequence .car-you{left:53%;top:24%;transform:rotate(8deg)}
+.reveal-field.stage-consequence .car-mate{left:65%;top:29%;transform:rotate(6deg)}
+.reveal-field.stage-consequence .car-opp{left:60%;top:38%;transform:rotate(153deg)}
+.reveal-field.stage-consequence .car-opp-two{left:86%;top:42%;transform:rotate(67deg)}
+.reveal-field.stage-rewind .car-you{left:24%;top:26%;transform:rotate(12deg)}
+.reveal-field.stage-rewind .car-mate{left:39%;top:21%;transform:rotate(26deg)}
+.reveal-field.stage-rewind .car-opp{left:72%;top:45%;transform:rotate(180deg)}
+.reveal-field.stage-rewind .car-opp-two{left:78%;top:23%;transform:rotate(135deg)}
+.reveal-field.stage-decision{--reveal-ball-x:62%;--reveal-ball-y:45%}
+.reveal-field.stage-decision .car-you{left:15%;top:52%;transform:rotate(-6deg)}
+.reveal-field.stage-decision .car-mate{left:55%;top:34%;transform:rotate(31deg)}
+.reveal-field.stage-decision .car-opp{left:calc(var(--reveal-ball-x) + 18px);top:calc(var(--reveal-ball-y) - 14px);transform:rotate(112deg)}
+.reveal-field.stage-decision .car-opp-two{left:86%;top:42%;transform:rotate(135deg)}
+.reveal-field.stage-result{--reveal-ball-x:calc(12% + 38px);--reveal-ball-y:calc(52% + 2px)}
+.reveal-field.stage-result .reveal-ball{left:var(--reveal-ball-x);top:var(--reveal-ball-y)}
+.reveal-field.stage-result .car-you{left:12%;top:52%;transform:rotate(0)}
+.reveal-field.stage-result .car-mate{left:61%;top:30%;transform:rotate(-34deg)}
+.reveal-field.stage-result .car-opp{left:57%;top:46%;transform:rotate(180deg)}
+.reveal-field.stage-result .car-opp-two{left:87%;top:43%;transform:rotate(180deg)}
 .reveal-variant-focus .reveal-field{background:linear-gradient(90deg,rgba(76,130,244,.035),rgba(255,255,255,.008) 50%,rgba(226,79,99,.035)),#08111b}
-.reveal-variant-focus .reveal-field .reveal-goal,.reveal-variant-focus .reveal-field::before,.reveal-variant-focus .reveal-field::after{opacity:.42}
+.reveal-variant-focus .reveal-field .reveal-goal,.reveal-variant-focus .reveal-field .reveal-goal-arc,.reveal-variant-focus .reveal-field .reveal-pitch-boundary,.reveal-variant-focus .reveal-field::before,.reveal-variant-focus .reveal-field::after{opacity:.42}
 .reveal-variant-focus .stage-setup .car-opp-two,.reveal-variant-focus .stage-mistake .car-opp-two,.reveal-variant-focus .stage-rewind .car-opp-two,.reveal-variant-focus .stage-decision .car-opp-two{opacity:.18}
 .reveal-variant-focus .stage-rewind .car-opp{opacity:.28}
 .reveal-variant-focus .stage-consequence .car-mate,.reveal-variant-focus .stage-result .car-opp-two{opacity:.26}
@@ -1101,7 +1128,7 @@ button.focus-mission{width:100%;color:#fff;text-align:left;cursor:pointer}button
 }
 @media(max-width:860px){
   .reveal-demo.reveal-card{grid-template-columns:1fr;padding:10px}
-  .reveal-field{min-height:360px}
+  .reveal-field{--reveal-center-size:90px;min-height:360px}
   .reveal-demo-copy.reveal-card{min-height:290px}
   .reveal-premium{align-items:start}
   .reveal-climb{width:100%;min-height:190px}
@@ -1113,7 +1140,7 @@ button.focus-mission{width:100%;color:#fff;text-align:left;cursor:pointer}button
   .reveal-review-controls span{margin:2px 3px}
   .reveal-demo.reveal-card{gap:9px;margin-top:28px;padding:8px;border-radius:18px}
   .reveal-field-wrap,.reveal-demo-copy.reveal-card{border-radius:12px}
-  .reveal-field{min-height:270px}
+  .reveal-field{--reveal-center-size:68px;--reveal-edge-gap:14px;min-height:270px}
   .reveal-car{width:29px;height:19px}
   .reveal-ball{width:16px;height:16px}
   .reveal-car.car-you span{top:-23px;font-size:7px}
@@ -1126,7 +1153,7 @@ button.focus-mission{width:100%;color:#fff;text-align:left;cursor:pointer}button
 }
 @media(max-width:370px){
   .reveal-hero-copy h1{font-size:clamp(35px,11.1vw,40px);letter-spacing:-.055em}
-  .reveal-field{min-height:238px}
+  .reveal-field{--reveal-center-size:60px;--reveal-edge-gap:12px;min-height:238px}
   .reveal-demo-copy.reveal-card{min-height:345px;padding:17px 14px}
   .reveal-demo-copy h3{font-size:23px}
   .reveal-before-after>div{padding:10px}
@@ -1138,19 +1165,27 @@ button.focus-mission{width:100%;color:#fff;text-align:left;cursor:pointer}button
   .reveal-car,.reveal-ball{transition:none!important}
 }
 
-/* Demo motion language: cars stay visually clean; only a shot in motion leaves
-   a short, fading ball trail. */
+/* Demo motion language: clean vehicle movement, no explanatory motion trails. */
 .reveal-home-fields .check{align-items:flex-start;padding-block:3px 5px}
 .reveal-home-submit{margin-top:16px}
-.reveal-ball-trail{position:absolute;left:16%;top:58%;z-index:3;width:48%;height:3px;border-radius:999px;background:linear-gradient(90deg,rgba(242,91,124,.64),rgba(242,91,124,.22) 43%,transparent);box-shadow:0 0 7px rgba(242,91,124,.16);opacity:0;filter:blur(.12px);pointer-events:none;transform:rotate(-14deg);transform-origin:left center;transition:left .7s cubic-bezier(.2,.8,.2,1),top .7s cubic-bezier(.2,.8,.2,1),width .7s cubic-bezier(.2,.8,.2,1),opacity .28s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
 .reveal-car.car-you{box-shadow:0 0 0 2px #08111b,0 0 0 3px rgba(255,224,106,.96),0 0 8px 2px rgba(255,215,65,.38),0 0 16px 4px rgba(255,205,42,.1),0 5px 10px rgba(0,0,0,.24)}
-.reveal-field.stage-consequence .reveal-ball-trail{opacity:.72}
-.reveal-field.stage-result .reveal-ball-trail{left:calc(28% + 38px);top:63%;width:29%;opacity:.64;transform:rotate(-19deg)}
+.reveal-restart{position:absolute;left:50%;top:50%;z-index:12;width:var(--reveal-center-size);height:var(--reveal-center-size);border-radius:50%;background:rgba(0,0,0,.34);opacity:0;overflow:hidden;pointer-events:none;transform:translate(-50%,-50%)}
+.reveal-restart-spinner{position:absolute;left:50%;top:50%;width:72%;aspect-ratio:1;display:grid;place-items:center;transform:translate(-50%,-50%);transform-origin:50% 50%;will-change:transform}
+.reveal-restart-mark{display:grid;place-items:center;width:100%;height:100%;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:calc(var(--reveal-center-size) * .52);font-style:normal;font-weight:900;line-height:1;filter:drop-shadow(0 0 5px rgba(255,255,255,.2))}
+.reveal-field.show-replay-cue .reveal-scene{animation:reveal-restart-scene 2s linear both}
+.reveal-field.show-replay-cue .reveal-restart{animation:reveal-restart-circle 2s linear both}
+.reveal-field.show-replay-cue .reveal-restart-spinner{animation:reveal-restart-spin 2s linear both}
+@keyframes reveal-restart-scene{0%{filter:blur(0) brightness(1)}25%,75%{filter:blur(1.5px) brightness(.78)}100%{filter:blur(0) brightness(1)}}
+@keyframes reveal-restart-circle{0%{opacity:0}25%,75%{opacity:1}100%{opacity:0}}
+@keyframes reveal-restart-spin{0%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(-50%,-50%) rotate(360deg)}70%{transform:translate(-50%,-50%) rotate(720deg)}100%{transform:translate(-50%,-50%) rotate(1440deg)}}
 @media(max-width:590px){
-  .reveal-field.stage-result .reveal-ball{left:calc(28% + 25px)}
-  .reveal-field.stage-result .reveal-ball-trail{left:calc(28% + 33px);width:27%}
+  .reveal-field.stage-mistake .car-you{left:45%}
+  .reveal-field.stage-mistake .car-mate{left:54%}
+  .reveal-field.stage-mistake .car-opp{left:calc(var(--reveal-ball-x) + 16px);top:calc(var(--reveal-ball-y) - 10px)}
+  .reveal-field.stage-decision .car-opp{left:calc(var(--reveal-ball-x) + 16px);top:calc(var(--reveal-ball-y) - 10px)}
+  .reveal-field.stage-result{--reveal-ball-x:calc(12% + 33px);--reveal-ball-y:calc(52% + 1.5px)}
 }
-@media(prefers-reduced-motion:reduce){.reveal-ball-trail{transition:none!important}}
+@media(prefers-reduced-motion:reduce){.reveal-restart{display:none}.reveal-scene{animation:none!important;filter:none!important}}
 
 /* 01 Reveal product-wide light system. Customer surfaces share the approved
    editorial canvas while internal admin tooling keeps its operational theme. */
