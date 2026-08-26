@@ -38,6 +38,7 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
   const [variant, setVariant] = useState<"tactical" | "focus">("tactical");
   const [reviewControls, setReviewControls] = useState(false);
   const [autoplayDisabled, setAutoplayDisabled] = useState(false);
+  const [replayCueVisible, setReplayCueVisible] = useState(false);
   const touchStart = useRef<number | null>(null);
   const demoRef = useRef<HTMLDivElement>(null);
   const hasAutoplayed = useRef(false);
@@ -87,6 +88,25 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
     return () => window.clearTimeout(timer);
   }, [activeStage, playback]);
 
+  useEffect(() => {
+    const timers: number[] = [];
+
+    if (playback === "playing" && activeStage === 2) {
+      timers.push(window.setTimeout(() => setReplayCueVisible(false), 0));
+      timers.push(window.setTimeout(() => setReplayCueVisible(true), 2350));
+    } else if (activeStage === 3) {
+      timers.push(window.setTimeout(() => setReplayCueVisible(true), 0));
+      timers.push(window.setTimeout(
+        () => setReplayCueVisible(false),
+        playback === "playing" ? 1750 : 2000,
+      ));
+    } else {
+      timers.push(window.setTimeout(() => setReplayCueVisible(false), 0));
+    }
+
+    return () => timers.forEach(timer => window.clearTimeout(timer));
+  }, [activeStage, playback]);
+
   function chooseStage(index: number, manual = true) {
     setActiveStage((index + loopStages.length) % loopStages.length);
     if (manual) setPlayback("paused");
@@ -124,7 +144,14 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
       {reviewControls && <div className="reveal-review-controls" aria-label="Local demo review controls"><span>Local review</span><button type="button" aria-pressed={variant === "tactical"} onClick={() => setVariant("tactical")}>A · Tactical board</button><button type="button" aria-pressed={variant === "focus"} onClick={() => setVariant("focus")}>B · Focus mode</button></div>}
       <div ref={demoRef} className={`reveal-demo reveal-card reveal-variant-${variant}`} data-playback={playback} aria-label={`Illustrative Replay Method product loop, ${variant === "tactical" ? "tactical board" : "focus mode"} variant`} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
         <div className="reveal-field-wrap">
-          <div className={`reveal-field stage-${stage.key}`} role="img" aria-label="Illustrative flat top-down 2v2 scenario. Your blue car is identified by a restrained gold outline. Only the ball leaves a fading trail when a shot is in motion."><i className="reveal-goal reveal-goal-left" /><i className="reveal-goal reveal-goal-right" /><i className="reveal-ball-trail" /><i className="reveal-ball" /><i className="reveal-car car-you" /><i className="reveal-car car-mate" /><i className="reveal-car car-opp" /><i className="reveal-car car-opp-two" /></div>
+          <div className={`reveal-field stage-${stage.key}${replayCueVisible ? " show-replay-cue" : ""}`} role="img" aria-label="Illustrative horizontal Rocket League field and top-down 2v2 scenario. Both blue cars point toward and chase the same ball during the mistake. Your blue car is identified by a restrained gold outline. A circular replay cue signals a fresh attempt.">
+            <span className="reveal-scene" aria-hidden="true">
+              <span className="reveal-pitch"><span className="reveal-pitch-boundary" /><i className="reveal-goal reveal-goal-left" /><i className="reveal-goal reveal-goal-right" /><i className="reveal-goal-arc reveal-goal-arc-left" /><i className="reveal-goal-arc reveal-goal-arc-right" /></span>
+              <i className="reveal-ball"><span className="reveal-ball-core" /></i>
+              <i className="reveal-car car-you" /><i className="reveal-car car-mate" /><i className="reveal-car car-opp" /><i className="reveal-car car-opp-two" />
+            </span>
+                  <span className="reveal-restart" aria-hidden="true"><span className="reveal-restart-spinner"><i className="reveal-restart-mark">↻</i></span></span>
+          </div>
         </div>
         <div className="reveal-demo-copy reveal-card" id="loop-stage-panel" role="tabpanel" aria-live={playback === "playing" ? "off" : "polite"} aria-labelledby={`loop-stage-${activeStage}`}>
           <div><div className="reveal-demo-meta"><span className="reveal-step-index">{stage.label}</span><div className="reveal-demo-controls" aria-label="Example playback control">{playback === "playing" ? <button type="button" onClick={() => setPlayback("paused")}>Pause</button> : playback === "complete" ? <button type="button" onClick={play}>Replay</button> : <button type="button" onClick={play}>Play demo</button>}</div></div><h3>{stage.title}</h3><p>{stage.body}</p><div className="reveal-before-after"><div><small>The mistake</small><b>Follow the same ball</b></div><div><small>Better decision</small><b>Protect the next ball</b></div></div></div>
