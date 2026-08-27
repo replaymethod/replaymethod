@@ -21,6 +21,6 @@ test("verified owner activation produces the dedicated server-session UI state",
   await expect(page.locator('.owner-qa-activate[data-hydrated="true"]')).toBeVisible();
   await page.getByRole("button", { name: /ACTIVATE OWNER QA/ }).click();
   await expect(page).toHaveURL(/\/analyze$/);
-  await expect(page.getByRole("heading", { name: /Upload 10 ranked replays/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Ten replays\. One pattern worth fixing/i })).toBeVisible();
   await expect(page.getByText("OWNER QA VERIFIED", { exact: true })).toBeVisible();
 });

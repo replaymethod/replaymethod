@@ -1,4 +1,5 @@
 import { detectorDefinition } from "./detector-registry.mjs";
+import { DETECTOR_CATEGORIES } from "./detector-catalog.mjs";
 
 export const EARLY_ACCESS_POLICY_VERSION = "rocket-league-early-access-policy@0.1.0";
 
@@ -119,11 +120,35 @@ export function composeEarlyAccessOutput(shadowRun, normalized) {
   }
 
   findings.sort((left, right) => right.confidence - left.confidence || right.frequency - left.frequency || left.id.localeCompare(right.id));
+  const categoryCoverage = new Map(Object.entries(DETECTOR_CATEGORIES).map(([id, label]) => [id, {
+    id,
+    label,
+    total: 0,
+    measuring: 0,
+    capabilityAbstained: 0,
+    observed: 0,
+  }]));
+  for (const run of shadowRun.runs ?? []) {
+    const definition = detectorDefinition(run.detectorId);
+    const category = categoryCoverage.get(definition?.category);
+    if (!category) continue;
+    category.total += 1;
+    if (run.implementationStatus === "measuring") category.measuring += 1;
+    if (run.implementationStatus === "capability_abstention") category.capabilityAbstained += 1;
+    if (run.status === "observed") category.observed += 1;
+  }
   return {
     policyVersion: EARLY_ACCESS_POLICY_VERSION,
     formalValidationStatus: "not_validated",
     findings,
     assessments,
+    analysisCoverage: {
+      totalDetectors: shadowRun.summary?.detectorCount ?? 0,
+      measuringDetectors: shadowRun.summary?.measuring ?? 0,
+      capabilityAbstained: shadowRun.summary?.capabilityAbstained ?? 0,
+      publicEligible: shadowRun.summary?.publicEligible ?? 0,
+      categories: [...categoryCoverage.values()],
+    },
     verifiedFacts: {
       subjectDisplayName: normalized.subjectDisplayName ?? null,
       mode: normalized.mode ?? null,

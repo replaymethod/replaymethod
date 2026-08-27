@@ -44,9 +44,10 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
-async function expectTenReplayStart(page: Page) {
+async function expectLandingFunnel(page: Page) {
   await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
-  await expect(page.locator('#ten-replay-start')).toBeVisible();
+  await expect(page.locator("main.marcel-home > section")).toHaveCount(5);
+  await expect(page.locator(".rm-home-hero-actions").getByRole("link", { name: /Start free analysis/ })).toHaveAttribute("href", "/analyze");
 }
 
 test.describe("first-time visitor funnel", () => {
@@ -63,45 +64,28 @@ test.describe("first-time visitor funnel", () => {
 
   test("the landing page explains one cross-match problem and exposes one immediate replay action", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Replay Method finds the mistake you keep repeating/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Stop guessing.*decision holding you back/i })).toBeVisible();
     await expect(page.locator(".reveal-promises")).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "You both go. No one covers." })).toBeVisible();
-    await expect(page.locator('#ten-replay-start input[type="file"][multiple]')).toHaveCount(1);
+    await expect(page.getByRole("heading", { name: "From replay files to one useful focus." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "One common mistake. Two very different outcomes." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /A pattern needs evidence.*confidence theatre/i })).toBeVisible();
+    await expect(page.locator('main.marcel-home input[type="file"]')).toHaveCount(0);
     await expect(page.getByRole("button", { name: /League of Legends|VALORANT/i })).toHaveCount(0);
-    const startCard = page.locator("#ten-replay-start");
-    await expect(startCard.getByText("0/10", { exact: true })).toBeVisible();
-    await expect(startCard.getByText("Drop your 10 replays here", { exact: true })).toBeVisible();
-    await expect(startCard.getByText(/original PC \.replay files/i)).toBeVisible();
-    await expect(startCard.getByText(/Complete|report is ready|10 matches compared/i)).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /Open full upload page/ })).toHaveAttribute("href", "/analyze");
-    await expect(page.locator(".reveal-faq details")).toHaveCount(5);
+    await expect(page.locator(".rm-home-hero-actions").getByRole("link", { name: /Start free analysis/ })).toHaveAttribute("href", "/analyze");
+    await expect(page.locator(".reveal-faq details")).toHaveCount(0);
   });
 
-  test("the home hero accepts ten replay files without an extra navigation step", async ({ page }) => {
+  test("the home hero leads directly to the focused ten-replay intake", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
-    const startCard = page.locator("#ten-replay-start");
-    await expect(startCard).toHaveAttribute("data-hydrated", "true");
-    const tenReplays = Array.from({ length: 10 }, (_, index) => ({
-      name: `home-match-${String(index + 1).padStart(2, "0")}.replay`,
-      mimeType: "application/octet-stream",
-      buffer: Buffer.from(`home-direct-selection-${index}`),
-    }));
-    await page.locator('#ten-replay-start input[type="file"]').setInputFiles(tenReplays);
-    await expect(page).toHaveURL(/\/$/);
-    await expect(startCard.locator(".reveal-home-files article.ready")).toHaveCount(10);
-    await expect(startCard.getByText("10 of 10", { exact: true }).first()).toBeVisible();
-    await expect(startCard.getByLabel("Email for your private report")).toBeVisible();
-    await expect(startCard.getByLabel("Current playlist rank")).toBeVisible();
-    await expect(startCard.getByRole("button", { name: /Verify my 10 replays/i })).toBeEnabled();
-    const consentRow = await startCard.locator(".reveal-home-fields .check").boundingBox();
-    const submitButton = await startCard.locator(".reveal-home-submit").boundingBox();
-    expect(consentRow && submitButton).toBeTruthy();
-    expect(submitButton!.y - (consentRow!.y + consentRow!.height)).toBeGreaterThanOrEqual(12);
+    await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Start free analysis/ }).click();
+    await expect(page).toHaveURL(/\/analyze$/);
+    await expect(page.getByText("Choose ten ranked matches.", { exact: true })).toBeVisible();
+    await expect(page.locator('input[type="file"][multiple]')).toHaveCount(1);
   });
 
   test("the illustrative product loop supports autoplay, pointer, keyboard and swipe before opening upload", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
-    await expectTenReplayStart(page);
+    await expectLandingFunnel(page);
     await expect(page.locator(".reveal-review-controls")).toHaveCount(0);
     await expect(page.locator(".reveal-legend")).toHaveCount(0);
     await expect(page.locator(".reveal-goal")).toHaveCount(2);
@@ -205,11 +189,13 @@ test.describe("first-time visitor funnel", () => {
     expect(centerDistance(mistakeUser!, mistakeMate!)).toBeGreaterThan(mistakeField!.width * 0.08);
     expect(mistakeOpponent!.x).toBeGreaterThan(mistakeBall!.x);
     const mistakeContact = await lowerRightNoseCornerContact(".car-opp");
-    expect(mistakeContact.surfaceGap).toBeGreaterThanOrEqual(0);
+    // Rendering engines can land the intended tangent contact a few hundredths
+    // of a CSS pixel inside the ball after transforms are rasterized.
+    expect(mistakeContact.surfaceGap).toBeGreaterThanOrEqual(-0.05);
     expect(mistakeContact.surfaceGap).toBeLessThanOrEqual(2);
     expect(mistakeContact.horizontalOffset).toBeGreaterThan(0);
-    expect(await rotationDegrees(".car-you")).toBeCloseTo(40, 0);
-    expect(await rotationDegrees(".car-mate")).toBeCloseTo(29, 0);
+    expect(await rotationDegrees(".car-you")).toBeCloseTo(33, 0);
+    expect(await rotationDegrees(".car-mate")).toBeCloseTo(34, 0);
     expect(centerDistance(mistakeOpponent!, mistakeBall!)).toBeLessThan(mistakeField!.width * 0.09);
     await page.getByRole("tab", { name: /^02 / }).press("ArrowRight");
     await expect(page.getByRole("tab", { name: /^03 / })).toHaveAttribute("aria-selected", "true");
@@ -223,13 +209,14 @@ test.describe("first-time visitor funnel", () => {
     const consequenceUser = await page.locator(".car-you").boundingBox();
     const consequenceMate = await page.locator(".car-mate").boundingBox();
     expect(mistakeOpponent && consequenceField && consequenceOpponent && consequenceOpponentTwo && consequenceBall && consequenceUser && consequenceMate).toBeTruthy();
-    expect(consequenceOpponent!.x).toBeLessThan(mistakeOpponent!.x - consequenceField!.width * 0.05);
-    expect(consequenceOpponentTwo!.x).toBeGreaterThan(mistakeOpponentTwo!.x + consequenceField!.width * 0.04);
-    expect(consequenceOpponentTwo!.y).toBeGreaterThan(mistakeOpponentTwo!.y + consequenceField!.height * 0.08);
+    expect(consequenceOpponent!.y).toBeGreaterThan(mistakeOpponent!.y + consequenceField!.height * 0.08);
+    expect(consequenceOpponentTwo!.x).toBeLessThan(mistakeOpponentTwo!.x - consequenceField!.width * 0.02);
+    expect(consequenceOpponentTwo!.y).toBeLessThan(mistakeOpponentTwo!.y - consequenceField!.height * 0.03);
     expect(consequenceBall!.x).toBeLessThan(consequenceOpponent!.x);
     expect(consequenceBall!.x).toBeLessThan(consequenceField!.x + consequenceField!.width * 0.1);
     expect(consequenceBall!.y).toBeGreaterThan(mistakeBall!.y + consequenceField!.height * 0.08);
-    expect(consequenceMate!.x).toBeGreaterThan(mistakeBall!.x - consequenceField!.width * 0.02);
+    expect(consequenceMate!.x).toBeGreaterThan(mistakeMate!.x + consequenceField!.width * 0.03);
+    expect(consequenceMate!.y).toBeGreaterThan(mistakeMate!.y + consequenceField!.height * 0.06);
     const shotStart = { x: consequenceBall!.x + consequenceBall!.width / 2, y: consequenceBall!.y + consequenceBall!.height / 2 };
     const shotEnd = { x: mistakeBall!.x + mistakeBall!.width / 2, y: mistakeBall!.y + mistakeBall!.height / 2 };
     const userCenterX = consequenceUser!.x + consequenceUser!.width / 2;
@@ -253,7 +240,7 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".reveal-scene")).toHaveCSS("animation-name", "reveal-restart-scene");
     await expect(page.locator(".reveal-restart-spinner")).toHaveCSS("animation-name", "reveal-restart-spin");
     await expect(page.locator(".reveal-restart-mark")).toHaveCount(1);
-    await expect(page.locator(".reveal-restart-mark")).toHaveText("↻");
+    await expect(page.locator(".reveal-restart-mark svg")).toHaveCount(1);
     await expect(page.locator(".reveal-restart-mark")).toHaveCSS("color", "rgb(255, 255, 255)");
     await expect(page.locator(".reveal-restart-arcs")).toHaveCount(0);
     await expect(page.locator(".reveal-restart-head")).toHaveCount(0);
@@ -275,13 +262,21 @@ test.describe("first-time visitor funnel", () => {
     const replayMotion = await page.locator(".reveal-restart-spinner").evaluate((element) => {
       const animation = element.getAnimations()[0];
       const effect = animation.effect as KeyframeEffect;
+      const scene = document.querySelector(".reveal-scene")!.getAnimations()[0]?.effect as KeyframeEffect;
+      const circle = document.querySelector(".reveal-restart")!.getAnimations()[0]?.effect as KeyframeEffect;
       return {
         duration: effect.getTiming().duration,
+        sceneDuration: scene.getTiming().duration,
+        circleDuration: circle.getTiming().duration,
         offsets: effect.getKeyframes().map(frame => frame.offset),
       };
     });
-    expect(replayMotion.duration).toBe(2000);
-    expect(replayMotion.offsets).toEqual([0, 0.25, 0.7, 1]);
+    expect(replayMotion.duration).toBe(980);
+    expect(replayMotion.sceneDuration).toBe(980);
+    expect(replayMotion.circleDuration).toBe(980);
+    expect(replayMotion.offsets).toHaveLength(16);
+    expect(replayMotion.offsets[0]).toBe(0);
+    expect(replayMotion.offsets.at(-1)).toBe(1);
     await page.waitForTimeout(950);
     const rewindUser = await page.locator(".car-you").boundingBox();
     const rewindMate = await page.locator(".car-mate").boundingBox();
@@ -294,19 +289,20 @@ test.describe("first-time visitor funnel", () => {
     const decisionUser = await page.locator(".car-you").boundingBox();
     const decisionMate = await page.locator(".car-mate").boundingBox();
     expect(rewindUser && rewindMate && rewindOpponentTwo && decisionOpponent && decisionOpponentTwo && decisionBall && decisionUser && decisionMate && consequenceField).toBeTruthy();
-    expect(decisionUser!.x).toBeLessThan(rewindUser!.x - consequenceField!.width * 0.07);
+    expect(decisionUser!.x).toBeLessThan(rewindUser!.x - consequenceField!.width * 0.05);
     expect(decisionMate!.x).toBeGreaterThan(rewindMate!.x + consequenceField!.width * 0.05);
     expect(rewindMate!.y).toBeLessThan(decisionMate!.y - consequenceField!.height * 0.08);
-    expect(decisionOpponentTwo!.x).toBeGreaterThan(rewindOpponentTwo!.x + consequenceField!.width * 0.05);
+    expect(decisionOpponentTwo!.x + decisionOpponentTwo!.width / 2).toBeGreaterThan(rewindOpponentTwo!.x + rewindOpponentTwo!.width / 2);
+    expect(decisionOpponentTwo!.y).toBeLessThan(rewindOpponentTwo!.y - consequenceField!.height * 0.15);
     expect(decisionOpponent!.x).toBeGreaterThan(decisionBall!.x);
     expect(decisionOpponent!.y).toBeLessThan(decisionBall!.y);
     const decisionContact = await lowerRightNoseCornerContact(".car-opp");
-    expect(decisionContact.surfaceGap).toBeGreaterThanOrEqual(0);
+    expect(decisionContact.surfaceGap).toBeGreaterThanOrEqual(-0.05);
     expect(decisionContact.surfaceGap).toBeLessThanOrEqual(2);
     expect(decisionContact.horizontalOffset).toBeGreaterThan(0);
     expect(await rotationDegrees(".car-you")).toBeCloseTo(-6, 0);
-    expect(await rotationDegrees(".car-mate")).toBeCloseTo(31, 0);
-    expect(await rotationDegrees(".car-opp-two")).toBeCloseTo(135, 0);
+    expect(await rotationDegrees(".car-mate")).toBeCloseTo(34, 0);
+    expect(await rotationDegrees(".car-opp-two")).toBeCloseTo(-90, 0);
     expect(centerDistance(decisionOpponent!, decisionBall!)).toBeLessThan(consequenceField!.width * 0.09);
     await page.getByRole("tab", { name: /^06 / }).click();
     await page.waitForTimeout(950);
@@ -316,13 +312,62 @@ test.describe("first-time visitor funnel", () => {
     const resultBall = await page.locator(".reveal-ball").boundingBox();
     expect(resultOpponent && resultOpponentTwo && resultUser && resultBall).toBeTruthy();
     expect(resultOpponent!.x).toBeGreaterThan(resultBall!.x);
-    expect(await rotationDegrees(".car-opp-two")).toBeCloseTo(180, 0);
-    expect(resultBall!.x - (resultUser!.x + resultUser!.width)).toBeGreaterThanOrEqual(3);
+    expect(await rotationDegrees(".car-opp-two")).toBeCloseTo(-150, 0);
+    expect(resultBall!.x - (resultUser!.x + resultUser!.width)).toBeGreaterThanOrEqual(2);
     expect(resultBall!.x - (resultUser!.x + resultUser!.width)).toBeLessThanOrEqual(6);
     expect(Math.abs((resultBall!.y + resultBall!.height / 2) - (resultUser!.y + resultUser!.height / 2))).toBeLessThanOrEqual(2);
-    await expect(page.getByText("Illustrative example, not your analysis.", { exact: true })).toBeVisible();
-    await page.getByRole("link", { name: /Open full upload page/ }).click();
+    await expect(page.getByText("This demo", { exact: true })).toBeVisible();
+    await expect(page.getByText("Your real analysis", { exact: true })).toBeVisible();
+    await page.locator(".rm-header-cta").click();
     await expect(page).toHaveURL(/\/analyze$/);
+  });
+
+  test("all six stages preserve the sketched replay pairs and nose directions", async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) < 600, "The reviewed reference captures use the desktop field.");
+    await page.goto("/?demoReview=1&demoAutoplay=off", { waitUntil: "load" });
+    await page.locator("#product").scrollIntoViewIfNeeded();
+
+    const targets = [
+      [[21, 22.8, 0], [31.4, 14.2, 20], [80.5, 13.4, 143], [80.7, 72.7, 275]],
+      [[47.5, 26.8, 33], [56.2, 27.7, 34], [66.6, 36.1, 112], [82.9, 50.8, 270]],
+      [[51.8, 31.6, 28], [61.2, 39.2, 55], [66.8, 50.4, 90], [79.7, 44.6, 210]],
+      [[21, 22.8, 0], [31.4, 14.2, 20], [80.5, 13.4, 143], [80.7, 72.7, 275]],
+      [[14.9, 51.9, 354], [56.2, 27.7, 34], [66.6, 36.1, 112], [82.9, 50.8, 270]],
+      [[12.2, 50.6, 10], [61.2, 39.2, 55], [66.8, 50.4, 90], [79.7, 44.6, 210]],
+    ] as const;
+    const captured: number[][][] = [];
+
+    for (const [index, target] of targets.entries()) {
+      await page.getByRole("tab", { name: new RegExp(`^0${index + 1} `) }).click();
+      await page.waitForTimeout(1000);
+      const actual = await page.locator(".reveal-car").evaluateAll((cars) => {
+        const field = cars[0]!.closest(".reveal-field") as HTMLElement;
+        return cars.map((car) => {
+          const element = car as HTMLElement;
+          const matrix = getComputedStyle(element).transform.match(/-?\d*\.?\d+/g)?.map(Number) ?? [];
+          const degrees = (Math.atan2(matrix[1] ?? 0, matrix[0] ?? 1) * 180 / Math.PI + 360) % 360;
+          return [element.offsetLeft / field.clientWidth * 100, element.offsetTop / field.clientHeight * 100, degrees];
+        });
+      });
+      captured.push(actual);
+
+      for (const [carIndex, expected] of target.entries()) {
+        expect(actual[carIndex]![0]).toBeCloseTo(expected[0], 0);
+        expect(actual[carIndex]![1]).toBeCloseTo(expected[1], 0);
+        const angleGap = Math.abs(actual[carIndex]![2] - expected[2]);
+        expect(Math.min(angleGap, 360 - angleGap)).toBeLessThanOrEqual(1);
+      }
+    }
+
+    const expectSameCar = (firstStage: number, secondStage: number, carIndex: number) => {
+      expect(captured[firstStage]![carIndex]![0]).toBeCloseTo(captured[secondStage]![carIndex]![0], 1);
+      expect(captured[firstStage]![carIndex]![1]).toBeCloseTo(captured[secondStage]![carIndex]![1], 1);
+      const angleGap = Math.abs(captured[firstStage]![carIndex]![2] - captured[secondStage]![carIndex]![2]);
+      expect(Math.min(angleGap, 360 - angleGap)).toBeLessThanOrEqual(1);
+    };
+    [0, 1, 2, 3].forEach(carIndex => expectSameCar(0, 3, carIndex));
+    [1, 2, 3].forEach(carIndex => expectSameCar(1, 4, carIndex));
+    [1, 2, 3].forEach(carIndex => expectSameCar(2, 5, carIndex));
   });
 
   test("local review exposes both demo variants while the public default stays clean", async ({ page }) => {
@@ -349,9 +394,9 @@ test.describe("first-time visitor funnel", () => {
   test("reduced motion keeps the product loop legible without animated state", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/", { waitUntil: "load" });
-    await expectTenReplayStart(page);
+    await expectLandingFunnel(page);
     await expect(page.getByRole("button", { name: "Play demo", exact: true })).toBeVisible();
-    await page.getByRole("link", { name: /Open full upload page/ }).click();
+    await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Start free analysis/ }).click();
     await expect(page).toHaveURL(/\/analyze$/);
   });
 
@@ -359,13 +404,13 @@ test.describe("first-time visitor funnel", () => {
     await page.goto("/analyze", { waitUntil: "load" });
     await expect(page.locator('main.batch-intake-page[data-hydrated="true"]')).toBeVisible();
     await expect(page.locator(".intake-card")).toBeVisible();
-    await expect(page.getByText("Choose your ten replays.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Choose ten ranked matches.", { exact: true })).toBeVisible();
     await expect(page.getByLabel("0 of 10 verified replays")).toBeVisible();
     await expect(page.getByText(/same player.*ranked.*playlist/i).first()).toBeVisible();
     await expect(page.getByLabel("Email for the private report *")).toBeVisible();
     await expect(page.getByLabel("Current playlist rank *")).toBeVisible();
     await expect(page.locator('input[type="file"][multiple]')).toHaveCount(1);
-    await expect(page.getByRole("button", { name: /VERIFY MY 10 REPLAYS/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /START MY PRIVATE ANALYSIS/ })).toBeVisible();
     const uploadLayout = await page.locator(".file-drop").evaluate(element => {
       const label = element.querySelector("b")?.getBoundingClientRect();
       const helper = element.querySelector("small")?.getBoundingClientRect();
@@ -448,27 +493,22 @@ test.describe("first-time visitor funnel", () => {
     await expect(page).toHaveURL(/\/report\/ready-batch\?token=ready-token$/);
   });
 
-  test("Rocket League is active while League and VALORANT are explicitly deferred", async ({ page }) => {
+  test("legacy game URLs collapse into the Rocket League product", async ({ page }) => {
     await page.goto("/rocket-league");
-    await expect(page.locator('#ten-replay-start input[type="file"][multiple]')).toHaveCount(1);
-    await expect(page.getByText("Drop your 10 replays here", { exact: true })).toBeVisible();
-    for (const [route, game] of [["/league", "League of Legends"], ["/valorant", "VALORANT"]] as const) {
+    await expect(page).toHaveURL(/\/$/);
+    await expectLandingFunnel(page);
+    for (const route of ["/league", "/valorant"] as const) {
       await page.goto(route);
-      await expect(page.getByText(`${game.toUpperCase()} · COMING LATER`, { exact: true })).toBeVisible();
-      await expect(page.getByRole("heading", { name: /Evidence before expansion/i })).toBeVisible();
-      await expect(page.locator('input[type="file"]')).toHaveCount(0);
+      await expect(page).toHaveURL(/\/$/);
+      await expectLandingFunnel(page);
+      await expect(page.getByText(/COMING LATER/i)).toHaveCount(0);
     }
   });
 
-  test("the free Climb Check gives a useful result without login or email", async ({ page }) => {
+  test("the archived Climb Check routes into the Rocket League field note", async ({ page }) => {
     await page.goto("/climb-check", { waitUntil: "load" });
-    await expect(page.locator('main.tool-page[data-hydrated="true"]')).toBeVisible();
-    await page.getByRole("button", { name: /Rocket League/ }).click();
-    await expect(page.getByRole("heading", { name: /Which one sounds most like your sessions/i })).toBeVisible();
-    await page.getByRole("button", { name: /double committing/i }).click();
-    await expect(page.getByText("YOUR STARTING HYPOTHESIS")).toBeVisible();
-    await expect(page.getByText("YOUR NEXT-QUEUE RULE")).toBeVisible();
-    await expect(page.getByText(/based on your answer, not match data/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/guides\/rocket-league-replay-review-checklist$/);
+    await expect(page.getByRole("heading", { name: /Stop watching the goal/i })).toBeVisible();
   });
 });
 
@@ -477,44 +517,43 @@ test.describe("truthful product boundaries", () => {
     await page.goto("/analyze?game=rocket-league&platform=pc", { waitUntil: "load" });
     await expect(page.locator('main.batch-intake-page[data-hydrated="true"]')).toBeVisible();
     await expect(page.locator(".intake-card")).toBeVisible();
-    await expect(page.getByText(/ten original ranked PC replays/i).first()).toBeVisible();
+    await expect(page.getByText(/original PC files/i).first()).toBeVisible();
     await expect(page.locator('input[type="file"]')).toHaveCount(1);
     await expect(page.getByText(/same ranked 1v1, 2v2 or 3v3 playlist/i)).toBeVisible();
     await expect(page.getByText(/Console video analysis/i)).toHaveCount(0);
   });
 
-  test("landing FAQ explains replacement and abstention without opening another product lane", async ({ page }) => {
+  test("landing explains evidence and abstention without an FAQ detour", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
-    await expectTenReplayStart(page);
-    await page.locator("summary").filter({ hasText: "What if one file is invalid?" }).click();
-    await expect(page.getByText(/does not consume a valid slot/i)).toBeVisible();
-    await page.locator("summary").filter({ hasText: "Why might Replay Method abstain?" }).click();
-    await expect(page.getByText(/explains why it cannot name a habit yet/i)).toBeVisible();
+    await expectLandingFunnel(page);
+    await expect(page.getByText("Several matches, not one clip.", { exact: true })).toBeVisible();
+    await expect(page.getByText("No signal means no forced answer.", { exact: true })).toBeVisible();
+    await expect(page.getByText(/your free analysis remains available/i)).toBeVisible();
   });
 
   test("the public start link reaches the same 10-replay intake on mobile and desktop", async ({ page }) => {
     await page.goto("/?utm_source=community&token=private", { waitUntil: "load" });
-    await expectTenReplayStart(page);
-    await page.getByRole("link", { name: /Open full upload page/ }).click();
+    await expectLandingFunnel(page);
+    await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Start free analysis/ }).click();
     await expect(page).toHaveURL(/\/analyze$/);
-    await expect(page.getByRole("heading", { name: /Upload 10 ranked replays/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Ten replays. One pattern worth fixing/i })).toBeVisible();
     expect(new URL(page.url()).searchParams.has("token")).toBe(false);
   });
 
-  test("League and VALORANT are described as official-access requests, not live analysis", async ({ page }) => {
-    for (const game of ["league", "valorant"] as const) {
-      await page.goto(`/${game}`);
-      await expect(page.getByText(new RegExp(`${game === "league" ? "LEAGUE OF LEGENDS" : "VALORANT"} · COMING LATER`))).toBeVisible();
-      await expect(page.getByRole("heading", { name: /Evidence before expansion/i })).toBeVisible();
-      await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  test("League and VALORANT have no separate public funnel", async ({ page }) => {
+    for (const route of ["/league", "/valorant"] as const) {
+      await page.goto(route);
+      await expect(page).toHaveURL(/\/$/);
+      await expectLandingFunnel(page);
+      await expect(page.getByText(/LEAGUE OF LEGENDS|VALORANT|COMING LATER/i)).toHaveCount(0);
     }
   });
 
   test("the commercial landing does not distract with pricing or checkout", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#pricing")).toHaveCount(1);
-    await expect(page.getByText("Planned for Premium", { exact: true })).toBeVisible();
-    await expect(page.getByText(/up to 35 each week/i)).toBeVisible();
+    await expect(page.getByText(/Planned for Premium|up to 35 representative replays each week/i)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: /Ten replays.*One thing to improve/i })).toBeVisible();
     await expect(page.locator('[data-plan="monthly"]')).toHaveCount(0);
     await expect(page.getByRole("button", { name: /buy|subscribe|checkout/i })).toHaveCount(0);
   });

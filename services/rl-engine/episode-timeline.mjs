@@ -30,6 +30,8 @@ const DECISION_EVENT_TYPES = new Set([
   "whiff",
 ]);
 
+export const EPISODE_TIMELINE_VERSION = "rocket-league-episode-timeline.v2";
+
 function identityValue(identity) {
   if (typeof identity === "string") return identity.toLowerCase();
   if (!identity || typeof identity !== "object") return "";
@@ -124,8 +126,13 @@ export function normalizeEpisodeTimeline(statsTimeline, subjectPlayerId) {
   }
 
   const phases = phaseSegments(statsTimeline?.frames ?? []);
+  events.sort((left, right) => (
+    (Number.isFinite(left.startTimeSeconds) ? left.startTimeSeconds : Infinity)
+    - (Number.isFinite(right.startTimeSeconds) ? right.startTimeSeconds : Infinity)
+    || left.id.localeCompare(right.id)
+  ));
   return {
-    schemaVersion: "rocket-league-episode-timeline.v1",
+    schemaVersion: EPISODE_TIMELINE_VERSION,
     subjectPlayerId: subjectId || null,
     phases,
     events,

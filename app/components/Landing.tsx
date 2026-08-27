@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type TouchEvent } from "react";
 import Link from "next/link";
 import { trackProductEvent } from "../../lib/client-analytics";
-import BatchAnalyzeFlow from "../analyze/BatchAnalyzeFlow";
+import { CustomerFooter, CustomerHeader } from "./CustomerChrome";
+import { ReplayMark } from "./ReplayMark";
 
 export type GameKey = "general" | "league" | "valorant" | "rocket-league";
 
@@ -30,6 +31,12 @@ const loopStages = [
   { key: "decision", label: "05 · The better decision", title: "Stay one layer back.", body: "Keep enough distance to react to the clear." },
   { key: "result", label: "06 · The result", title: "Keep the play alive.", body: "You reach the next ball and your team stays in control." },
 ] as const;
+
+// Deliberately speed-remapped: action moves quickly, while the consequence and
+// result get enough room to land. The full loop is 9.2 seconds.
+const LOOP_STAGE_DURATIONS_MS = [1500, 1150, 1900, 1050, 1550, 2050] as const;
+const REPLAY_CUE_LEAD_MS = 280;
+const REPLAY_CUE_DURATION_MS = 980;
 
 function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
   const [activeStage, setActiveStage] = useState(0);
@@ -84,7 +91,7 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
     const timer = window.setTimeout(() => {
       if (activeStage === loopStages.length - 1) setPlayback("complete");
       else setActiveStage(current => current + 1);
-    }, 2600);
+    }, LOOP_STAGE_DURATIONS_MS[activeStage]);
     return () => window.clearTimeout(timer);
   }, [activeStage, playback]);
 
@@ -93,12 +100,17 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
 
     if (playback === "playing" && activeStage === 2) {
       timers.push(window.setTimeout(() => setReplayCueVisible(false), 0));
-      timers.push(window.setTimeout(() => setReplayCueVisible(true), 2350));
+      timers.push(window.setTimeout(
+        () => setReplayCueVisible(true),
+        LOOP_STAGE_DURATIONS_MS[activeStage] - REPLAY_CUE_LEAD_MS,
+      ));
     } else if (activeStage === 3) {
       timers.push(window.setTimeout(() => setReplayCueVisible(true), 0));
       timers.push(window.setTimeout(
         () => setReplayCueVisible(false),
-        playback === "playing" ? 1750 : 2000,
+        playback === "playing"
+          ? REPLAY_CUE_DURATION_MS - REPLAY_CUE_LEAD_MS
+          : REPLAY_CUE_DURATION_MS,
       ));
     } else {
       timers.push(window.setTimeout(() => setReplayCueVisible(false), 0));
@@ -140,9 +152,10 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
 
   return <section className="reveal-section" id="product">
     <div className="reveal-shell">
-      <header className="reveal-section-intro"><span className="reveal-kicker">16-second replay example</span><h2>You both go. No one covers.</h2><p>See why following the same ball leaves the next play open — and what to do instead.</p></header>
+      <header className="reveal-section-intro"><span className="reveal-kicker">Simple example · Double commit</span><h2>One common mistake. Two very different outcomes.</h2><p>Watch one double commit open the net. Then see how Replay Method finds the patterns you repeat across ten matches.</p></header>
       {reviewControls && <div className="reveal-review-controls" aria-label="Local demo review controls"><span>Local review</span><button type="button" aria-pressed={variant === "tactical"} onClick={() => setVariant("tactical")}>A · Tactical board</button><button type="button" aria-pressed={variant === "focus"} onClick={() => setVariant("focus")}>B · Focus mode</button></div>}
       <div ref={demoRef} className={`reveal-demo reveal-card reveal-variant-${variant}`} data-playback={playback} aria-label={`Illustrative Replay Method product loop, ${variant === "tactical" ? "tactical board" : "focus mode"} variant`} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
+        <header className="rm-demo-windowbar"><span className="active"><i />Replay example</span><span>Decision comparison</span><small>9.2 second loop</small></header>
         <div className="reveal-field-wrap">
           <div className={`reveal-field stage-${stage.key}${replayCueVisible ? " show-replay-cue" : ""}`} role="img" aria-label="Illustrative horizontal Rocket League field and top-down 2v2 scenario. Both blue cars point toward and chase the same ball during the mistake. Your blue car is identified by a restrained gold outline. A circular replay cue signals a fresh attempt.">
             <span className="reveal-scene" aria-hidden="true">
@@ -150,36 +163,56 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
               <i className="reveal-ball"><span className="reveal-ball-core" /></i>
               <i className="reveal-car car-you" /><i className="reveal-car car-mate" /><i className="reveal-car car-opp" /><i className="reveal-car car-opp-two" />
             </span>
-                  <span className="reveal-restart" aria-hidden="true"><span className="reveal-restart-spinner"><i className="reveal-restart-mark">↻</i></span></span>
+                  <span className="reveal-restart" aria-hidden="true"><span className="reveal-restart-spinner"><i className="reveal-restart-mark"><ReplayMark /></i></span></span>
           </div>
         </div>
         <div className="reveal-demo-copy reveal-card" id="loop-stage-panel" role="tabpanel" aria-live={playback === "playing" ? "off" : "polite"} aria-labelledby={`loop-stage-${activeStage}`}>
-          <div><div className="reveal-demo-meta"><span className="reveal-step-index">{stage.label}</span><div className="reveal-demo-controls" aria-label="Example playback control">{playback === "playing" ? <button type="button" onClick={() => setPlayback("paused")}>Pause</button> : playback === "complete" ? <button type="button" onClick={play}>Replay</button> : <button type="button" onClick={play}>Play demo</button>}</div></div><h3>{stage.title}</h3><p>{stage.body}</p><div className="reveal-before-after"><div><small>The mistake</small><b>Follow the same ball</b></div><div><small>Better decision</small><b>Protect the next ball</b></div></div></div>
+          <div key={stage.key} className="reveal-stage-copy"><div className="reveal-demo-meta"><span className="reveal-step-index">{stage.label}</span><div className="reveal-demo-controls" aria-label="Example playback control">{playback === "playing" ? <button type="button" onClick={() => setPlayback("paused")}>Pause</button> : playback === "complete" ? <button type="button" onClick={play}>Replay</button> : <button type="button" onClick={play}>Play demo</button>}</div></div><h3>{stage.title}</h3><p>{stage.body}</p><div className="reveal-before-after"><div><small>The mistake</small><b>Follow the same ball</b></div><div><small>Better decision</small><b>Protect the next ball</b></div></div></div>
           <div className="reveal-timeline" role="tablist" aria-label="Demo steps">{loopStages.map((item,index)=><button id={`loop-stage-${index}`} type="button" role="tab" aria-label={`${String(index+1).padStart(2,"0")} ${item.label.replace(/^\d+ · /, "")}`} aria-selected={activeStage===index} aria-controls="loop-stage-panel" tabIndex={activeStage===index?0:-1} onClick={()=>chooseStage(index)} onKeyDown={event=>handleStageKey(event,index)} key={item.key}>{String(index+1).padStart(2,"0")}</button>)}</div>
         </div>
+        <div className="reveal-example-bridge" aria-label="Difference between the simple example and a real Replay Method analysis">
+          <div><span>This demo</span><b>One familiar mistake.</b><p>Six beats make a double commit instantly readable.</p></div>
+          <i aria-hidden="true">→</i>
+          <div><span>Your real analysis</span><b>Ten matches in context.</b><p>{earlyAccessOpen ? "Only verified, repeated opportunities become coaching." : "It opens only when every match can be verified safely."}</p></div>
+          <a href="#why">Why ten replays matter <span aria-hidden="true">↓</span></a>
+        </div>
       </div>
-      <p className="reveal-demo-truth"><b>Illustrative example, not your analysis.</b> {earlyAccessOpen ? "Your real review only uses moments verified across your own ten replays." : "Your real review opens only while every match can be verified safely."}</p>
     </div>
   </section>;
 }
 
-const infoPanels = {
-  free: ["Included free", "See what keeps holding you back.", "Replay Method analyzes all ten matches together, ignores one-off chaos, and finds the mistake that actually repeats.", ["10 matches together", "Your repeated mistake", "What to try next"]],
-  premium: ["Planned for Premium", "See whether you are actually fixing it.", "Premium will later follow one priority across four weeks and show whether the habit improved, slipped back, or stayed unclear.", ["One monthly focus", "Up to 35 each week", "Progress you can see"]],
-  honest: ["An honest result", "No clear pattern means no made-up advice.", "If the ten matches do not support one repeated mistake, you get the verified facts and keep your free analysis for another set.", ["Files still checked", "No invented coaching", "Free analysis remains"]],
-  privacy: ["Private by default", "Your replays stay yours.", "Your files and report stay tied to your private access. Duplicates are blocked, replacements keep your progress, and reports are private by default.", ["Private report", "Safe resume", "Duplicate protection"]],
-  faq: ["Quick answer", "What needs to match?", "Use ten replays from the same player and playlist. If one file is wrong, replace only that file — you do not start over.", ["Same player", "Same playlist", "Replace one file"]],
-  advanced: ["How it works", "The complexity stays under the surface.", "Evidence thresholds, exclusions, detector details, and experiment labels remain available when someone chooses to inspect the advanced view.", ["Evidence rules", "Version details", "Processing notes"]],
-} as const;
-
-function RevealInfo() {
-  const [active, setActive] = useState<keyof typeof infoPanels>("free");
-  const panel = infoPanels[active];
-  const labels: Array<[keyof typeof infoPanels,string]> = [["free","What you get"],["premium","Keep improving"],["honest","When it is unclear"],["privacy","Your files"],["faq","Quick answers"],["advanced","How it works"]];
-  return <section className="reveal-section reveal-info-section"><div className="reveal-shell"><header className="reveal-section-intro"><span className="reveal-kicker">What Replay Method Does</span><h2>One bad game is noise. A repeated mistake is the clue.</h2><p>We compare all ten matches, find what keeps happening, and turn it into one clear thing to try next.</p></header><div className="reveal-info"><div className="reveal-info-nav" aria-label="Product information">{labels.map(([key,label])=><button type="button" aria-pressed={active===key} onClick={()=>setActive(key)} key={key}>{label}<span>→</span></button>)}</div><article className="reveal-info-panel reveal-card" aria-live="polite"><span className="reveal-kicker">{panel[0]}</span><h3>{panel[1]}</h3><p>{panel[2]}</p><div>{panel[3].map(point=><span key={point}>{point}</span>)}</div></article></div></div></section>;
+function HowItWorks() {
+  return <section className="rm-home-how" id="method" aria-labelledby="how-title">
+    <div className="reveal-shell">
+      <header><span className="reveal-kicker">How it works</span><h2 id="how-title">From replay files to one useful focus.</h2></header>
+      <ol>
+        <li><small>01</small><div><h3>Upload ten ranked replays.</h3><p>Use the same player and playlist so the matches can be compared fairly.</p></div></li>
+        <li><small>02</small><div><h3>We find what repeats.</h3><p>Replay Method compares similar decisions across the full set, with the situation around each one.</p></div></li>
+        <li><small>03</small><div><h3>Take one focus into your next session.</h3><p>You get the clearest supported pattern, the replay evidence and a concrete adjustment.</p></div></li>
+      </ol>
+    </div>
+  </section>;
 }
 
-export default function Landing({ game = "general", engineOpen = false, earlyAccessOpen = false }: { game?: GameKey; engineOpen?: boolean; calibrationOpen?: boolean; earlyAccessOpen?: boolean }) {
+function WhyTrustIt({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
+  return <section className="rm-home-trust" id="why" aria-labelledby="why-title">
+    <div className="reveal-shell">
+      <header>
+        <span className="reveal-kicker">Why trust the result</span>
+        <h2 id="why-title">A pattern needs evidence.<br />Not confidence theatre.</h2>
+        <p>{earlyAccessOpen ? "Early Access stays explicit: the engine shows what supports the result and where certainty ends." : "The private beta stays closed when the engine cannot safely deliver a supported result."}</p>
+      </header>
+      <div className="rm-home-trust-list">
+        <article><span>01</span><div><h3>Several matches, not one clip.</h3><p>A habit must return across comparable moments before it becomes coaching.</p></div></article>
+        <article><span>02</span><div><h3>Context changes the verdict.</h3><p>Pressure, possession, teammate coverage and what happened next all matter.</p></div></article>
+        <article><span>03</span><div><h3>The evidence stays attached.</h3><p>The result points back to concrete replay moments, including counterexamples.</p></div></article>
+        <article><span>04</span><div><h3>No signal means no forced answer.</h3><p>If the proof is too weak, Replay Method says so—and your free analysis remains available.</p></div></article>
+      </div>
+    </div>
+  </section>;
+}
+
+export default function Landing({ game = "general", earlyAccessOpen = false }: { game?: GameKey; engineOpen?: boolean; calibrationOpen?: boolean; earlyAccessOpen?: boolean }) {
   const pageRef = useRef<HTMLElement>(null);
   useEffect(() => {
     pageRef.current?.setAttribute("data-hydrated", "true");
@@ -193,32 +226,25 @@ export default function Landing({ game = "general", engineOpen = false, earlyAcc
   if (game === "league" || game === "valorant") return <FutureGame game={game} />;
 
   return <main ref={pageRef} className="marcel-home reveal-home" data-hydrated="false">
-    <nav className="reveal-nav reveal-shell" aria-label="Replay Method">
-      <Link className="reveal-brand" href="/" aria-label="Replay Method home"><span className="reveal-logo" aria-hidden="true" /><span>Replay Method</span></Link>
-      <div className="reveal-nav-links"><a href="#product">How it works</a><a href="#product">Example</a><a href="#pricing">Free vs Premium</a></div>
-      <span className="reveal-nav-note">Private by default</span>
-    </nav>
+    <CustomerHeader current="product" />
 
-    <section className="reveal-hero reveal-shell">
-      <div className="reveal-hero-copy">
-        <span className="reveal-kicker">Hardstuck in Rocket League?</span>
-        <h1>Replay Method finds the mistake <em>you keep repeating.</em></h1>
-        <p>Upload ten ranked replays. Replay Method analyzes the full set, finds the mistake that keeps showing up, and gives you one clear thing to try next.</p>
+    <section className="rm-home-hero reveal-shell" aria-labelledby="home-title">
+      <span className="reveal-kicker">Rocket League replay analysis</span>
+      <h1 id="home-title">Stop guessing.<br />See the decision holding you back.</h1>
+      <p>Upload ten ranked replays. Replay Method finds the pattern that keeps returning and gives you one clear focus for your next session.</p>
+      <div className="rm-home-hero-actions">
+        <Link href="/analyze" onClick={() => trackProductEvent("analysis_start","rocket-league","home_hero")}>Start free analysis <span aria-hidden="true">→</span></Link>
+        <a href="#product">See a simple example</a>
       </div>
-      <BatchAnalyzeFlow engineOpen={engineOpen} variant="hero" />
+      <small>Private report · No card · Original PC replays</small>
     </section>
 
+    <HowItWorks />
     <ProductMoment earlyAccessOpen={earlyAccessOpen} />
-    <RevealInfo />
+    <WhyTrustIt earlyAccessOpen={earlyAccessOpen} />
 
-    <section className="reveal-section" id="pricing"><div className="reveal-shell reveal-premium reveal-card"><div><span className="reveal-kicker">Future value</span><h2>Free finds the pattern. Premium tracks the climb.</h2><p>Ten replays reveal what keeps repeating. Premium will later compare up to 35 each week to show whether it is actually changing.</p><span className="reveal-coming">Planned for Premium</span></div><div className="reveal-climb" role="img" aria-label="Illustrative future Premium journey from baseline through focus and recheck to a next move"><svg viewBox="0 0 520 150" aria-hidden="true"><defs><linearGradient id="revealClimbGradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#8753ff"/><stop offset="1" stopColor="#18cde3"/></linearGradient></defs><path className="track" d="M24 116 C110 116 126 78 188 82 S287 104 334 70 S420 42 496 34"/><path className="line" d="M24 116 C110 116 126 78 188 82 S287 104 334 70 S420 42 496 34"/><circle cx="24" cy="116" r="6"/><circle cx="188" cy="82" r="6"/><circle cx="334" cy="70" r="6"/><circle cx="496" cy="34" r="6"/></svg><div className="reveal-climb-labels"><div><small>01</small><b>Baseline</b></div><div><small>02</small><b>Focus</b></div><div><small>03</small><b>Recheck</b></div><div><small>04</small><b>Next move</b></div></div><small>Illustrative tracking flow · improvement is measured, never promised</small></div></div></section>
+    <section className="rm-home-final reveal-shell" id="pricing" aria-labelledby="final-title"><span className="reveal-kicker">Ready when you are</span><h2 id="final-title">Ten replays.<br />One thing to improve.</h2><p>Start with the last ten ranked matches from the same playlist.</p><Link href="/analyze" onClick={() => trackProductEvent("analysis_start","rocket-league","home_final")}>Start free analysis <span aria-hidden="true">→</span></Link><small>Free · Private · No card</small></section>
 
-    <section className="reveal-section reveal-trust" aria-labelledby="trust-title"><div className="reveal-shell"><span className="reveal-kicker">{earlyAccessOpen ? "Early access · Clear answers" : "Private beta · Clear answers"}</span><h2 id="trust-title">Useful when the pattern is clear. Honest when it is not.</h2><div><article><i>01</i><b>Your ten matches</b><p>Every accepted replay stays visible and contributes to one combined review.</p></article><article><i>02</i><b>Your next move</b><p>You get one focus only when the same supported pattern appears across matches.</p></article><article><i>03</i><b>If the pattern is weak</b><p>You still see what was analyzed, the neutral facts, and what to do next. No invented coaching.</p></article></div></div></section>
-
-    <section className="reveal-section reveal-faq" aria-labelledby="faq-title"><div className="reveal-shell"><header><span className="reveal-kicker">Before you upload</span><h2 id="faq-title">No-BS answers.</h2></header><details><summary>Where is my Rocket League replay?<b>+</b></summary><p>On Windows: Documents → My Games → Rocket League → TAGame → Demos. Choose the original file ending in .replay.</p></details><details><summary>Will I get an analysis now?<b>+</b></summary><p>{engineOpen ? "Yes, after ten valid replays. Each file is verified for the same player and ranked playlist. The report is released only at 10/10." : "Not while the deterministic replay engine is unavailable. No files are accepted into a dead end."}</p></details><details><summary>What if one file is invalid?<b>+</b></summary><p>It is excluded with a concrete reason and does not consume a valid slot. Add a replacement until the batch reaches exactly ten verified matches.</p></details><details><summary>What happens to the files?<b>+</b></summary><p>They are stored privately to deliver the requested report. Customer replays are excluded from calibration, training and evaluation unless you separately opt in.</p></details><details><summary>Why might Replay Method abstain?<b>+</b></summary><p>If no supported pattern repeats across the ten matches, the report shows the verified facts and explains why it cannot name a habit yet.</p></details></div></section>
-
-    <section className="reveal-final reveal-shell"><h2>You may not see the pattern. Replay Method can.</h2><Link className="reveal-primary" href="/analyze" onClick={() => trackProductEvent("analysis_start","rocket-league","home_final")}>Analyze my 10 replays <span>→</span></Link></section>
-
-    <footer className="reveal-footer reveal-shell"><span>Replay Method</span><Link href="/privacy">Privacy</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a><span>Evidence boundaries</span></footer>
+    <CustomerFooter />
   </main>;
 }

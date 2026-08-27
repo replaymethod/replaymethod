@@ -29,6 +29,6 @@ test("unvalidated detector candidates are private and lifecycle-safe", () => {
 
   const summary = detectorCatalogSummary();
   assert.equal(summary.public, 0);
-  assert.equal(summary.byLifecycle.shadow, 8);
-  assert.equal(summary.byLifecycle.discovery, summary.total - 8);
+  assert.equal(summary.byLifecycle.shadow, 60);
+  assert.equal(summary.byLifecycle.discovery, 0);
 });

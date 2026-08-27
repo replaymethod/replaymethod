@@ -101,7 +101,7 @@ export default function ReplayContribution({ intakeOpen, compact = false }: { in
       <span>ROCKET LEAGUE BETA · PAUSED</span>
       <h1 id="rl-intake-title">Replay uploads are closed right now.</h1>
       <p>The secure intake is ready, but no file is accepted while the collection switch is off.</p>
-      <Link href="/rocket-league#join-beta">Get the opening email <b>→</b></Link>
+      <Link href="/analyze">Start with the 10-replay product <b>→</b></Link>
     </section>;
   }
 

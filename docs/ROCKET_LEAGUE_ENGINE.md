@@ -70,7 +70,9 @@ representative replay is used.
 The candidate catalog lives in `services/rl-engine/detector-catalog.mjs`. It
 currently spans boost economy, rotation, challenges, recovery, possession,
 offense, defense, kickoffs and team coordination. Catalog inclusion does not make
-a detector public; every entry starts in `discovery` with `public: false`.
+a detector public. All 60 entries now have a versioned shadow executor and
+remain `public: false`; 40 deliberately stop at capability abstention until
+their required evidence models exist.
 
 The research and rationale behind this broader shape are recorded in
 [`COMPETITIVE_INTELLIGENCE.md`](COMPETITIVE_INTELLIGENCE.md).
@@ -99,11 +101,43 @@ leak" is a report-prioritization rule, not a restriction to one internal detecto
 
 ## Current private calibration system
 
-Eight versioned shadow probes currently cover boost reserve, supersonic boost
+Twenty measuring shadow probes currently cover boost reserve, supersonic boost
 waste, kickoff timing, first-touch outcomes, challenge dives, teammate spacing,
-double commitments and recovery momentum loss. They execute over the full
-normalized replay state and create review candidates only; none is public by
-default.
+double commitments, recovery momentum loss, first-touch retention, contextual
+challenge quality, post-landing re-entry, boost overfill, kickoff-contact
+leverage, general giveaways, center follow-up and defensive-clear follow-up.
+The set also includes normalized defensive reserve, last-layer overextension,
+challenge coverage and last-player challenge contracts. The other 40 catalog
+entries execute a versioned capability check and abstain
+instead of fabricating an assessment. None is public by default.
+
+The `0.7.0` shadow runtime gives all 20 measuring lanes a versioned opportunity
+contract; no measuring lane is positive-candidate-only. Whole-match movement
+remains sampled at 10 Hz. A bounded
+30 Hz detail lane retains a deduplicated frame pool only around subject-linked
+touches, challenges, kickoffs and recovery events. Context records access
+order, pressure, possession, goal-side teammate coverage, score/clock state and
+the attributable next outcome where available.
+
+Contextual detectors must account for firings, non-firings and abstentions in
+the same denominator. Opportunity contract `0.2.0` deduplicates source IDs,
+records integrity failures and blocks an integrity-failed review queue. Decision
+context `0.5.0` adds canonical mode, phase/live state, score differential,
+coverage, defensive layer, role, field zone, a labeled kinematic intercept
+proxy, explicit access margins and shared teammate-to-subject/ball approach
+geometry. Tactical spatial `0.2.0` supplies those deterministic primitives.
+Frame state v2 preserves raw 0–255 replay
+boost while exposing normalized 0–100 percent; gameplay thresholds must consume
+the normalized field.
+Batch aggregation `1.3.0` compares those opportunities
+across matches and contexts privately. The Pattern Memory `0.2.0` layer then
+freezes the detector version, opportunity/context schema, context and evidence
+thresholds into a stable contract. It
+distinguishes thin or clustered signals from distributed
+cross-match recurrence, blocks high-abstention windows and supports a later
+like-for-like directional comparison. Pattern Memory does not promote a shadow
+detector, change the customer-facing primary finding or bypass the independent
+quality gate.
 
 Every checked-in candidate has a matching anonymized replay-moment window for
 the owner-only `/admin/rl-review` lab. The viewer reconstructs the top-down
@@ -116,7 +150,9 @@ small apparently perfect sample cannot pass. The deterministic coaching
 composer consumes only promoted findings, outputs one primary behavior with a
 practice and verification plan, and otherwise abstains.
 
-The public free Early Access lane is a different output tier. It exposes only
+The public free Early Access lane is a different output tier. Its report shows
+the complete nine-area analysis map—60 checks, measuring lanes and protected
+abstentions—while exposing only
 bounded deterministic interpretations with repeated timestamped evidence in
 the submitted replay, labels them experimental, and reports confidence as
 within-match evidence strength rather than detector precision. Generic shadow

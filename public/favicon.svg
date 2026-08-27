@@ -1,5 +1,5 @@
-<svg width="64" height="64" viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Replay Method">
-  <foreignObject width="37" height="37">
-    <div xmlns="http://www.w3.org/1999/xhtml" style="display:grid;place-items:center;width:37px;height:37px;border-radius:11px;background:linear-gradient(140deg,#a248ff,#5449ff);color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:900;line-height:normal">↻</div>
-  </foreignObject>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Replay Method">
+  <rect width="512" height="512" rx="116" fill="#F4F4F0"/>
+  <path d="M64 338C119 338 116 156 175 156C233 156 231 338 289 338C348 338 345 156 404 156C447 156 457 243 448 291" stroke="#061A2E" stroke-width="45" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M398 264L448 291L474 240" stroke="#061A2E" stroke-width="45" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -1,3 +1,5 @@
+import { boostRawToPercent } from "./boost-units.mjs";
+
 const VECTOR_AXES = Object.freeze(["x", "y", "z"]);
 
 function finite(value) {
@@ -77,9 +79,14 @@ export function normalizeFrameState(ndarray, replayMeta = {}, sampleRateHz = 10)
     ball: readRigidBody(row, 2),
     players: players.map((player) => {
       const offset = globalWidth + (player.index * playerWidth);
+      const boostRaw = finite(row[offset]);
       return {
         ...player,
-        boost: finite(row[offset]),
+        // `boost` remains the raw 0..255 replay value for compatibility.
+        // New gameplay logic must consume the explicitly normalized field.
+        boost: boostRaw,
+        boostRaw,
+        boostPercent: boostRawToPercent(boostRaw),
         distanceToBall: finite(row[offset + 1]),
         ...readRigidBody(row, offset + 2),
       };
@@ -89,7 +96,7 @@ export function normalizeFrameState(ndarray, replayMeta = {}, sampleRateHz = 10)
   const lastTime = frames.at(-1)?.timeSeconds;
 
   return {
-    schemaVersion: "rocket-league-frame-state.v1",
+    schemaVersion: "rocket-league-frame-state.v2",
     sampleRateHz,
     players,
     frames,

@@ -7,11 +7,11 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Evidence-first Rocket League replay coaching.",
     start_url: "/",
     display: "standalone",
-    background_color: "#03040a",
-    theme_color: "#03040a",
+    background_color: "#f4f4f0",
+    theme_color: "#f4f4f0",
     icons: [
-      { src: "/brand/replay-method-mark-v12-192.png", sizes: "192x192", type: "image/png" },
-      { src: "/brand/replay-method-mark-v12-512.png", sizes: "512x512", type: "image/png" }
+      { src: "/brand/replay-method-mark-v13-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/brand/replay-method-mark-v13-512.png", sizes: "512x512", type: "image/png" }
     ]
   };
 }

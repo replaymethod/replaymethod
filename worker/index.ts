@@ -21,6 +21,9 @@ interface Env {
   ADMIN_EMAILS?: string;
   ADMIN_USER_ID?: string;
   ADMIN_USER_IDS?: string;
+  RL_LOCAL_REVIEW_ENABLED?: string;
+  RL_LOCAL_REVIEW_OWNER_TOKEN?: string;
+  RL_LOCAL_REVIEWER_TOKEN?: string;
   RIOT_LEAGUE_API_KEY?: string;
   RIOT_VALORANT_API_KEY?: string;
   RIOT_RSO_CLIENT_ID?: string;
@@ -100,7 +103,7 @@ function withSecurityHeaders(response: Response, url: URL) {
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
-  if (/^\/(?:access|admin|report|reports)(?:\/|$)/.test(url.pathname) || /^\/api\/(?:admin|analyses|billing|player|replay-uploads)(?:\/|$)/.test(url.pathname)) {
+  if (/^\/(?:access|admin|local-review-access|local-review-owner|report|reports)(?:\/|$)/.test(url.pathname) || /^\/api\/(?:admin|analyses|billing|local-review-session|player|replay-uploads)(?:\/|$)/.test(url.pathname)) {
     headers.set("Cache-Control", "private, no-store");
     headers.set("Referrer-Policy", "no-referrer");
   }

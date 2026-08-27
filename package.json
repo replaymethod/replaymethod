@@ -9,6 +9,7 @@
     "brand:generate": "node scripts/generate-brand-assets.mjs",
     "install:ci": "bash scripts/install-ci.sh",
     "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
+    "review:local": "node scripts/start-local-review.mjs",
     "build": "bash scripts/build-verified.sh",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/*.test.mjs services/rl-engine/*.test.mjs",
@@ -23,6 +24,10 @@
     "rl-engine:review-queue": "node scripts/build-rl-review-queue.mjs",
     "rl-engine:review-select": "node scripts/select-rl-review-queue.mjs",
     "rl-engine:review-moments": "node scripts/build-rl-review-moments.mjs",
+    "rl-engine:review-plan": "node scripts/build-rl-independent-review-plan.mjs",
+    "rl-engine:review-packets": "node scripts/export-rl-blind-reviewer-packets.mjs",
+    "rl-engine:review-merge": "node scripts/merge-rl-blind-reviews.mjs",
+    "rl-engine:review-finalize": "node scripts/finalize-rl-blind-adjudication.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"

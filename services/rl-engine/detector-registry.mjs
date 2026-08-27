@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { ROCKET_LEAGUE_DETECTOR_CATALOG } from "./detector-catalog.mjs";
 
-export const DETECTOR_REGISTRY_VERSION = "rocket-league-detector-registry.v1";
+export const DETECTOR_REGISTRY_VERSION = "rocket-league-detector-registry.v2";
 export const ACTIVATION_RECORD_VERSION = "rocket-league-detector-activation.v1";
 
 const lifecycleTransitions = Object.freeze({
@@ -14,26 +14,38 @@ const lifecycleTransitions = Object.freeze({
 });
 
 const registryOverrides = Object.freeze({
+  "boost.zero_duration": { version: "0.2.0", duplicateGroup: "boost-reserve", minimumSamples: 3 },
+  "boost.overfill": { version: "0.3.0" },
+  "kickoff.contact": { version: "0.2.0" },
+  "possession.giveaway": { version: "0.2.0" },
+  "offense.center_to_opponent": { version: "0.2.0" },
+  "defense.clear_direction": { version: "0.2.0" },
   "boost.supersonic_waste": {
-    version: "0.2.0",
+    version: "0.4.0",
     dependencies: ["boost.zero_duration"],
     conflicts: ["boost.zero_duration"],
     duplicateGroup: "boost-reserve",
     minimumSamples: 3,
   },
-  "boost.zero_duration": { duplicateGroup: "boost-reserve", minimumSamples: 3 },
-  "kickoff.speed": { supportedModes: ["1v1", "2v2", "3v3"], minimumSamples: 5 },
-  "possession.first_touch": { duplicateGroup: "possession-control", minimumSamples: 3 },
-  "challenge.dive": { duplicateGroup: "commitment-risk", minimumSamples: 3 },
-  "rotation.spacing_too_close": { supportedModes: ["2v2", "3v3"], duplicateGroup: "team-coverage", minimumSamples: 3 },
-  "teamplay.double_commit": { supportedModes: ["2v2", "3v3"], duplicateGroup: "team-coverage", minimumSamples: 2 },
-  "recovery.momentum_loss": { duplicateGroup: "recovery-tempo", minimumSamples: 3 },
+  "boost.defensive_reserve": { duplicateGroup: "boost-reserve", minimumSamples: 5 },
+  "kickoff.speed": { version: "0.2.0", supportedModes: ["1v1", "2v2", "3v3"], minimumSamples: 5 },
+  "possession.first_touch": { version: "0.2.0", duplicateGroup: "possession-control", minimumSamples: 3 },
+  "challenge.dive": { version: "0.2.0", duplicateGroup: "commitment-risk", minimumSamples: 3 },
+  "challenge.teammate_coverage": { supportedModes: ["2v2", "3v3"], duplicateGroup: "commitment-risk", minimumSamples: 5 },
+  "challenge.last_player": { supportedModes: ["2v2", "3v3"], duplicateGroup: "commitment-risk", minimumSamples: 5 },
+  "rotation.third_overextension": { supportedModes: ["2v2", "3v3"], duplicateGroup: "commitment-risk", minimumSamples: 5 },
+  "rotation.spacing_too_close": { version: "0.2.0", supportedModes: ["2v2", "3v3"], duplicateGroup: "team-coverage", minimumSamples: 3 },
+  "teamplay.double_commit": { version: "0.2.0", supportedModes: ["2v2", "3v3"], duplicateGroup: "team-coverage", minimumSamples: 2 },
+  "recovery.momentum_loss": { version: "0.2.0", duplicateGroup: "recovery-tempo", minimumSamples: 3 },
+  "possession.first_touch_retention": { version: "0.2.0", duplicateGroup: "possession-control", minimumSamples: 5 },
+  "challenge.quality": { version: "0.3.0", duplicateGroup: "commitment-risk", minimumSamples: 5 },
+  "recovery.reentry_quality": { version: "0.2.0", duplicateGroup: "recovery-tempo", minimumSamples: 5 },
 });
 
 export const DETECTOR_REGISTRY = Object.freeze(ROCKET_LEAGUE_DETECTOR_CATALOG.map((entry) => Object.freeze({
   registryVersion: DETECTOR_REGISTRY_VERSION,
   id: entry.id,
-  version: entry.lifecycle === "shadow" ? "0.1.0" : "unimplemented",
+  version: "0.1.0",
   category: entry.category,
   title: entry.title,
   lifecycle: entry.lifecycle,

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { trackProductEvent } from "../../lib/client-analytics";
 import { canonicalUtcTimestamp } from "../../lib/report-date.mjs";
+import { CustomerFooter, CustomerHeader } from "../components/CustomerChrome";
 
 type ReportSummary = {
   publicId: string;
@@ -122,10 +123,7 @@ export default function ReportsClient() {
 
   return (
     <main className="reports-page">
-      <nav className="tool-nav shell">
-        <Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link>
-        <Link href="/analyze" onClick={trackNewAnalysis}>New analysis</Link>
-      </nav>
+      <CustomerHeader current="report" right={<Link className="rm-header-cta" href="/analyze" onClick={trackNewAnalysis}>New analysis <span aria-hidden="true">↗</span></Link>} />
       <section className="reports-shell shell" id="report-history">
         <span>{historyMode === "verified" ? "EMAIL-VERIFIED HISTORY" : "DEVICE-SAVED HISTORY"}</span>
         <h1>Your reports.</h1>
@@ -178,6 +176,7 @@ export default function ReportsClient() {
           {privacyError && <p className="privacy-error" role="alert">{privacyError}</p>}
         </aside>}
       </section>
+      <CustomerFooter />
     </main>
   );
 }

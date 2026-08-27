@@ -2,6 +2,7 @@
 
 import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { CustomerFooter, CustomerHeader } from "../components/CustomerChrome";
 import { readApiResponse } from "../../lib/client-api-response.mjs";
 import FreeAnalysisUsed, { FREE_ANALYSIS_USED_MESSAGE } from "../components/FreeAnalysisUsed";
 import OwnerVerificationRequired, { OWNER_VERIFICATION_REQUIRED_MESSAGE } from "../components/OwnerVerificationRequired";
@@ -324,17 +325,18 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
   </section>;
 
   return <main ref={pageRef} className="intake-page batch-intake-page" data-hydrated="false">
-    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><Link href="/">Exit</Link></div></nav>
+    <CustomerHeader current="product" right={<><Link href="/reports">My reports</Link><Link className="rm-header-cta" href="/">Exit <span aria-hidden="true">↗</span></Link></>} />
     <section className="intake-shell shell">
-      <header className="intake-header"><div><span>YOUR FREE 10-MATCH REVIEW</span><h1>Upload 10 ranked replays.<br /><em>See what keeps happening.</em></h1><p>Choose ten original ranked PC replays from the same player and playlist. Every file stays visible while Replay Method verifies it.</p></div><aside><b>{validCount}/10</b><span>VERIFIED REPLAYS</span><small>{displayedExcluded ? `${displayedExcluded} excluded · ` : ""}Private · No card · Resumable</small></aside></header>
+      <header className="intake-header"><div><span>Free Rocket League analysis</span><h1>Ten replays. One pattern worth fixing.</h1></div><aside><p>We compare the decisions—not just the scoreboard—and turn the clearest repeated pattern into one plan for your next three games.</p><div><a href="#replay-batch">Choose replays</a><Link href="/replay-upload">Find the files</Link></div><small>Private · No card · Resumable</small></aside></header>
       <div className="intake-progress" aria-label={`${validCount} of 10 verified replays`}><i style={{ width: `${validCount * 10}%` }} /><span>{validCount} / 10</span></div>
-      <form className="intake-card batch-intake" onSubmit={submit} aria-busy={busy}>
-        <section><span className="intake-kicker">EXACTLY TEN VALID MATCHES</span><h2>{remaining === 10 && selectionRemaining === 10 ? "Choose your ten replays." : remaining ? `Add ${selectionRemaining} more replay${selectionRemaining === 1 ? "" : "s"}.` : "All ten matches are verified."}</h2><p className="intake-explain">Same player · same ranked 1v1, 2v2 or 3v3 playlist. Wrong files stay visible with a clear reason; the good files remain in place.</p>
-          {selectionRemaining > 0 && <label className={`file-drop ${rows.some(row => row.status === "ready") ? "has-file" : ""} ${dragActive ? "drag-active" : ""}`} onDragEnter={event => { event.preventDefault(); setDragActive(true); }} onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; setDragActive(true); }} onDragLeave={event => { if (event.currentTarget === event.target) setDragActive(false); }} onDrop={dropFiles}><input ref={inputRef} type="file" multiple accept=".replay,application/octet-stream" onChange={event => chooseFiles(event.target.files)} disabled={busy} /><i>↥</i><b>{selectionRemaining === 10 ? "Choose or drop 10 .replay files" : `Choose or drop ${selectionRemaining} replacement file${selectionRemaining === 1 ? "" : "s"}`}</b><small>Pick all ten at once · maximum 16 MB each · uploads resume safely</small></label>}
+      <form className="intake-card batch-intake" id="replay-batch" onSubmit={submit} aria-busy={busy}>
+        <div className="batch-sandbox-tabs" aria-label="Analysis setup"><span className="active">01 · Replays</span><span>02 · Context</span><small>{validCount}/10 verified{displayedExcluded ? ` · ${displayedExcluded} replaced` : ""}</small></div>
+        <section><span className="intake-kicker">Step 1 · Your replays</span><h2>{remaining === 10 && selectionRemaining === 10 ? "Choose ten ranked matches." : remaining ? `Add ${selectionRemaining} more replay${selectionRemaining === 1 ? "" : "s"}.` : "All ten matches are verified."}</h2><p className="intake-explain">Same player. Same ranked 1v1, 2v2 or 3v3 playlist. We keep every valid file and explain every exclusion.</p>
+          {selectionRemaining > 0 && <label className={`file-drop ${rows.some(row => row.status === "ready") ? "has-file" : ""} ${dragActive ? "drag-active" : ""}`} onDragEnter={event => { event.preventDefault(); setDragActive(true); }} onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; setDragActive(true); }} onDragLeave={event => { if (event.currentTarget === event.target) setDragActive(false); }} onDrop={dropFiles}><input ref={inputRef} type="file" multiple accept=".replay,application/octet-stream" onChange={event => chooseFiles(event.target.files)} disabled={busy} /><i>↥</i><b>{selectionRemaining === 10 ? "Choose or drop 10 .replay files" : `Choose or drop ${selectionRemaining} replacement file${selectionRemaining === 1 ? "" : "s"}`}</b><small>Original PC files · pick all ten at once · 16 MB max each · resumable</small></label>}
           <Link className="replay-file-help" href="/replay-upload" target="_blank" rel="noreferrer">Can’t find the files? <span>Open the guide →</span></Link>
           {rows.length > 0 && <div className="batch-file-list" aria-label="Replay verification list" aria-live="polite">{rows.map((row, index) => <article className={row.status} key={row.key}><i>{row.status === "valid" ? "✓" : row.status === "excluded" ? "×" : String(index + 1).padStart(2, "0")}</i><div><b>{row.file.name}</b><small>{row.message}</small></div></article>)}</div>}
         </section>
-        <section><span className="intake-kicker">PLAYER CONTEXT &amp; PRIVATE DELIVERY</span><h2>One context, used consistently across the batch.</h2><div className="field-grid">
+        <section><span className="intake-kicker">Step 2 · Your context</span><h2>Where should we send the result?</h2><p className="intake-explain">Rank and playlist context help us read the same player consistently across all ten matches.</p><div className="field-grid">
           {!ownerQa && <label className="wide"><span>Email for the private report *</span><input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required /></label>}
           {ownerQa && <div className="quick-owner-verified wide" role="status"><i>✓</i><div><b>OWNER QA VERIFIED</b><span>Unlimited QA · excluded from product metrics and calibration</span></div></div>}
           <label><span>Current playlist rank *</span><select value={rank} onChange={event => setRank(event.target.value)} required><option value="">Choose rank</option>{RANKS.map(item => <option value={item} key={item}>{item}</option>)}</select></label>
@@ -342,11 +344,20 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
           <label className="check wide"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} required /><span>I agree that Replay Method may privately process these ten original replay files to deliver my report. <a href="/privacy" target="_blank">Privacy</a></span></label>
         </div></section>
         {candidates.length > 0 && <section className="player-resolution" aria-labelledby="batch-player-title"><div><span>PLAYER IDENTITY · LOCK ONCE</span><h3 id="batch-player-title">Which player is you?</h3><p>Every accepted replay must contain this exact verified player.</p></div><div className="player-resolution-options" role="radiogroup" aria-label="Players found in replay 1">{candidates.map(player => <button type="button" role="radio" aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} onClick={() => setSelectedPlayer(player)} key={player}>{player}</button>)}</div><button className="player-resolution-submit" type="button" disabled={!selectedPlayer || !rank} onClick={lockPlayer}>Lock this player for all 10 →</button></section>}
-        <button className="submit-analysis" formNoValidate={reportReady} disabled={busy || (remaining === 0 && !reportReady) || candidates.length > 0}><span>{busy ? candidates.length ? "WAITING FOR PLAYER…" : `VERIFYING ${validCount}/10…` : session ? `CONTINUE SAVED REVIEW · ${validCount}/10 →` : "VERIFY MY 10 REPLAYS →"}</span></button>
+        <button className="submit-analysis" formNoValidate={reportReady} disabled={busy || (remaining === 0 && !reportReady) || candidates.length > 0}><span>{busy ? candidates.length ? "WAITING FOR PLAYER…" : `VERIFYING ${validCount}/10…` : session ? `CONTINUE SAVED REVIEW · ${validCount}/10 →` : "START MY PRIVATE ANALYSIS →"}</span></button>
         <small className="submission-note">One free ten-replay batch · No card · Invalid replacements do not consume valid slots.</small>
         {freeUsed && <FreeAnalysisUsed />}{ownerVerificationRequired && <OwnerVerificationRequired />}{message && <p className="intake-message" role="alert">{message}</p>}
       </form>
-      <footer className="intake-footer"><span>Ten matches. Recurrence first. One plan.</span><div><Link href="/privacy">Privacy</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a></div></footer>
+
+      <section className="rm-analysis-after" aria-labelledby="analysis-after-title">
+        <header><span>After the upload</span><h2 id="analysis-after-title">The complexity stays inside the engine.</h2><p>Your report opens with the answer. The evidence is there when you want to inspect it.</p></header>
+        <div>
+          <article><i>01</i><h3>Verify the set</h3><p>Same player, same ranked playlist, ten valid original replays.</p></article>
+          <article><i>02</i><h3>Compare decisions</h3><p>Similar opportunities are read with possession, pressure, access and coverage.</p></article>
+          <article><i>03</i><h3>Release one focus</h3><p>Only a supported repeated pattern becomes your next-session plan.</p></article>
+        </div>
+      </section>
     </section>
+    <CustomerFooter />
   </main>;
 }

@@ -12,7 +12,7 @@ export type Guide = {
   faq: { q: string; a: string }[];
 };
 
-export const guides: Guide[] = [
+const allGuides: Guide[] = [
   {
     slug: "league-replay-review-checklist",
     game: "League of Legends",
@@ -93,4 +93,6 @@ export const guides: Guide[] = [
   }
 ];
 
+export const archivedGuides = allGuides.filter(guide => guide.game !== "Rocket League");
+export const guides = allGuides.filter(guide => guide.game === "Rocket League");
 export const guideBySlug = Object.fromEntries(guides.map(guide => [guide.slug, guide])) as Record<string, Guide>;

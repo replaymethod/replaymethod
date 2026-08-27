@@ -4,11 +4,18 @@ import { createHash } from "node:crypto";
 
 export const CALIBRATION_REPORT_VERSION = "rocket-league-calibration-report.v1";
 export const REVIEW_QUEUE_VERSION = "rocket-league-review-queue.v2";
+export const OPPORTUNITY_REVIEW_QUEUE_VERSION = "rocket-league-opportunity-review-queue.v1";
+
+export const FOUNDATION_DETECTOR_IDS = Object.freeze([
+  "possession.first_touch_retention",
+  "challenge.quality",
+  "recovery.reentry_quality",
+]);
 
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
   if (value && typeof value === "object") {
-    return Object.fromEntries(Object.keys(value).sort().filter((key) => !["generatedAt", "reproducibilityFingerprint"].includes(key))
+    return Object.fromEntries(Object.keys(value).sort().filter((key) => !["generatedAt", "reproducibilityFingerprint", "operational"].includes(key))
       .map((key) => [key, stableValue(value[key])]));
   }
   return value;
@@ -44,21 +51,35 @@ export function compareCalibrationReports(left, right) {
 }
 
 const decidedVerdicts = new Set(["confirmed", "rejected"]);
+const gameplayTruthValues = new Set(["present", "absent", "uncertain"]);
+
+function reviewDecision(label) {
+  if (gameplayTruthValues.has(label?.gameplayTruth)) return label.gameplayTruth;
+  if (label?.verdict === "confirmed") return "present";
+  if (label?.verdict === "rejected") return "absent";
+  if (label?.verdict === "uncertain") return "uncertain";
+  return null;
+}
 
 export function reviewerAgreementMetrics(labels = []) {
   const latest = new Map();
   for (const label of labels) {
     const candidateKey = label.candidateKey ?? label.candidateId;
     const reviewer = String(label.reviewerId ?? label.reviewerEmail ?? "").trim().toLowerCase();
-    if (!candidateKey || !reviewer || !decidedVerdicts.has(label.verdict)) continue;
-    latest.set(`${candidateKey}:${reviewer}`, { ...label, candidateKey, reviewer });
+    const decision = reviewDecision(label);
+    if (!candidateKey || !reviewer || !decision) continue;
+    const key = `${candidateKey}:${reviewer}`;
+    const previous = latest.get(key);
+    const currentOrder = String(label.createdAt ?? label.id ?? "");
+    const previousOrder = String(previous?.createdAt ?? previous?.id ?? "");
+    if (!previous || currentOrder >= previousOrder) latest.set(key, { ...label, candidateKey, reviewer, decision });
   }
   const byCandidate = Map.groupBy([...latest.values()], (label) => label.candidateKey);
   const comparisons = [];
   for (const candidateLabels of byCandidate.values()) {
     for (let left = 0; left < candidateLabels.length; left += 1) {
       for (let right = left + 1; right < candidateLabels.length; right += 1) {
-        comparisons.push([candidateLabels[left].verdict, candidateLabels[right].verdict]);
+        comparisons.push([candidateLabels[left].decision, candidateLabels[right].decision]);
       }
     }
   }
@@ -66,10 +87,13 @@ export function reviewerAgreementMetrics(labels = []) {
     ? comparisons.filter(([left, right]) => left === right).length / comparisons.length
     : null;
   const decisions = [...latest.values()];
-  const positiveRate = decisions.length
-    ? decisions.filter((label) => label.verdict === "confirmed").length / decisions.length
+  const decisionCounts = decisions.reduce((counts, label) => {
+    counts[label.decision] = (counts[label.decision] ?? 0) + 1;
+    return counts;
+  }, {});
+  const expected = decisions.length
+    ? Object.values(decisionCounts).reduce((sum, count) => sum + ((count / decisions.length) ** 2), 0)
     : null;
-  const expected = positiveRate == null ? null : (positiveRate ** 2) + ((1 - positiveRate) ** 2);
   const kappa = rawAgreement == null || expected == null || expected === 1
     ? null
     : (rawAgreement - expected) / (1 - expected);
@@ -82,6 +106,571 @@ export function reviewerAgreementMetrics(labels = []) {
   };
 }
 
+export function reviewerAgreementByStratum(labels = []) {
+  const strata = Map.groupBy(labels, (label) => (
+    `${label.detectorId ?? "unknown"}:${label.contextKey ?? label.opportunityContextKey ?? "unknown"}`
+  ));
+  return [...strata.entries()].map(([stratum, rows]) => ({
+    stratum,
+    detectorId: rows[0]?.detectorId ?? "unknown",
+    contextKey: rows[0]?.contextKey ?? rows[0]?.opportunityContextKey ?? "unknown",
+    ...reviewerAgreementMetrics(rows),
+  })).sort((left, right) => left.stratum.localeCompare(right.stratum));
+}
+
+/**
+ * Produce an explicit adjudication packet. It contains only independently
+ * double-reviewed disagreements/uncertain labels and never resolves them.
+ */
+export function buildAdjudicationQueue(reviewQueue, labelHistory = []) {
+  const candidates = new Map((reviewQueue?.candidates ?? []).map((candidate) => [candidate.id, candidate]));
+  const latest = new Map();
+  for (const label of labelHistory) {
+    const candidateKey = label.candidateKey ?? label.candidateId;
+    const reviewer = String(label.reviewerId ?? label.reviewerEmail ?? "").trim().toLowerCase();
+    const decision = reviewDecision(label);
+    if (!candidates.has(candidateKey) || !reviewer || !decision) continue;
+    const key = `${candidateKey}:${reviewer}`;
+    const previous = latest.get(key);
+    const currentOrder = String(label.createdAt ?? label.id ?? "");
+    const previousOrder = String(previous?.createdAt ?? previous?.id ?? "");
+    if (!previous || currentOrder >= previousOrder) latest.set(key, { ...label, candidateKey, reviewer, decision });
+  }
+  const byCandidate = Map.groupBy([...latest.values()], (label) => label.candidateKey);
+  const candidatesForAdjudication = [];
+  for (const [candidateKey, labels] of byCandidate) {
+    if (labels.length < 2) continue;
+    const decided = labels.filter((label) => label.decision !== "uncertain");
+    const uncertain = labels.some((label) => label.decision === "uncertain" || label.ambiguous === true);
+    const disagreement = new Set(decided.map((label) => label.decision)).size > 1;
+    if (!uncertain && !disagreement) continue;
+    const candidate = candidates.get(candidateKey);
+    candidatesForAdjudication.push({
+      candidateKey,
+      detectorId: candidate.detectorId,
+      detectorVersion: candidate.detectorVersion,
+      opportunityContextKey: candidate.opportunityContextKey,
+      reviewQuestion: candidate.reviewQuestion ?? null,
+      timestampSeconds: candidate.timestampSeconds,
+      replayFingerprint: candidate.replayFingerprint,
+      reason: disagreement ? "reviewer_disagreement" : "ambiguous_or_uncertain",
+      reviewerLabels: labels.map((label) => ({
+        reviewerId: label.reviewerId ?? label.reviewerEmail,
+        verdict: label.verdict ?? null,
+        gameplayTruth: label.decision,
+        timestampVerified: label.timestampVerified ?? null,
+        contextCorrect: label.contextCorrect ?? null,
+        coachingRelevance: label.coachingRelevance ?? null,
+        ambiguous: label.ambiguous ?? null,
+        notes: label.notes ?? "",
+        reviewerQualification: label.reviewerQualification ?? null,
+        createdAt: label.createdAt ?? null,
+      })),
+      adjudication: null,
+    });
+  }
+  candidatesForAdjudication.sort((left, right) => left.detectorId.localeCompare(right.detectorId)
+    || String(left.opportunityContextKey).localeCompare(String(right.opportunityContextKey))
+    || left.candidateKey.localeCompare(right.candidateKey));
+  return {
+    schemaVersion: "rocket-league-adjudication-queue.v1",
+    sourceQueueVersion: reviewQueue?.schemaVersion ?? null,
+    sourceReportFingerprint: reviewQueue?.sourceReportFingerprint ?? null,
+    labelSetVersion: reviewQueue?.labelSetVersion ?? null,
+    labelManualFingerprint: reviewQueue?.labelManualFingerprint ?? null,
+    blindToModelDecision: true,
+    adjudicator: {
+      adjudicatorId: null,
+      qualification: null,
+      submittedAt: null,
+    },
+    generatedAt: new Date().toISOString(),
+    unresolvedCount: candidatesForAdjudication.length,
+    candidates: candidatesForAdjudication,
+  };
+}
+
+export function buildIndependentReviewPlan(reviewQueue, {
+  reviewerSlots = ["reviewer-a", "reviewer-b"],
+  rounds = 4,
+  labelManualFingerprint,
+} = {}) {
+  if (!Array.isArray(reviewerSlots) || reviewerSlots.length < 2 || new Set(reviewerSlots).size !== reviewerSlots.length) {
+    throw new Error("Independent review requires at least two unique reviewer slots.");
+  }
+  if (!Number.isInteger(rounds) || rounds < 1) throw new Error("Review rounds must be a positive integer.");
+  if (!/^[a-f0-9]{64}$/.test(String(labelManualFingerprint ?? ""))) {
+    throw new Error("Independent review requires a SHA-256 label-manual fingerprint.");
+  }
+  const candidates = reviewQueue?.candidates ?? [];
+  if (!candidates.length || new Set(candidates.map((candidate) => candidate.id)).size !== candidates.length) {
+    throw new Error("Independent review requires a non-empty queue with unique candidate ids.");
+  }
+  const assignments = reviewerSlots.map((reviewerSlot) => {
+    const ordered = [...candidates].sort((left, right) => {
+      const leftHash = createHash("sha256").update(`${reviewerSlot}:${left.id}`).digest("hex");
+      const rightHash = createHash("sha256").update(`${reviewerSlot}:${right.id}`).digest("hex");
+      return leftHash.localeCompare(rightHash) || left.id.localeCompare(right.id);
+    });
+    const reviewRounds = Array.from({ length: Math.min(rounds, ordered.length) }, (_, index) => ({
+      round: index + 1,
+      candidateIds: ordered.filter((_, candidateIndex) => candidateIndex % Math.min(rounds, ordered.length) === index).map((candidate) => candidate.id),
+    }));
+    return { reviewerSlot, candidateCount: ordered.length, rounds: reviewRounds };
+  });
+  const reference = new Set(assignments[0].rounds.flatMap((round) => round.candidateIds));
+  const identicalCoverage = assignments.every((assignment) => {
+    const assigned = new Set(assignment.rounds.flatMap((round) => round.candidateIds));
+    return assigned.size === reference.size && [...reference].every((id) => assigned.has(id));
+  });
+  if (!identicalCoverage) throw new Error("Independent reviewer assignments must cover the exact same candidates.");
+  return {
+    schemaVersion: "rocket-league-independent-review-plan.v1",
+    sourceQueueVersion: reviewQueue.schemaVersion ?? null,
+    sourceReportFingerprint: reviewQueue.sourceReportFingerprint ?? null,
+    labelSetVersion: reviewQueue.labelSetVersion ?? null,
+    labelManualFingerprint,
+    blindReview: true,
+    reviewerCount: reviewerSlots.length,
+    candidatesPerReviewer: candidates.length,
+    totalIndependentDecisionsRequired: candidates.length * reviewerSlots.length,
+    identicalCandidateCoverage: true,
+    assignments,
+  };
+}
+
+export function buildBlindReviewerPackets(reviewQueue, reviewPlan, reviewMoments) {
+  const candidates = reviewQueue?.candidates ?? [];
+  const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  const momentIds = new Set(Object.keys(reviewMoments?.moments ?? {}));
+  if (!candidates.length || candidateById.size !== candidates.length) throw new Error("Blind packets require a unique non-empty review queue.");
+  if (reviewQueue?.sourceReportFingerprint !== reviewPlan?.sourceReportFingerprint
+    || reviewQueue?.labelSetVersion !== reviewPlan?.labelSetVersion) {
+    throw new Error("Review plan provenance does not match the source queue.");
+  }
+  if (!/^[a-f0-9]{64}$/.test(String(reviewPlan?.labelManualFingerprint ?? ""))) {
+    throw new Error("Blind packets require a SHA-256 label-manual fingerprint.");
+  }
+  if (reviewMoments?.candidateCount !== candidates.length || candidates.some((candidate) => !momentIds.has(candidate.id))) {
+    throw new Error("Blind packets require one materialized moment for every candidate.");
+  }
+  const packets = (reviewPlan?.assignments ?? []).map((assignment) => {
+    const seen = new Set();
+    const rounds = assignment.rounds.map((round) => ({
+      round: round.round,
+      reviews: round.candidateIds.map((candidateId) => {
+        const candidate = candidateById.get(candidateId);
+        if (!candidate || seen.has(candidateId)) throw new Error("Reviewer assignment contains a missing or duplicate candidate.");
+        seen.add(candidateId);
+        return {
+          candidateId,
+          momentKey: candidateId,
+          detectorId: candidate.detectorId,
+          detectorVersion: candidate.detectorVersion,
+          reviewQuestion: candidate.reviewQuestion,
+          replayFingerprint: candidate.replayFingerprint,
+          timestampSeconds: candidate.timestampSeconds,
+          frame: candidate.frame,
+          mode: candidate.mode,
+          rankCohort: candidate.rankCohort,
+          label: {
+            gameplayTruth: null,
+            timestampVerified: null,
+            contextCorrect: null,
+            coachingRelevance: null,
+            ambiguous: null,
+            notes: "",
+          },
+        };
+      }),
+    }));
+    if (seen.size !== candidates.length) throw new Error("Reviewer packet does not cover the complete candidate set.");
+    const packet = {
+      schemaVersion: "rocket-league-blind-reviewer-packet.v1",
+      sourceReportFingerprint: reviewQueue.sourceReportFingerprint,
+      labelSetVersion: reviewQueue.labelSetVersion,
+      labelManualFingerprint: reviewPlan.labelManualFingerprint,
+      reviewerSlot: assignment.reviewerSlot,
+      reviewer: {
+        reviewerId: null,
+        qualification: null,
+        submittedAt: null,
+      },
+      blindReview: true,
+      candidateCount: seen.size,
+      redactionPolicy: "model_decision_and_rationale_removed",
+      rounds,
+    };
+    const serialized = JSON.stringify(packet);
+    for (const forbidden of ["opportunityStatus", "classification", "modelEvidence"]) {
+      if (serialized.includes(`\"${forbidden}\"`)) throw new Error(`Blind packet leaked ${forbidden}.`);
+    }
+    return packet;
+  });
+  if (packets.length < 2 || new Set(packets.map((packet) => packet.reviewerSlot)).size !== packets.length) {
+    throw new Error("Blind packets require at least two unique reviewer assignments.");
+  }
+  return packets;
+}
+
+const blindReviewKeys = new Set([
+  "candidateId", "momentKey", "detectorId", "detectorVersion", "reviewQuestion",
+  "replayFingerprint", "timestampSeconds", "frame", "mode", "rankCohort", "label",
+]);
+const blindLabelKeys = new Set([
+  "gameplayTruth", "timestampVerified", "contextCorrect", "coachingRelevance", "ambiguous", "notes",
+]);
+const blindPacketKeys = new Set([
+  "schemaVersion", "sourceReportFingerprint", "labelSetVersion", "labelManualFingerprint", "reviewerSlot", "reviewer",
+  "blindReview", "candidateCount", "redactionPolicy", "rounds",
+]);
+const blindReviewerKeys = new Set(["reviewerId", "qualification", "submittedAt"]);
+const blindRoundKeys = new Set(["round", "reviews"]);
+
+function exactKeys(value, allowed, description) {
+  const unexpected = Object.keys(value ?? {}).filter((key) => !allowed.has(key));
+  if (unexpected.length) throw new Error(`${description} contains forbidden fields: ${unexpected.join(", ")}.`);
+}
+
+function requiredText(value, description) {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) throw new Error(`${description} is required.`);
+  return normalized;
+}
+
+function modelOutcome(opportunityStatus, gameplayTruth) {
+  if (opportunityStatus === "firing") return gameplayTruth === "present" ? "true_positive" : "false_positive";
+  if (opportunityStatus === "non_firing") return gameplayTruth === "present" ? "false_negative" : "true_negative";
+  if (opportunityStatus === "abstained") return gameplayTruth === "present" ? "abstained_present" : "abstained_absent";
+  throw new Error(`Unsupported opportunity status: ${opportunityStatus}.`);
+}
+
+/**
+ * Validate two or more independently completed blind packets, retain every
+ * source judgment and only then join consensus truth to the hidden model
+ * decision. This function fails closed on provenance, coverage or schema drift.
+ */
+export function mergeBlindReviewerSubmissions(reviewQueue, submissions = []) {
+  const queueCandidates = reviewQueue?.candidates ?? [];
+  const candidateById = new Map(queueCandidates.map((candidate) => [candidate.id, candidate]));
+  if (!queueCandidates.length || candidateById.size !== queueCandidates.length) {
+    throw new Error("Blind review merge requires a unique non-empty master queue.");
+  }
+  if (!reviewQueue?.blindReview || reviewQueue?.holdoutIncluded !== false) {
+    throw new Error("Blind review merge accepts only an explicit non-holdout blind queue.");
+  }
+  if (!Array.isArray(submissions) || submissions.length < 2) {
+    throw new Error("Blind review merge requires at least two reviewer submissions.");
+  }
+
+  const reviewerSlots = new Set();
+  const reviewerIds = new Set();
+  const labelManualFingerprints = new Set();
+  const labels = [];
+  for (const submission of submissions) {
+    exactKeys(submission, blindPacketKeys, "Reviewer submission");
+    exactKeys(submission?.reviewer, blindReviewerKeys, "Reviewer provenance");
+    if (submission?.schemaVersion !== "rocket-league-blind-reviewer-packet.v1" || submission?.blindReview !== true) {
+      throw new Error("Reviewer submission has an unsupported schema or is not marked blind.");
+    }
+    if (submission.sourceReportFingerprint !== reviewQueue.sourceReportFingerprint
+      || submission.labelSetVersion !== reviewQueue.labelSetVersion) {
+      throw new Error("Reviewer submission provenance does not match the master queue.");
+    }
+    if (!/^[a-f0-9]{64}$/.test(String(submission.labelManualFingerprint ?? ""))) {
+      throw new Error("Reviewer submission lacks a valid label-manual fingerprint.");
+    }
+    labelManualFingerprints.add(submission.labelManualFingerprint);
+    const reviewerSlot = requiredText(submission.reviewerSlot, "Reviewer slot");
+    const reviewerId = requiredText(submission.reviewer?.reviewerId, `Reviewer id for ${reviewerSlot}`).toLowerCase();
+    const reviewerQualification = requiredText(submission.reviewer?.qualification, `Reviewer qualification for ${reviewerSlot}`);
+    const submittedAt = requiredText(submission.reviewer?.submittedAt, `Submission timestamp for ${reviewerSlot}`);
+    if (Number.isNaN(Date.parse(submittedAt))) throw new Error(`Submission timestamp for ${reviewerSlot} is invalid.`);
+    if (reviewerSlots.has(reviewerSlot) || reviewerIds.has(reviewerId)) {
+      throw new Error("Reviewer slots and reviewer identities must be unique.");
+    }
+    reviewerSlots.add(reviewerSlot);
+    reviewerIds.add(reviewerId);
+
+    for (const round of submission.rounds ?? []) exactKeys(round, blindRoundKeys, `Round in ${reviewerSlot}`);
+    const reviews = (submission.rounds ?? []).flatMap((round) => round?.reviews ?? []);
+    if (reviews.length !== queueCandidates.length || submission.candidateCount !== queueCandidates.length) {
+      throw new Error(`Reviewer ${reviewerSlot} does not cover the complete candidate set.`);
+    }
+    const seen = new Set();
+    for (const review of reviews) {
+      exactKeys(review, blindReviewKeys, `Review in ${reviewerSlot}`);
+      exactKeys(review.label, blindLabelKeys, `Label in ${reviewerSlot}`);
+      const candidate = candidateById.get(review.candidateId);
+      if (!candidate || seen.has(review.candidateId)) {
+        throw new Error(`Reviewer ${reviewerSlot} contains a missing or duplicate candidate.`);
+      }
+      seen.add(review.candidateId);
+      const immutablePairs = [
+        ["momentKey", review.candidateId],
+        ["detectorId", candidate.detectorId],
+        ["detectorVersion", candidate.detectorVersion],
+        ["reviewQuestion", candidate.reviewQuestion],
+        ["replayFingerprint", candidate.replayFingerprint],
+        ["timestampSeconds", candidate.timestampSeconds],
+        ["frame", candidate.frame],
+        ["mode", candidate.mode],
+        ["rankCohort", candidate.rankCohort],
+      ];
+      for (const [key, expected] of immutablePairs) {
+        if (review[key] !== expected) throw new Error(`Reviewer ${reviewerSlot} changed immutable field ${key}.`);
+      }
+      const label = review.label ?? {};
+      if (!gameplayTruthValues.has(label.gameplayTruth)) throw new Error(`Reviewer ${reviewerSlot} has an incomplete gameplayTruth label.`);
+      for (const field of ["timestampVerified", "contextCorrect", "coachingRelevance", "ambiguous"]) {
+        if (typeof label[field] !== "boolean") throw new Error(`Reviewer ${reviewerSlot} has an incomplete ${field} label.`);
+      }
+      const notes = String(label.notes ?? "").trim();
+      if ((label.gameplayTruth === "uncertain" || label.ambiguous || !label.timestampVerified) && !notes) {
+        throw new Error(`Reviewer ${reviewerSlot} must explain uncertain, ambiguous or timestamp-invalid labels.`);
+      }
+      labels.push({
+        candidateKey: candidate.id,
+        detectorId: candidate.detectorId,
+        detectorVersion: candidate.detectorVersion,
+        opportunityContextKey: candidate.opportunityContextKey,
+        reviewerSlot,
+        reviewerId,
+        reviewerQualification,
+        labelSetVersion: reviewQueue.labelSetVersion,
+        createdAt: submittedAt,
+        gameplayTruth: label.gameplayTruth,
+        timestampVerified: label.timestampVerified,
+        contextCorrect: label.contextCorrect,
+        coachingRelevance: label.coachingRelevance,
+        ambiguous: label.ambiguous,
+        notes,
+      });
+    }
+  }
+  if (labelManualFingerprints.size !== 1) throw new Error("Reviewer submissions used different label manuals.");
+
+  const byCandidate = Map.groupBy(labels, (label) => label.candidateKey);
+  const resolvedCandidates = [];
+  for (const candidate of queueCandidates) {
+    const reviews = byCandidate.get(candidate.id) ?? [];
+    if (reviews.length !== submissions.length) throw new Error(`Candidate ${candidate.id} lacks independent review coverage.`);
+    const truths = new Set(reviews.map((review) => review.gameplayTruth));
+    const needsAdjudication = truths.size !== 1 || truths.has("uncertain") || reviews.some((review) => review.ambiguous);
+    if (needsAdjudication) continue;
+    const gameplayTruth = reviews[0].gameplayTruth;
+    resolvedCandidates.push({
+      ...candidate,
+      observation: undefined,
+      gameplayTruth,
+      timestampVerified: reviews.every((review) => review.timestampVerified),
+      contextCorrect: reviews.every((review) => review.contextCorrect),
+      coachingRelevance: reviews.every((review) => review.coachingRelevance),
+      independentReviewCount: reviews.length,
+      modelOutcome: modelOutcome(candidate.opportunityStatus, gameplayTruth),
+    });
+  }
+  const labelManualFingerprint = [...labelManualFingerprints][0];
+  const adjudicationQueue = buildAdjudicationQueue({ ...reviewQueue, labelManualFingerprint }, labels);
+  const reviewerAgreement = reviewerAgreementMetrics(labels);
+  const resolvedQueue = {
+    schemaVersion: "rocket-league-consensus-opportunity-labels.v1",
+    sourceReportFingerprint: reviewQueue.sourceReportFingerprint,
+    labelSetVersion: reviewQueue.labelSetVersion,
+    labelManualFingerprint,
+    holdoutIncluded: false,
+    reviewerCount: submissions.length,
+    reviewerAgreement,
+    labelProvenanceComplete: true,
+    candidates: resolvedCandidates,
+  };
+  const detectorIds = [...new Set(queueCandidates.map((candidate) => candidate.detectorId))].sort();
+  return {
+    schemaVersion: "rocket-league-blind-review-merge.v1",
+    sourceQueueVersion: reviewQueue.schemaVersion ?? null,
+    sourceReportFingerprint: reviewQueue.sourceReportFingerprint,
+    labelSetVersion: reviewQueue.labelSetVersion,
+    labelManualFingerprint,
+    holdoutIncluded: false,
+    reviewerCount: submissions.length,
+    candidateCount: queueCandidates.length,
+    independentDecisionCount: labels.length,
+    resolvedConsensusCount: resolvedCandidates.length,
+    unresolvedAdjudicationCount: adjudicationQueue.unresolvedCount,
+    reviewerAgreement,
+    reviewerAgreementByStratum: reviewerAgreementByStratum(labels),
+    labels,
+    resolvedQueue,
+    adjudicationQueue,
+    detectorMetrics: Object.fromEntries(detectorIds.map((detectorId) => [
+      detectorId,
+      opportunityMetricsFromLabels(resolvedQueue, detectorId),
+    ])),
+  };
+}
+
+const adjudicationPacketKeys = new Set([
+  "schemaVersion", "sourceQueueVersion", "sourceReportFingerprint", "labelSetVersion",
+  "labelManualFingerprint", "blindToModelDecision", "adjudicator", "generatedAt",
+  "unresolvedCount", "candidates",
+]);
+const adjudicatorKeys = new Set(["adjudicatorId", "qualification", "submittedAt"]);
+const adjudicationCandidateKeys = new Set([
+  "candidateKey", "detectorId", "detectorVersion", "opportunityContextKey", "reviewQuestion",
+  "timestampSeconds", "replayFingerprint", "reason", "reviewerLabels", "adjudication",
+]);
+const adjudicationLabelKeys = new Set([
+  "gameplayTruth", "timestampVerified", "contextCorrect", "coachingRelevance", "ambiguous", "rationale",
+]);
+
+/**
+ * Finalize a completed redacted adjudication packet. Source reviews stay
+ * immutable; adjudicated gameplay truth is joined to hidden model status only
+ * inside the resulting private calibration artifact.
+ */
+export function finalizeBlindReviewAdjudication(reviewQueue, mergeResult, adjudicationSubmission) {
+  if (mergeResult?.schemaVersion !== "rocket-league-blind-review-merge.v1"
+    || mergeResult?.sourceReportFingerprint !== reviewQueue?.sourceReportFingerprint
+    || mergeResult?.labelSetVersion !== reviewQueue?.labelSetVersion
+    || mergeResult?.holdoutIncluded !== false) {
+    throw new Error("Blind review merge provenance does not match the master queue.");
+  }
+  exactKeys(adjudicationSubmission, adjudicationPacketKeys, "Adjudication submission");
+  exactKeys(adjudicationSubmission?.adjudicator, adjudicatorKeys, "Adjudicator provenance");
+  if (adjudicationSubmission?.schemaVersion !== "rocket-league-adjudication-queue.v1"
+    || adjudicationSubmission?.blindToModelDecision !== true
+    || adjudicationSubmission?.sourceReportFingerprint !== reviewQueue.sourceReportFingerprint
+    || adjudicationSubmission?.labelSetVersion !== reviewQueue.labelSetVersion
+    || adjudicationSubmission?.labelManualFingerprint !== mergeResult.labelManualFingerprint) {
+    throw new Error("Adjudication provenance does not match the blind review merge.");
+  }
+  const adjudicatorId = requiredText(adjudicationSubmission.adjudicator?.adjudicatorId, "Adjudicator id").toLowerCase();
+  const adjudicatorQualification = requiredText(adjudicationSubmission.adjudicator?.qualification, "Adjudicator qualification");
+  const adjudicatedAt = requiredText(adjudicationSubmission.adjudicator?.submittedAt, "Adjudication timestamp");
+  if (Number.isNaN(Date.parse(adjudicatedAt))) throw new Error("Adjudication timestamp is invalid.");
+  if (new Set((mergeResult.labels ?? []).map((label) => String(label.reviewerId).toLowerCase())).has(adjudicatorId)) {
+    throw new Error("Adjudicator must be independent from both source reviewers.");
+  }
+
+  const masterById = new Map((reviewQueue.candidates ?? []).map((candidate) => [candidate.id, candidate]));
+  const expectedAdjudication = new Map((mergeResult.adjudicationQueue?.candidates ?? []).map((candidate) => [candidate.candidateKey, candidate]));
+  const submitted = adjudicationSubmission.candidates ?? [];
+  if (submitted.length !== expectedAdjudication.size || adjudicationSubmission.unresolvedCount !== expectedAdjudication.size) {
+    throw new Error("Adjudication submission does not cover the exact unresolved set.");
+  }
+  const seen = new Set();
+  const adjudicatedCandidates = [];
+  const unresolvedCandidates = [];
+  const unresolvedLabeledCandidates = [];
+  for (const candidate of submitted) {
+    exactKeys(candidate, adjudicationCandidateKeys, "Adjudication candidate");
+    const expected = expectedAdjudication.get(candidate.candidateKey);
+    const master = masterById.get(candidate.candidateKey);
+    if (!expected || !master || seen.has(candidate.candidateKey)) throw new Error("Adjudication contains a missing or duplicate candidate.");
+    seen.add(candidate.candidateKey);
+    for (const key of ["detectorId", "detectorVersion", "opportunityContextKey", "reviewQuestion", "timestampSeconds", "replayFingerprint", "reason"]) {
+      if (candidate[key] !== expected[key]) throw new Error(`Adjudication changed immutable field ${key}.`);
+    }
+    if (JSON.stringify(candidate.reviewerLabels) !== JSON.stringify(expected.reviewerLabels)) {
+      throw new Error("Adjudication changed immutable source reviewer labels.");
+    }
+    exactKeys(candidate.adjudication, adjudicationLabelKeys, "Adjudication label");
+    const label = candidate.adjudication ?? {};
+    if (!gameplayTruthValues.has(label.gameplayTruth)) throw new Error("Adjudication has an incomplete gameplayTruth label.");
+    for (const field of ["timestampVerified", "contextCorrect", "coachingRelevance", "ambiguous"]) {
+      if (typeof label[field] !== "boolean") throw new Error(`Adjudication has an incomplete ${field} label.`);
+    }
+    const rationale = requiredText(label.rationale, "Adjudication rationale");
+    if (label.gameplayTruth === "uncertain" || label.ambiguous || !label.timestampVerified) {
+      unresolvedCandidates.push({ candidateKey: candidate.candidateKey, gameplayTruth: label.gameplayTruth, rationale });
+      unresolvedLabeledCandidates.push({
+        ...master,
+        observation: undefined,
+        gameplayTruth: "uncertain",
+        adjudicatedGameplayTruth: label.gameplayTruth,
+        timestampVerified: label.timestampVerified,
+        contextCorrect: label.contextCorrect,
+        coachingRelevance: label.coachingRelevance,
+        resolution: "unresolved_after_adjudication",
+        adjudicatorId,
+        adjudicatedAt,
+        adjudicationRationale: rationale,
+      });
+      continue;
+    }
+    adjudicatedCandidates.push({
+      ...master,
+      observation: undefined,
+      gameplayTruth: label.gameplayTruth,
+      timestampVerified: label.timestampVerified,
+      contextCorrect: label.contextCorrect,
+      coachingRelevance: label.coachingRelevance,
+      resolution: "adjudicated",
+      adjudicatorId,
+      adjudicatorQualification,
+      adjudicatedAt,
+      adjudicationRationale: rationale,
+      modelOutcome: modelOutcome(master.opportunityStatus, label.gameplayTruth),
+    });
+  }
+  if (seen.size !== expectedAdjudication.size) throw new Error("Adjudication submission is missing unresolved candidates.");
+
+  const expectedConsensusIds = new Set([...masterById.keys()].filter((candidateId) => !expectedAdjudication.has(candidateId)));
+  const consensusCandidates = (mergeResult.resolvedQueue?.candidates ?? []).map((candidate) => {
+    const master = masterById.get(candidate.id);
+    if (!master || !expectedConsensusIds.has(candidate.id) || !["present", "absent"].includes(candidate.gameplayTruth)) {
+      throw new Error("Blind review merge contains an invalid consensus candidate.");
+    }
+    if (candidate.modelOutcome !== modelOutcome(master.opportunityStatus, candidate.gameplayTruth)) {
+      throw new Error("Blind review merge contains an invalid consensus model outcome.");
+    }
+    return { ...candidate, resolution: "reviewer_consensus" };
+  });
+  if (consensusCandidates.length !== expectedConsensusIds.size) {
+    throw new Error("Blind review merge does not cover the exact consensus set.");
+  }
+  const resolvedIds = new Set([...consensusCandidates, ...adjudicatedCandidates].map((candidate) => candidate.id));
+  if (resolvedIds.size !== consensusCandidates.length + adjudicatedCandidates.length) {
+    throw new Error("Finalized labels contain duplicate candidate resolutions.");
+  }
+  if (resolvedIds.size + unresolvedCandidates.length !== reviewQueue.candidates.length) {
+    throw new Error("Finalized labels do not account for the complete master queue.");
+  }
+  const finalQueue = {
+    schemaVersion: "rocket-league-final-opportunity-labels.v1",
+    sourceReportFingerprint: reviewQueue.sourceReportFingerprint,
+    labelSetVersion: reviewQueue.labelSetVersion,
+    labelManualFingerprint: mergeResult.labelManualFingerprint,
+    holdoutIncluded: false,
+    reviewerCount: mergeResult.reviewerCount,
+    reviewerAgreement: mergeResult.reviewerAgreement,
+    labelProvenanceComplete: true,
+    candidates: [...consensusCandidates, ...adjudicatedCandidates, ...unresolvedLabeledCandidates],
+  };
+  const detectorIds = [...new Set((reviewQueue.candidates ?? []).map((candidate) => candidate.detectorId))].sort();
+  return {
+    schemaVersion: "rocket-league-adjudicated-calibration.v1",
+    sourceReportFingerprint: reviewQueue.sourceReportFingerprint,
+    labelSetVersion: reviewQueue.labelSetVersion,
+    labelManualFingerprint: mergeResult.labelManualFingerprint,
+    holdoutIncluded: false,
+    reviewerCount: mergeResult.reviewerCount,
+    adjudicatorId,
+    sourceCandidateCount: reviewQueue.candidates.length,
+    consensusCount: consensusCandidates.length,
+    adjudicatedCount: adjudicatedCandidates.length,
+    unresolvedUncertainCount: unresolvedCandidates.length,
+    unresolvedCandidates,
+    reviewerAgreement: mergeResult.reviewerAgreement,
+    reviewerAgreementByStratum: mergeResult.reviewerAgreementByStratum,
+    finalQueue,
+    detectorMetrics: Object.fromEntries(detectorIds.map((detectorId) => [
+      detectorId,
+      opportunityMetricsFromLabels(finalQueue, detectorId),
+    ])),
+  };
+}
+
 const reviewQuestions = Object.freeze({
   "boost.zero_duration": "Did zero boost materially reduce this player's useful options in this moment?",
   "boost.supersonic_waste": "Was boost spent without creating useful additional speed or positional value?",
@@ -91,6 +680,18 @@ const reviewQuestions = Object.freeze({
   "rotation.spacing_too_close": "Did this spacing duplicate a teammate's coverage or reduce reaction time?",
   "teamplay.double_commit": "Did both teammates commit to the same ball without enough layered coverage?",
   "recovery.momentum_loss": "Was this low-speed interval avoidable and did it delay useful re-entry?",
+  "possession.first_touch_retention": "Did the first touch surrender control in a comparable, attributable opportunity?",
+  "challenge.quality": "Did this challenge lose the player's assigned access while leaving insufficient coverage?",
+  "recovery.reentry_quality": "Did this landing measurably delay useful re-entry in the retained detail window?",
+  "boost.overfill": "Did this pickup discard material boost without enough route, denial or role value to justify it?",
+  "boost.defensive_reserve": "Did the available boost reserve materially remove a needed defensive option at this commitment?",
+  "rotation.third_overextension": "Did the defensive last layer overextend beyond recoverable coverage in this decision?",
+  "challenge.teammate_coverage": "Did this challenge create material risk because no usable teammate layer covered the next outcome?",
+  "challenge.last_player": "Did this last-player challenge create an avoidable open-net or uncontested-access risk?",
+  "kickoff.contact": "Did the subject's kickoff contact give the opponent immediate attributable leverage?",
+  "possession.giveaway": "Did this low-pressure touch surrender controllable possession to the opponent?",
+  "offense.center_to_opponent": "Did this center favor an opponent follow-up over a reachable teammate continuation?",
+  "defense.clear_direction": "Did this defensive clear direction enable an avoidable opponent recycle?",
 });
 
 export function aggregateCalibrationRuns(entries, failures = []) {
@@ -129,6 +730,9 @@ export function aggregateCalibrationRuns(entries, failures = []) {
     signalReplayRate: detector.replayRuns ? detector.replaysWithSignal / detector.replayRuns : 0,
     publicQualityGate: assessPublicDetectorGate({ replayCount: detector.replayRuns }),
   }));
+  const runtimes = entries.map((entry) => entry.operational?.runtimeMs).filter(Number.isFinite).sort((left, right) => left - right);
+  const rssAfter = entries.map((entry) => entry.operational?.rssAfterBytes).filter(Number.isFinite);
+  const percentile = (values, fraction) => values.length ? values[Math.min(values.length - 1, Math.ceil(values.length * fraction) - 1)] : null;
 
   const report = {
     schemaVersion: CALIBRATION_REPORT_VERSION,
@@ -147,6 +751,16 @@ export function aggregateCalibrationRuns(entries, failures = []) {
     replays: entries,
     detectors: detectorResults,
     failures,
+    operational: {
+      measuredReplayCount: runtimes.length,
+      totalRuntimeMs: runtimes.length ? runtimes.reduce((sum, value) => sum + value, 0) : null,
+      meanRuntimeMs: runtimes.length ? runtimes.reduce((sum, value) => sum + value, 0) / runtimes.length : null,
+      p50RuntimeMs: percentile(runtimes, 0.5),
+      p95RuntimeMs: percentile(runtimes, 0.95),
+      maximumRuntimeMs: runtimes.length ? runtimes.at(-1) : null,
+      maximumObservedRssBytes: rssAfter.length ? Math.max(...rssAfter) : null,
+      limitation: "RSS is sampled after each replay inside one long-lived calibration process; it is not per-request peak memory.",
+    },
     conclusions: {
       parserCoverageEstablished: entries.length > 0 && failures.length === 0,
       publicDetectorsEnabled: detectorResults.filter((detector) => detector.publicQualityGate.eligible).length,
@@ -191,6 +805,253 @@ export function buildReviewQueue(calibrationReport) {
   };
 }
 
+function opportunityCandidates(calibrationReport, detectorIds) {
+  const selectedDetectors = new Set(detectorIds);
+  const candidates = [];
+  for (const replay of calibrationReport?.replays ?? []) {
+    for (const contract of replay.opportunityContracts ?? []) {
+      if (!selectedDetectors.has(contract.detectorId)) continue;
+      for (const evaluation of contract.evaluations ?? []) {
+        if (!Number.isFinite(evaluation.timestampSeconds)) continue;
+        candidates.push({
+          id: `${replay.replayFingerprint}:${contract.detectorId}@${contract.detectorVersion}:${evaluation.opportunityId}`,
+          replayFingerprint: replay.replayFingerprint,
+          subjectRosterIndex: Number.isInteger(replay.subjectRosterIndex) ? replay.subjectRosterIndex : null,
+          evidenceSource: replay.evidenceSource ?? "unknown",
+          mode: replay.mode ?? null,
+          rankCohort: replay.rankCohort ?? "unranked-unknown",
+          cohortKey: replay.cohortKey ?? `${replay.mode ?? "unknown"}:${replay.rankCohort ?? "unranked-unknown"}`,
+          metadataProvenance: replay.metadataProvenance ?? "unknown",
+          corpusAssignment: replay.corpusAssignment ?? null,
+          gameVersion: replay.gameVersion ?? null,
+          detectorId: contract.detectorId,
+          detectorVersion: contract.detectorVersion,
+          opportunityType: contract.opportunityType,
+          opportunityStatus: evaluation.status,
+          opportunityContextKey: evaluation.contextKey ?? "unknown",
+          reviewQuestion: reviewQuestions[contract.detectorId] ?? "Is the described behavior present in this gameplay moment?",
+          timestampSeconds: evaluation.timestampSeconds,
+          frame: evaluation.frame ?? null,
+          observation: {
+            opportunityStatus: evaluation.status,
+            classification: evaluation.classification ?? "unclassified",
+            contextKey: evaluation.contextKey ?? "unknown",
+            context: evaluation.context ?? {},
+            reasons: evaluation.reasons ?? [],
+            evidence: evaluation.evidence ?? {},
+          },
+          label: null,
+          gameplayTruth: null,
+          timestampVerified: null,
+          contextCorrect: null,
+          coachingRelevance: null,
+          notes: "",
+        });
+      }
+    }
+  }
+  return candidates.sort((left, right) => (
+    left.detectorId.localeCompare(right.detectorId)
+    || left.opportunityStatus.localeCompare(right.opportunityStatus)
+    || left.opportunityContextKey.localeCompare(right.opportunityContextKey)
+    || left.replayFingerprint.localeCompare(right.replayFingerprint)
+    || left.timestampSeconds - right.timestampSeconds
+    || left.id.localeCompare(right.id)
+  ));
+}
+
+function balancedOpportunitySample(candidates, perStatus, maxPerReplay) {
+  const cohorts = Map.groupBy(candidates, (candidate) => (
+    candidate.cohortKey ?? `${candidate.mode ?? "unknown"}:${candidate.rankCohort ?? "unranked-unknown"}`
+  ));
+  const cohortStates = [...cohorts.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([cohortKey, rows]) => {
+    const contexts = Map.groupBy(rows, (candidate) => candidate.opportunityContextKey);
+    const contextKeys = [...contexts.keys()].sort();
+    return {
+      cohortKey,
+      contexts,
+      contextKeys,
+      cursors: new Map(contextKeys.map((key) => [key, 0])),
+      nextContext: 0,
+    };
+  });
+  const replayCounts = new Map();
+  const selected = [];
+  while (selected.length < perStatus) {
+    let added = false;
+    for (const state of cohortStates) {
+      let cohortAdded = false;
+      for (let attempt = 0; attempt < state.contextKeys.length; attempt += 1) {
+        const contextIndex = (state.nextContext + attempt) % state.contextKeys.length;
+        const contextKey = state.contextKeys[contextIndex];
+        const rows = state.contexts.get(contextKey) ?? [];
+        let cursor = state.cursors.get(contextKey) ?? 0;
+        while (cursor < rows.length) {
+          const candidate = rows[cursor++];
+          const replayKey = `${candidate.detectorId}:${candidate.opportunityStatus}:${candidate.replayFingerprint}`;
+          if ((replayCounts.get(replayKey) ?? 0) >= maxPerReplay) continue;
+          replayCounts.set(replayKey, (replayCounts.get(replayKey) ?? 0) + 1);
+          selected.push(candidate);
+          added = true;
+          cohortAdded = true;
+          state.nextContext = (contextIndex + 1) % state.contextKeys.length;
+          break;
+        }
+        state.cursors.set(contextKey, cursor);
+        if (cohortAdded) break;
+      }
+      if (selected.length >= perStatus) break;
+    }
+    if (!added) break;
+  }
+  return selected;
+}
+
+/**
+ * Builds a new, blind review queue from the complete opportunity denominator.
+ * The historical candidate-only queue remains a separate locked artifact.
+ */
+export function buildOpportunityReviewQueue(calibrationReport, {
+  detectorIds = FOUNDATION_DETECTOR_IDS,
+  perStatus = 40,
+  maxPerReplay = 2,
+  labelSetVersion = "rocket-league-expert-labels.v4-opportunity",
+} = {}) {
+  if (!Number.isInteger(perStatus) || perStatus < 1) throw new Error("perStatus must be a positive integer.");
+  if (!Number.isInteger(maxPerReplay) || maxPerReplay < 1) throw new Error("maxPerReplay must be a positive integer.");
+  const sourceReplays = calibrationReport?.replays ?? [];
+  if (!sourceReplays.length) throw new Error("Opportunity review queue requires a non-empty calibration_dev report.");
+  if (!String(calibrationReport?.reproducibilityFingerprint ?? "").trim()) {
+    throw new Error("Opportunity review queue requires a reproducibility fingerprint.");
+  }
+  const invalidAssignments = [...new Set(sourceReplays
+    .map((replay) => replay.corpusAssignment ?? "missing")
+    .filter((assignment) => assignment !== "calibration_dev"))];
+  if (invalidAssignments.length) {
+    throw new Error(`Opportunity review queue accepts only explicit calibration_dev assignments; rejected: ${invalidAssignments.join(", ")}.`);
+  }
+  if (sourceReplays.some((replay) => replay.evidenceSource !== "real_replay")) {
+    throw new Error("Opportunity review queue accepts only real_replay evidence.");
+  }
+  if (sourceReplays.some((replay) => replay.attributionState !== "verified")) {
+    throw new Error("Opportunity review queue requires verified player attribution for every replay.");
+  }
+  if (sourceReplays.some((replay) => replay.modeMatchesManifest === false)) {
+    throw new Error("Opportunity review queue rejects replay/manifest mode mismatches.");
+  }
+  if (sourceReplays.some((replay) => (replay.opportunityContracts ?? []).some((contract) => contract.summary?.integrityPassed === false
+    || Number(contract.summary?.duplicateOpportunitiesDropped ?? 0) > 0))) {
+    throw new Error("Opportunity review queue rejects duplicate or integrity-failed opportunity contracts.");
+  }
+  const replayFingerprints = sourceReplays.map((replay) => replay.replayFingerprint);
+  if (replayFingerprints.some((fingerprint) => !fingerprint) || new Set(replayFingerprints).size !== replayFingerprints.length) {
+    throw new Error("Opportunity review queue requires unique replay fingerprints.");
+  }
+  const complete = opportunityCandidates(calibrationReport, detectorIds);
+  const groups = Map.groupBy(complete, (candidate) => `${candidate.detectorId}:${candidate.opportunityStatus}`);
+  const candidates = [...groups.entries()].flatMap(([, rows]) => balancedOpportunitySample(rows, perStatus, maxPerReplay));
+  const statusCounts = Object.fromEntries([...Map.groupBy(candidates, (candidate) => candidate.opportunityStatus).entries()]
+    .map(([key, rows]) => [key, rows.length]));
+  const detectorStatusCounts = Object.fromEntries([...Map.groupBy(candidates, (candidate) => candidate.detectorId).entries()]
+    .map(([detectorId, rows]) => [detectorId, Object.fromEntries([...Map.groupBy(rows, (candidate) => candidate.opportunityStatus).entries()]
+      .map(([status, statusRows]) => [status, statusRows.length]))]));
+  return {
+    schemaVersion: OPPORTUNITY_REVIEW_QUEUE_VERSION,
+    sourceReportVersion: calibrationReport?.schemaVersion ?? null,
+    sourceReportFingerprint: calibrationReport?.reproducibilityFingerprint ?? null,
+    generatedAt: new Date().toISOString(),
+    labelSetVersion: String(labelSetVersion),
+    sourceCorpusAssignment: "calibration_dev",
+    holdoutIncluded: false,
+    blindReview: true,
+    selection: {
+      detectorIds: [...detectorIds],
+      strategy: "Hierarchical round-robin across mode/rank cohorts and then opportunity contexts, with a per-replay cap, sampled separately for firing, non-firing and abstained decisions.",
+      requestedPerDetectorStatus: perStatus,
+      maxPerReplayPerDetectorStatus: maxPerReplay,
+      availableCandidates: complete.length,
+      selectedCandidates: candidates.length,
+      statusCounts,
+      detectorStatusCounts,
+    },
+    candidates,
+  };
+}
+
+export function opportunityMetricsFromLabels(reviewQueue, detectorId) {
+  const reviewed = (reviewQueue?.candidates ?? []).filter((candidate) => (
+    candidate.detectorId === detectorId
+    && ["present", "absent", "uncertain"].includes(candidate.gameplayTruth)
+  ));
+  const decided = reviewed.filter((candidate) => candidate.gameplayTruth !== "uncertain");
+  const scored = decided.filter((candidate) => ["firing", "non_firing"].includes(candidate.opportunityStatus));
+  const positive = (candidate) => candidate.gameplayTruth === "present";
+  const firing = (candidate) => candidate.opportunityStatus === "firing";
+  const nonFiring = (candidate) => candidate.opportunityStatus === "non_firing";
+  const truePositives = scored.filter((candidate) => firing(candidate) && positive(candidate)).length;
+  const falsePositives = scored.filter((candidate) => firing(candidate) && !positive(candidate)).length;
+  const trueNegatives = scored.filter((candidate) => nonFiring(candidate) && !positive(candidate)).length;
+  const falseNegatives = scored.filter((candidate) => nonFiring(candidate) && positive(candidate)).length;
+  const abstentions = reviewed.filter((candidate) => candidate.opportunityStatus === "abstained");
+  const interval = (successes, total) => {
+    if (!total) return { lower: null, upper: null };
+    const lower = wilsonLowerBound(successes, total);
+    const upper = 1 - wilsonLowerBound(total - successes, total);
+    return { lower, upper };
+  };
+  const predictedPositive = truePositives + falsePositives;
+  const actualPositive = truePositives + falseNegatives;
+  const actualNegative = trueNegatives + falsePositives;
+  const abstentionUncertain = abstentions.filter((candidate) => candidate.gameplayTruth === "uncertain").length;
+  const uncertainReviewed = reviewed.filter((candidate) => candidate.gameplayTruth === "uncertain").length;
+  const cohortCounts = scored.reduce((counts, candidate) => {
+    const key = candidate.cohortKey ?? `${candidate.mode ?? "unknown"}:${candidate.rankCohort ?? "unranked-unknown"}`;
+    counts[key] = (counts[key] ?? 0) + 1;
+    return counts;
+  }, {});
+  const coveredCohortCounts = Object.entries(cohortCounts)
+    .filter(([key]) => !key.startsWith("unknown:") && !key.endsWith(":unranked-unknown"))
+    .map(([, count]) => count);
+  return {
+    reviewedOpportunities: reviewed.length,
+    decidedOpportunities: decided.length,
+    scoredOpportunities: scored.length,
+    replayCount: new Set(scored.map((candidate) => candidate.replayFingerprint).filter(Boolean)).size,
+    reviewedPositives: scored.filter(positive).length,
+    reviewedNegatives: scored.filter((candidate) => !positive(candidate)).length,
+    truePositives,
+    falsePositives,
+    trueNegatives,
+    falseNegatives,
+    precision: predictedPositive ? truePositives / predictedPositive : null,
+    precision95: interval(truePositives, predictedPositive),
+    recall: actualPositive ? truePositives / actualPositive : null,
+    recall95: interval(truePositives, actualPositive),
+    specificity: actualNegative ? trueNegatives / actualNegative : null,
+    specificity95: interval(trueNegatives, actualNegative),
+    falsePositiveRate: actualNegative ? falsePositives / actualNegative : null,
+    falsePositiveRate95: interval(falsePositives, actualNegative),
+    timestampVerifiedRate: scored.length
+      ? scored.filter((candidate) => candidate.timestampVerified === true).length / scored.length
+      : null,
+    rankModeCohorts: coveredCohortCounts.length,
+    cohortCounts,
+    minimumCohortSamples: coveredCohortCounts.length ? Math.min(...coveredCohortCounts) : 0,
+    uncertainReviewed,
+    uncertainRate: reviewed.length ? uncertainReviewed / reviewed.length : null,
+    uncertainRate95: interval(uncertainReviewed, reviewed.length),
+    abstentionReviewed: abstentions.length,
+    abstentionUncertainRate: abstentions.length
+      ? abstentionUncertain / abstentions.length
+      : null,
+    abstentionUncertainRate95: interval(abstentionUncertain, abstentions.length),
+    independentReviewers: reviewQueue?.reviewerCount ?? null,
+    reviewerAgreement: reviewQueue?.reviewerAgreement?.rawAgreement ?? reviewQueue?.reviewerAgreement ?? null,
+    labelProvenanceComplete: reviewQueue?.labelProvenanceComplete === true,
+    expertLabelSetVersion: reviewQueue?.labelSetVersion ?? null,
+  };
+}
+
 export function calibrationMetricsFromLabels(reviewQueue, detectorId, labelHistory = []) {
   const candidates = (reviewQueue?.candidates ?? []).filter((candidate) => (
     candidate.detectorId === detectorId && candidate.evidenceSource === "real_replay"
@@ -213,9 +1074,12 @@ export function calibrationMetricsFromLabels(reviewQueue, detectorId, labelHisto
     replayCount: new Set(reviewed.map((candidate) => candidate.replayFingerprint)).size,
     reviewedPositives: confirmed.length,
     reviewedNegatives: rejected.length,
-    precision: reviewed.length ? confirmed.length / reviewed.length : null,
-    precisionLowerBound: wilsonLowerBound(confirmed.length, reviewed.length),
-    falsePositiveRate: reviewed.length ? rejected.length / reviewed.length : null,
+    candidateConfirmationRate: reviewed.length ? confirmed.length / reviewed.length : null,
+    candidateConfirmationRateLowerBound: wilsonLowerBound(confirmed.length, reviewed.length),
+    precision: null,
+    precisionLowerBound: null,
+    falsePositiveRate: null,
+    recall: null,
     timestampVerifiedRate: reviewed.length
       ? reviewed.filter((candidate) => candidate.timestampVerified === true).length / reviewed.length
       : null,

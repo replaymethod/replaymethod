@@ -21,13 +21,13 @@ test("locked private set supports a blind autosaved first judgment end to end", 
   const importResponse = await ownerPage.request.post("/api/admin/rl-review-queue", {
     headers: { Origin: baseURL! },
     multipart: {
-      queue: { name: "kickoff-review-queue.json", mimeType: "application/json", buffer: await import("node:fs/promises").then(fs => fs.readFile(queuePath!)) },
-      moments: { name: "kickoff-review-moments.json", mimeType: "application/json", buffer: await import("node:fs/promises").then(fs => fs.readFile(momentsPath!)) },
+      queue: { name: "opportunity-review-queue.json.gz", mimeType: "application/gzip", buffer: await import("node:fs/promises").then(fs => fs.readFile(queuePath!)) },
+      moments: { name: "opportunity-review-moments.json.gz", mimeType: "application/gzip", buffer: await import("node:fs/promises").then(fs => fs.readFile(momentsPath!)) },
     },
   });
   expect(importResponse.ok(), await importResponse.text()).toBeTruthy();
   const imported = await importResponse.json() as { imported: number; replayCount: number; holdoutOverlapCount: number };
-  expect(imported).toMatchObject({ imported: 102, replayCount: 64, holdoutOverlapCount: 0 });
+  expect(imported).toMatchObject({ imported: 343, replayCount: 85, holdoutOverlapCount: 0 });
 
   const reviewerEmail = `reviewer-${runId}@example.invalid`;
   const reviewer = await browser.newContext({ extraHTTPHeaders: authHeaders(reviewerEmail, `e2e-reviewer-${runId}`, "E2E Reviewer") });
@@ -55,7 +55,8 @@ test("locked private set supports a blind autosaved first judgment end to end", 
   expect(approvalResponse.ok(), await approvalResponse.text()).toBeTruthy();
 
   await reviewPage.reload();
-  await expect(reviewPage.getByText("0 / 102")).toBeVisible();
+  await expect(reviewPage.getByText("0 / 172")).toBeVisible();
+  await expect(reviewPage.getByText("0 / 343 overall")).toBeVisible();
   const firstCandidate = reviewPage.locator(".rl-candidate").first();
   await expect(firstCandidate.getByText("BLIND GAMEPLAY CANDIDATE")).toBeVisible();
   await expect(firstCandidate.getByLabel("Detector observation revealed after lock")).toHaveCount(0);
@@ -70,11 +71,17 @@ test("locked private set supports a blind autosaved first judgment end to end", 
   await resumedCandidate.getByLabel("COACHING RELEVANCE").selectOption("actionable");
   reviewPage.once("dialog", dialog => dialog.accept());
   await resumedCandidate.getByRole("button", { name: "Lock independent judgment" }).click();
-  await expect(reviewPage.getByText("1 / 102")).toBeVisible();
+  await expect(reviewPage.getByText("1 / 172")).toBeVisible();
+  await expect(reviewPage.getByText("1 / 343 overall")).toBeVisible();
   const lockedCandidate = reviewPage.locator(".rl-candidate").first();
   await expect(lockedCandidate.getByText("INDEPENDENT JUDGMENT LOCKED")).toBeVisible();
   await expect(lockedCandidate.getByLabel("Detector observation revealed after lock")).toBeVisible();
   await expect(lockedCandidate.getByRole("button", { name: "Lock independent judgment" })).toHaveCount(0);
+
+  await reviewPage.getByLabel("REVIEW PASS").selectOption("2");
+  await reviewPage.getByRole("button", { name: "Apply" }).click();
+  await expect(reviewPage.getByText("0 / 171")).toBeVisible();
+  await expect(reviewPage.getByText("1 / 343 overall")).toBeVisible();
 
   await owner.close();
   await reviewer.close();

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const socialImageMeta =
-  /<meta(?=[^>]*\bproperty=["']og:image["'])(?=[^>]*\bcontent=["']https:\/\/replaymethod\.xyz\/brand\/og-replay-method-v12-1200x630\.png["'])[^>]*>/i;
+  /<meta(?=[^>]*\bproperty=["']og:image["'])(?=[^>]*\bcontent=["']https:\/\/replaymethod\.xyz\/brand\/og-replay-method-v13-1200x630\.png["'])[^>]*>/i;
 
 test("renders production social metadata and the fail-closed product-first path", async () => {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -31,12 +31,12 @@ test("renders production social metadata and the fail-closed product-first path"
   );
   const html = await response.text();
   assert.match(html, socialImageMeta);
-  assert.match(html, /Replay Method finds the mistake/i);
-  assert.match(html, /type="file"[^>]*multiple/i);
-  assert.match(html, /Drop your 10 replays here/i);
-  assert.match(html, /Start your private analysis/i);
+  assert.match(html, /See the decision holding you back/i);
+  assert.doesNotMatch(html, /type="file"[^>]*multiple/i);
+  assert.match(html, /From replay files to one useful focus/i);
+  assert.match(html, /A pattern needs evidence/i);
   assert.doesNotMatch(html, /Your private report is ready|10 matches compared/i);
   assert.doesNotMatch(html, /Choose my game|Contribute one replay/i);
-  assert.match(html, /Analyze my 10 replays/i);
-  assert.match(html, /Not while the deterministic replay engine is unavailable/i);
+  assert.match(html, /Start free analysis/i);
+  assert.doesNotMatch(html, /Planned for Premium|35 representative replays/i);
 });

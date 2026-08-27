@@ -75,6 +75,42 @@ versioned replay episodes, calibrated detectors, expert labels, contextual
 baselines and measured links between practice prescriptions and later match
 behavior.
 
+## Founder-led cultural and experience edge
+
+Replay Method's market hypothesis is not only functional. The product must
+combine **evidence-grade intelligence with culture-grade presentation**. Its
+founder-led visual and verbal direction comes from motion graphics, editing,
+graffiti composition and native familiarity with younger gaming and internet
+culture. That perspective is a potential experience and distribution advantage,
+not decoration to add after the engine is finished.
+
+Future implementation must not normalize this direction into generic SaaS or
+literal "gaming UI." Preserve:
+
+- editing rhythm, precise reveals and motion that explains state;
+- graffiti-derived confidence, composition and controlled surprise without
+  spray-font imitation or decorative noise;
+- Scandinavian restraint, disciplined typography, space and one controlled
+  electric accent;
+- concise, natural language that earns trust without corporate imitation of
+  youth slang;
+- social-native assets that feel culturally credible rather than like ads;
+- one dominant path with advanced power hidden behind progressive disclosure;
+- the owner's creative veto over customer-facing visual, motion and verbal
+  identity.
+
+The customer experience should feel personally relevant, fast and worth
+showing to a friend while remaining calm, private and evidence-led. "High
+stimulation" means precise feedback, beautiful response and visible mastery,
+never infinite scroll, random rewards, forced streaks, shame or ornamental
+overload.
+
+This advantage remains a founder hypothesis until tested with the actual target
+audience. Validation must measure five-second comprehension, task completion,
+trust, premium perception, recall of the one rule and voluntary desire to return
+or share. User testing should sharpen this creative direction, not silently
+replace it with the average preference of a panel.
+
 ## Scientific and psychological principles
 
 Product decisions should preserve these mechanisms:
@@ -343,13 +379,19 @@ At the time of this consolidation:
   last, with marketing consent separate and off by default;
 - a fully post-result email capture is deliberately deferred until anonymous
   device ownership and secure report claiming can be implemented end to end;
-- accounts, enforced free limits, cross-match memory and payments are not yet
-  implemented;
+- accounts, enforced free limits, customer-facing longitudinal memory and
+  payments are not yet fully activated;
 - no paid checkout is active;
 - the Rocket League catalog is broad, but discovery entries must not be marketed
   as calibrated public detectors;
 - Rocket League frame-state and episode extraction now run on real replays;
-- eight private shadow probes execute behind explicit public quality gates;
+- a private versioned Pattern Lock layer now separates one-off, emerging,
+  context-specific and repeatable detector output across ten matches, freezes
+  the comparison definition and can recheck the same behavior later without
+  changing public coaching or bypassing detector validation;
+- all 60 detector lanes execute privately across nine analysis areas; sixteen
+  currently measure replay telemetry while 44 stop at explicit capability
+  abstention, and none bypasses the public quality gate;
 - the first six-replay baseline parsed without failures and produced 515
   anonymized review candidates and 515 matching replay-moment windows;
 - a private D1-backed Rocket League review lab now filters those candidates,

@@ -29,7 +29,7 @@ test("segments match phases and preserves subject-backed decision events", () =>
     ] },
   }, "epic:subject-id");
 
-  assert.equal(timeline.schemaVersion, "rocket-league-episode-timeline.v1");
+  assert.equal(timeline.schemaVersion, "rocket-league-episode-timeline.v2");
   assert.deepEqual(timeline.phases.map((phase) => phase.phase), [
     "kickoff_countdown", "active_play", "post_goal",
   ]);

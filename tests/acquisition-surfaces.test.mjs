@@ -30,26 +30,24 @@ test("routes free hypotheses into the honest beta intake", async () => {
   assert.doesNotMatch(guide, /#join-beta/);
 });
 
-test("distinguishes future games from the ten-replay Rocket League product", async () => {
-  const [landing, intake, batchFlow, metadata] = await Promise.all([
+test("keeps the public product Rocket League-only", async () => {
+  const [landing, batchFlow, metadata, gameRoute, sitemap] = await Promise.all([
     source("../app/components/Landing.tsx"),
-    source("../app/analyze/AnalyzeFlow.tsx"),
     source("../app/analyze/BatchAnalyzeFlow.tsx"),
     source("../app/analyze/page.tsx"),
+    source("../app/[game]/page.tsx"),
+    source("../app/sitemap.ts"),
   ]);
-  assert.match(landing, /if \(game === "league" \|\| game === "valorant"\) return <FutureGame/);
-  assert.match(landing, /authorized match evidence can support the same standard/);
   assert.match(landing, /href="\/analyze"/);
-  assert.match(landing, /<BatchAnalyzeFlow engineOpen=\{engineOpen\} variant="hero"/);
   assert.match(batchFlow, /Drop your 10 replays here/);
-  assert.match(landing, /Analyze my 10 replays/);
-  assert.match(intake, /SAVE MY RIOT BETA REQUEST/);
-  assert.match(batchFlow, /VERIFY MY 10 REPLAYS/);
+  assert.match(landing, /Start free analysis/);
+  assert.match(batchFlow, /START MY PRIVATE ANALYSIS/);
   assert.match(batchFlow, /\{validCount\}\/10/);
-  assert.match(intake, /Automated League and VALORANT analysis is not live/);
   assert.match(batchFlow, /same player.*same ranked.*playlist/is);
   assert.doesNotMatch(batchFlow, /START CONSOLE VIDEO BETA/);
   assert.doesNotMatch(metadata, /get one focused Replay Method diagnosis/i);
+  assert.match(gameRoute, /permanentRedirect\("\/"\)/);
+  assert.doesNotMatch(sitemap, /\/league|\/valorant|\/climb-check|\/guides"/);
 });
 
 test("puts the product action before explanatory browsing", async () => {
@@ -59,14 +57,15 @@ test("puts the product action before explanatory browsing", async () => {
     source("../app/rocket-league-beta/ReplayContribution.tsx"),
   ]);
   assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
-  assert.match(landing, /Replay Method finds the mistake <em>you keep repeating\.<\/em>/);
-  assert.match(landing, /<BatchAnalyzeFlow engineOpen=\{engineOpen\} variant="hero"/);
+  assert.match(landing, /Stop guessing\.<br \/>See the decision holding you back\./);
+  assert.doesNotMatch(landing, /<BatchAnalyzeFlow/);
   assert.match(batchFlow, /Start your private analysis/);
   assert.match(batchFlow, /Drop your 10 replays here/);
   assert.match(batchFlow, /Open full upload page/);
-  assert.match(landing, /You both go\. No one covers\./);
+  assert.match(landing, /One common mistake\. Two very different outcomes\./);
+  assert.match(landing, /A pattern needs evidence\.<br \/>Not confidence theatre\./);
   assert.doesNotMatch(landing, /Free first analysis · No card required · Replays stay private|One free analysis · no card · private report|Replay Method · Experimental early access/);
-  assert.ok(landing.indexOf("<BatchAnalyzeFlow") < landing.indexOf("<ProductMoment"));
+  assert.ok(landing.indexOf("<HowItWorks") < landing.indexOf("<ProductMoment"));
   assert.match(contribution, /replay && <section className="rl-intake-context"/);
   assert.match(contribution, /Choose the original PC file\. The next step appears instantly/);
 });

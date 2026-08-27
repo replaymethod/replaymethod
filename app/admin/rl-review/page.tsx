@@ -4,13 +4,13 @@ import { getDb } from "../../../db";
 import { rlReviewCandidates, rlReviewLabels } from "../../../db/schema";
 import { requireChatGPTUser } from "../../chatgpt-auth";
 import { ensureRlReviewerApplicant } from "../../../lib/admin";
-import { detectorName, reviewerPlaylistScopes, RL_LABEL_SET_VERSION } from "../../../lib/rl-review";
+import { detectorName, reviewerPlaylistScopes, RL_LABEL_SET_VERSION, splitRlReviewPasses } from "../../../lib/rl-review";
 import ReviewCandidateForm from "./ReviewCandidateForm";
 import ReplayMomentViewer, { type ReplayMoment } from "./ReplayMomentViewer";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = { verdict?: string; page?: string };
+type SearchParams = { verdict?: string; pass?: string; page?: string };
 const pageSize = 6;
 
 export default async function RlReviewPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -25,15 +25,19 @@ export default async function RlReviewPage({ searchParams }: { searchParams: Pro
     db.select().from(rlReviewLabels).where(and(eq(rlReviewLabels.reviewerId, reviewer.id), eq(rlReviewLabels.labelSetVersion, RL_LABEL_SET_VERSION))).orderBy(asc(rlReviewLabels.id))
   ]);
   const qualifiedModes = reviewerPlaylistScopes(reviewer.playlistQualificationsJson);
-  const candidates = storedCandidates.filter(candidate => Boolean(candidate.mode && qualifiedModes.has(candidate.mode)));
+  const qualifiedCandidates = storedCandidates.filter(candidate => Boolean(candidate.mode && qualifiedModes.has(candidate.mode)));
+  const reviewPasses = splitRlReviewPasses(qualifiedCandidates);
   const latestLabels = new Map<number, typeof labelHistory[number]>();
   for (const label of labelHistory) latestLabels.set(label.candidateId, label);
   const params = await searchParams;
+  const selectedPass = params.pass === "2" || params.pass === "all" ? params.pass : "1";
+  const candidates = selectedPass === "1" ? reviewPasses.first : selectedPass === "2" ? reviewPasses.second : qualifiedCandidates;
   const personalVerdict = (id: number) => latestLabels.get(id)?.verdict ?? "unreviewed";
   const filtered = candidates.filter(row => (
     !params.verdict || personalVerdict(row.id) === params.verdict
   ));
   const reviewed = candidates.filter(row => personalVerdict(row.id) !== "unreviewed").length;
+  const reviewedOverall = qualifiedCandidates.filter(row => personalVerdict(row.id) !== "unreviewed").length;
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const requestedPage = Math.max(1, Number(params.page || "1") || 1);
   const currentPage = Math.min(requestedPage, pageCount);
@@ -57,17 +61,19 @@ export default async function RlReviewPage({ searchParams }: { searchParams: Pro
   const pageUrl = (page: number) => {
     const query = new URLSearchParams();
     if (params.verdict) query.set("verdict", params.verdict);
+    query.set("pass", selectedPass);
     query.set("page", String(page));
     return `/admin/rl-review?${query}`;
   };
 
   return <main className="rl-review-page"><section className="rl-review-shell">
     <nav className="rl-review-nav"><Link href="/">Replay Method</Link><div><span>{reviewer.displayName || reviewer.email}</span><b>{reviewer.qualification.replaceAll("_", " ")} · {[...qualifiedModes].join(" / ")}</b></div></nav>
-    <header className="rl-review-hero"><div><span>BLIND EXPERT REVIEW · {RL_LABEL_SET_VERSION}</span><h1>Judge the moment.<br />Not another reviewer.</h1><p>The detector output and every other reviewer remain hidden until your structured first judgment is locked.</p></div><aside><span>YOUR PROGRESS</span><b>{reviewed} / {candidates.length}</b><small>Autosaved drafts resume on this device</small></aside></header>
+    <header className="rl-review-hero"><div><span>BLIND EXPERT REVIEW · {RL_LABEL_SET_VERSION}</span><h1>Judge the moment.<br />Not another reviewer.</h1><p>The detector output and every other reviewer remain hidden until your structured first judgment is locked.</p></div><aside><span>{selectedPass === "all" ? "TOTAL PROGRESS" : `PASS ${selectedPass} PROGRESS`}</span><b>{reviewed} / {candidates.length}</b><small>{reviewedOverall} / {qualifiedCandidates.length} overall · autosaved drafts resume</small></aside></header>
 
     <section className="rl-review-blind-note"><i>◉</i><div><b>Blindness is active</b><p>No detector observation, consensus score, prior verdict or reviewer note is exposed before your judgment is locked.</p></div></section>
 
     <form className="rl-review-filters" action="/admin/rl-review">
+      <label><span>REVIEW PASS</span><select name="pass" defaultValue={selectedPass}><option value="1">Pass 1 · calibration checkpoint</option><option value="2">Pass 2 · complete calibration</option><option value="all">All locked candidates</option></select></label>
       <label><span>MY VERDICT</span><select name="verdict" defaultValue={params.verdict ?? ""}><option value="">All</option><option value="unreviewed">Unreviewed</option><option value="confirmed">Confirmed</option><option value="rejected">False positive</option><option value="uncertain">Uncertain</option></select></label>
       <button>Apply</button><Link href="/admin/rl-review">Clear</Link>
     </form>

@@ -17,7 +17,16 @@ function result(index, finding = index < 4) {
     normalized: {
       game: "rocket-league", externalMatchId: `match-${index}`, subjectPlayerId: "player-1",
       subjectDisplayName: "Player One", mode: "Ranked Doubles 2v2", occurredAt: `2026-08-${String(index + 1).padStart(2, "0")}T12:00:00.000Z`,
-      metadata: { performanceSnapshot: { version: "v1", metrics, moments: [{ id: `m-${index}`, title: "Moment", context: "Ranked", observation: "Observed", consequence: "Consequence", limitation: "Bounded", timestampSeconds: 30, evidenceKind: "verified_telemetry", source: "parser", version: "v1" }] } },
+      metadata: {
+        performanceSnapshot: { version: "v1", metrics, moments: [{ id: `m-${index}`, title: "Moment", context: "Ranked", observation: "Observed", consequence: "Consequence", limitation: "Bounded", timestampSeconds: 30, evidenceKind: "verified_telemetry", source: "parser", version: "v1" }] },
+        decisionEngine: { detectors: [{
+          detectorId: "possession.first_touch_retention", detectorVersion: "0.1.0", opportunityType: "first_touch_retention",
+          evaluations: [
+            { opportunityId: `o-${index}-1`, status: [0, 2, 6, 8].includes(index) ? "firing" : "non_firing", classification: [0, 2, 6, 8].includes(index) ? "opponent_gain" : "team_retained", contextKey: "2v2:first_touch_retention:first:loose:low:normal" },
+            { opportunityId: `o-${index}-2`, status: "non_firing", classification: "team_retained", contextKey: "2v2:first_touch_retention:first:loose:low:normal" },
+          ],
+        }] },
+      },
     },
     findings: finding ? [{
       id: "spacing.overlap", category: "positioning", title: "Protect the second layer", summary: "Both cars entered the same channel.",
@@ -50,6 +59,16 @@ test("aggregates exactly ten matches and keeps one-off signals out of the plan",
   assert.match(aggregate.report.whyItCosts, /4 of 10 matches/);
   assert.ok(aggregate.metadata.performanceSnapshot.metrics.length >= 5);
   assert.ok(new Set(aggregate.metadata.performanceSnapshot.metrics.map(metric => metric.category)).size >= 3);
+  assert.equal(aggregate.metadata.batch.opportunityPatterns.length, 1);
+  assert.equal(aggregate.metadata.batch.opportunityPatterns[0].eligibleOpportunities, 20);
+  assert.equal(aggregate.metadata.batch.opportunityPatterns[0].firingOpportunities, 4);
+  assert.equal(aggregate.metadata.batch.opportunityPatterns[0].nonFiringOpportunities, 16);
+  assert.equal(aggregate.metadata.batch.opportunityPatterns[0].comparableContexts[0].matches, 10);
+  assert.equal(aggregate.metadata.batch.patternMemory.contractCount, 1);
+  assert.equal(aggregate.metadata.batch.patternMemory.patternLockCandidateCount, 1);
+  assert.equal(aggregate.metadata.batch.patternMemory.contracts[0].state, "pattern_lock_candidate");
+  assert.equal(aggregate.metadata.batch.patternMemory.contracts[0].publicEligible, false);
+  assert.match(aggregate.metadata.batch.patternMemory.contracts[0].contractId, /^pm_[a-f0-9]{24}$/);
   assert.throws(() => aggregateReplayBatch(Array.from({ length: 9 }, (_, index) => result(index))), /Exactly ten/);
 });
 
@@ -73,7 +92,7 @@ test("batch product reserves one allowance and never counts excluded files as va
   assert.match(process, /crypto\.randomUUID\(\)\.replaceAll\("-", ""\)/);
   assert.match(flow, /Choose exactly \$\{required\}/);
   assert.match(flow, /onDrop=\{dropFiles\}/);
-  assert.match(flow, /Wrong files stay visible with a clear reason/);
+  assert.match(flow, /We keep every valid file and explain every exclusion/);
   assert.match(flow, /replaymethod-ten-replay-upload/);
   assert.match(report, /row\.evidenceType !== "replay_batch" \|\| Boolean\(finding\)/);
   assert.match(parser, /externalMatchId: matchGuid \|\| undefined/);

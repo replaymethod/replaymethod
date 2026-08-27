@@ -20,15 +20,16 @@ test.describe("private report states", () => {
   test("a terminal input error explains what happened", async ({ page }) => {
     await page.goto(reports.blocked);
     await expect(page.getByText("PAUSED", { exact: true })).toBeVisible();
-    await expect(page.getByText("MATCH COULD NOT BE READ")).toBeVisible();
-    await expect(page.getByRole("heading", { name: /could not verify enough evidence/i })).toBeVisible();
+    await expect(page.getByText("Replay not verified", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /couldn’t read this replay/i })).toBeVisible();
   });
 
   test("a completed Early Access report separates verified facts, one experimental insight and the next rule", async ({ page }) => {
     await page.goto(reports.ready);
     await expect(page.getByText("READY", { exact: true })).toBeVisible();
     await expect(page.getByText("Invalid Date", { exact: true })).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "Your match in 20 seconds." })).toBeVisible();
+    await expect(page.locator(".match-in-20")).toContainText("You enter the same lane after your teammate commits.");
+    await expect(page.locator(".report-deep-dive h2")).toBeVisible();
     await expect(page.getByLabel("Evidence status and sample size").getByText("EXPERIMENTAL COACHING", { exact: true })).toBeVisible();
     await expect(page.getByText("FULL MATCH STATS", { exact: true })).toBeVisible();
     await expect(page.getByText("HOW SURE IS THIS?", { exact: true })).toBeVisible();
@@ -44,7 +45,7 @@ test.describe("private report states", () => {
 
   test("the one-focus action transfers focus once without locking later scrolling", async ({ page }) => {
     await page.goto(reports.ready);
-    await page.getByRole("button", { name: /SHOW MY ONE-FOCUS PLAN/ }).click();
+    await page.getByRole("button", { name: /SEE MY 3-MATCH PLAN/ }).click();
     await expect(page.locator("#action-plan")).toBeFocused();
     expect(new URL(page.url()).hash).toBe("");
     const anchored = await page.evaluate(() => window.scrollY);

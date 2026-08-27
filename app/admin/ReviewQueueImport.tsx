@@ -20,9 +20,9 @@ export default function ReviewQueueImport() {
   }
 
   return <form className="review-queue-import" onSubmit={submit}>
-    <div><span>LOCKED PRIVATE CALIBRATION QUEUE</span><b>Only the owner-authorized 102 moments / 64 replays artifact pair is accepted.</b><small>Byte-level SHA-256 allowlist · calibration only · zero holdout overlap · idempotent audit record</small></div>
-    <label><span>Selected queue JSON</span><input name="queue" type="file" accept="application/json,.json" required /></label>
-    <label><span>Anonymized moments JSON</span><input name="moments" type="file" accept="application/json,.json" required /></label>
+    <div><span>LOCKED PRIVATE OPPORTUNITY QUEUE</span><b>Only the owner-authorized 343 moments / 85 calibration_dev replays artifact pair is accepted.</b><small>Byte-level SHA-256 allowlist · firing + non-firing + abstention · zero holdout overlap · idempotent audit record</small></div>
+    <label><span>Selected queue JSON.gz</span><input name="queue" type="file" accept="application/gzip,.gz" required /></label>
+    <label><span>Anonymized moments JSON.gz</span><input name="moments" type="file" accept="application/gzip,.gz" required /></label>
     <button disabled={state === "saving"}>{state === "saving" ? "Importing…" : "Import private review set"}</button>
     {message && <p className={state}>{message}</p>}
   </form>;

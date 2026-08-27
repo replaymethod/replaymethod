@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, resolve } from "node:path";
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, relative, resolve, sep } from "node:path";
 import { aggregateCalibrationRuns } from "../services/rl-engine/calibration.mjs";
 import { buildReplayEvidence, inspectReplayRoster, NORMALIZER_VERSION, PARSER_VERSION } from "../services/rl-engine/parser.mjs";
 import { runShadowDetectors, SHADOW_RUNTIME_VERSION } from "../services/rl-engine/shadow-runtime.mjs";
 import { cohortKey, normalizeMode, normalizeRankCohort } from "../services/rl-engine/context.mjs";
 
 function usage() {
-  console.error("Usage: node scripts/calibrate-rl-engine.mjs <file-or-directory> [...] [--metadata corpus.json] [--split calibration|holdout|calibration_dev|challenge|frozen_blind_holdout] [--output report.json]");
+  console.error("Usage: node scripts/calibrate-rl-engine.mjs <file-or-directory> [...] [--metadata corpus.json] [--split calibration|calibration_dev] [--output report.json]");
 }
 
 function replayFiles(target) {
@@ -29,14 +29,18 @@ const metadataPath = metadataIndex >= 0 ? rawArgs[metadataIndex + 1] : null;
 const split = splitIndex >= 0 ? rawArgs[splitIndex + 1] : null;
 const optionIndexes = [outputIndex, metadataIndex, splitIndex].filter((index) => index >= 0).flatMap((index) => [index, index + 1]);
 const targets = rawArgs.filter((arg, index) => !optionIndexes.includes(index));
-if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !metadataPath) || (split && !["calibration", "holdout", "calibration_dev", "challenge", "frozen_blind_holdout"].includes(split))) {
+if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !metadataPath) || (split && !["calibration", "calibration_dev"].includes(split))) {
   usage();
   process.exitCode = 1;
 } else {
+  const resolvedTargets = targets.map((target) => resolve(target));
   const sourceMetadata = metadataPath ? JSON.parse(readFileSync(resolve(metadataPath), "utf8")) : { replays: {} };
   const acquisitionEntries = Array.isArray(sourceMetadata.approved)
     ? sourceMetadata.approved
     : Array.isArray(sourceMetadata.replays) ? sourceMetadata.replays : [];
+  if (!split && acquisitionEntries.some((entry) => ["challenge", "holdout", "frozen_blind_holdout", "blind_holdout"].includes(entry.split ?? entry.assignment))) {
+    throw new Error("A manifest containing protected evaluation splits requires an explicit non-protected calibration split. This tool does not open challenge or blind holdout data.");
+  }
   const metadata = acquisitionEntries.length ? {
     replays: Object.fromEntries(acquisitionEntries.filter((entry) => entry.sha256).map((entry) => [entry.sha256, {
       mode: entry.mode,
@@ -47,15 +51,29 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
       privacySalt: sourceMetadata.privacySalt,
     }]))
   } : sourceMetadata;
+  const insideTarget = (file) => resolvedTargets.some((target) => {
+    if (file === target) return true;
+    const child = relative(target, file);
+    return child && child !== ".." && !child.startsWith(`..${sep}`) && !child.startsWith(sep);
+  });
+  const manifestFiles = split && acquisitionEntries.length
+    ? acquisitionEntries.filter((entry) => (entry.split ?? entry.assignment) === split).map((entry) => ({
+      file: resolve(String(entry.storagePath ?? "")),
+      expectedHash: String(entry.sha256 ?? "").toLowerCase(),
+    }))
+    : null;
+  if (manifestFiles && (!manifestFiles.length || manifestFiles.some((entry) => !entry.expectedHash || !entry.file || !insideTarget(entry.file)))) {
+    throw new Error("Split calibration requires hash-identified manifest storage paths inside the explicit target.");
+  }
   const unique = new Map();
-  for (const target of targets) {
-    for (const file of replayFiles(resolve(target))) {
+  const selectedFiles = manifestFiles ?? resolvedTargets.flatMap((target) => replayFiles(target).map((file) => ({ file, expectedHash: null })));
+  for (const { file, expectedHash } of selectedFiles) {
       const bytes = readFileSync(file);
       const hash = createHash("sha256").update(bytes).digest("hex");
+      if (expectedHash && hash !== expectedHash) throw new Error(`Manifest SHA-256 mismatch for ${basename(file)}.`);
       const declared = metadata.replays?.[hash] ?? metadata.replays?.[hash.slice(0, 16)] ?? {};
       if (split && declared.assignment !== split) continue;
       if (!unique.has(hash)) unique.set(hash, { file, bytes: new Uint8Array(bytes), hash });
-    }
   }
 
   const entries = [];
@@ -63,6 +81,8 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
   for (const { file, bytes, hash } of unique.values()) {
     try {
       console.error(`Calibrating ${basename(file)}…`);
+      const startedAt = performance.now();
+      const rssBeforeBytes = process.memoryUsage().rss;
       const roster = inspectReplayRoster(bytes);
       const declared = metadata.replays?.[hash] ?? metadata.replays?.[hash.slice(0, 16)] ?? {};
       const declaredPlayerName = String(declared.playerName ?? "").trim().toLowerCase();
@@ -77,8 +97,10 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
         throw error;
       }
       if (!subject) throw new Error("Replay contained no attributable player.");
-      const evidence = buildReplayEvidence(bytes, subject.name, "");
+      const evidence = buildReplayEvidence(bytes, subject.id || subject.name, "");
       const shadow = runShadowDetectors(evidence);
+      const runtimeMs = performance.now() - startedAt;
+      const rssAfterBytes = process.memoryUsage().rss;
       const parsedMode = normalizeMode(evidence.normalized.mode);
       const declaredMode = normalizeMode(declared.mode);
       const mode = parsedMode;
@@ -92,6 +114,7 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
         parsedMode,
         modeMatchesManifest: declaredMode === "unknown" ? null : parsedMode === declaredMode,
         attributionState: "verified",
+        subjectRosterIndex: roster.players.indexOf(subject),
         rankCohort,
         cohortKey: cohortKey({ mode, rankCohort }),
         metadataProvenance: declared.playerName || declared.subjectFingerprint || declared.rank || declared.rankCohort || declared.mode ? "private-corpus-manifest" : "replay-only",
@@ -102,6 +125,12 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
         frameCoverage: evidence.frameState.summary.coverage,
         parserEvents: evidence.episodeTimeline.summary.rawEventCount,
         decisionEvents: evidence.episodeTimeline.summary.decisionEventCount,
+        operational: {
+          runtimeMs,
+          rssBeforeBytes,
+          rssAfterBytes,
+          rssDeltaBytes: rssAfterBytes - rssBeforeBytes,
+        },
         shadowRuns: shadow.runs.map((run) => ({
           detectorId: run.detectorId,
           detectorVersion: run.detectorVersion,
@@ -109,6 +138,25 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
           candidateCount: run.candidateCount,
           measurements: run.measurements,
           evidence: run.evidence,
+        })),
+        opportunityContracts: shadow.runs.filter((run) => run.opportunityContract).map((run) => ({
+          schemaVersion: run.opportunityContract.schemaVersion,
+          contextVersion: run.opportunityContract.contextVersion,
+          detectorId: run.opportunityContract.detectorId,
+          detectorVersion: run.opportunityContract.detectorVersion,
+          opportunityType: run.opportunityContract.opportunityType,
+          summary: run.opportunityContract.summary,
+          evaluations: run.opportunityContract.evaluations.map((evaluation) => ({
+            opportunityId: evaluation.opportunityId,
+            timestampSeconds: evaluation.timestampSeconds,
+            frame: evaluation.frame,
+            status: evaluation.status,
+            classification: evaluation.classification,
+            contextKey: evaluation.contextKey,
+            context: evaluation.context,
+            reasons: evaluation.reasons ?? [],
+            evidence: evaluation.evidence ?? {},
+          })),
         })),
       });
     } catch (error) {
@@ -125,7 +173,8 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
   if (output) {
     const destination = resolve(output);
     mkdirSync(dirname(destination), { recursive: true });
-    writeFileSync(destination, json);
+    writeFileSync(destination, json, { mode: 0o600 });
+    chmodSync(destination, 0o600);
     console.error(`Wrote ${destination}`);
   } else {
     process.stdout.write(json);

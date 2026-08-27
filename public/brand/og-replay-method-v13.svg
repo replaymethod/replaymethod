@@ -1,0 +1,20 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F4F4F0"/>
+  <rect x="32" y="32" width="1136" height="566" rx="30" stroke="#D9DCD8"/>
+  <g transform="translate(76 61) scale(1.55)">
+    <path d="M4.5 23.75C8.35 23.75 8.15 11 12.25 11C16.35 11 16.15 23.75 20.25 23.75C24.35 23.75 24.15 11 28.25 11C31.3 11 32 17.1 31.35 20.45" stroke="#061A2E" stroke-width="3.15" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M27.85 18.55L31.35 20.45L33.2 16.9" stroke="#061A2E" stroke-width="3.15" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="144" y="101" fill="#061A2E" font-family="Helvetica Neue,Arial,sans-serif" font-size="28" font-weight="600" letter-spacing="-1">Replay Method</text>
+  <text x="76" y="194" fill="#52606B" font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="600">REPLAY INTELLIGENCE FOR ROCKET LEAGUE</text>
+  <text x="76" y="286" fill="#061A2E" font-family="Helvetica Neue,Arial,sans-serif" font-size="66" font-weight="400" letter-spacing="-4">Find the decision</text>
+  <text x="76" y="354" fill="#061A2E" font-family="Helvetica Neue,Arial,sans-serif" font-size="66" font-weight="400" letter-spacing="-4">keeping you stuck.</text>
+  <text x="76" y="422" fill="#52606B" font-family="Helvetica Neue,Arial,sans-serif" font-size="24">10 ranked replays → one evidence-backed focus.</text>
+  <g transform="translate(780 142)">
+    <rect width="318" height="330" rx="24" fill="#061A2E"/>
+    <path d="M35 245C77 245 75 91 119 91C164 91 161 245 206 245C251 245 249 91 293 91" stroke="#7357FF" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="119" cy="91" r="8" fill="#F4F4F0" stroke="#7357FF" stroke-width="4"/>
+    <circle cx="206" cy="245" r="8" fill="#F4F4F0" stroke="#14BFD2" stroke-width="4"/>
+    <text x="35" y="292" fill="#F4F4F0" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="600">REPLAY → CONTEXT → DECISION</text>
+  </g>
+</svg>

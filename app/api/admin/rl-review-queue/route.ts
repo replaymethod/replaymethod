@@ -2,6 +2,7 @@ import { getDb } from "../../../../db";
 import { requireSiteAdminMutation } from "../../../../lib/admin";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { RL_PRIVATE_REVIEW_SET } from "../../../../lib/rl-review";
+import { RL_LABEL_SET_VERSION } from "../../../../lib/rl-review";
 import { declaredBodyTooLarge, operationalErrorCode } from "../../../../lib/request-security.mjs";
 
 const MAX_IMPORT_BYTES = 12 * 1024 * 1024;
@@ -51,6 +52,17 @@ async function sha256(value: File) {
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
+async function sha256Text(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function artifactText(value: File) {
+  const gzip = value.name.endsWith(".gz") || value.type === "application/gzip" || value.type === "application/x-gzip";
+  if (!gzip) return value.text();
+  return new Response(value.stream().pipeThrough(new DecompressionStream("gzip"))).text();
+}
+
 export async function POST(request: Request) {
   const unauthorized = await requireSiteAdminMutation(request);
   if (unauthorized) return unauthorized;
@@ -67,15 +79,18 @@ export async function POST(request: Request) {
     }
     if (queueFile.size + momentsFile.size > MAX_IMPORT_BYTES) return Response.json({ error: "Review import is larger than 12 MB." }, { status: 413 });
 
-    const [queueSha256, momentsSha256, queueText, momentsText] = await Promise.all([
-      sha256(queueFile), sha256(momentsFile), queueFile.text(), momentsFile.text()
-    ]);
+    const [queueSha256, momentsSha256] = await Promise.all([sha256(queueFile), sha256(momentsFile)]);
     if (queueSha256 !== RL_PRIVATE_REVIEW_SET.queueSha256 || momentsSha256 !== RL_PRIVATE_REVIEW_SET.momentsSha256) {
       return Response.json({
         error: "These files are not the owner-authorized locked calibration artifacts.",
         queueSha256,
         momentsSha256,
       }, { status: 400 });
+    }
+    const [queueText, momentsText] = await Promise.all([artifactText(queueFile), artifactText(momentsFile)]);
+    const [queueContentSha256, momentsContentSha256] = await Promise.all([sha256Text(queueText), sha256Text(momentsText)]);
+    if (queueContentSha256 !== RL_PRIVATE_REVIEW_SET.queueContentSha256 || momentsContentSha256 !== RL_PRIVATE_REVIEW_SET.momentsContentSha256) {
+      return Response.json({ error: "The decompressed review artifacts do not match the locked canonical content." }, { status: 400 });
     }
     const queue = JSON.parse(queueText) as Record<string, unknown>;
     const artifact = JSON.parse(momentsText) as Record<string, unknown>;
@@ -84,8 +99,12 @@ export async function POST(request: Request) {
     if (candidates.length !== RL_PRIVATE_REVIEW_SET.candidateCount || candidates.length !== (queue.candidates as unknown[])?.length) {
       return Response.json({ error: `Locked review queue must contain exactly ${RL_PRIVATE_REVIEW_SET.candidateCount} valid candidates.` }, { status: 400 });
     }
-    if (queue.holdoutIncluded !== false || queue.sourceCorpusAssignment !== "calibration") {
-      return Response.json({ error: "Only the locked calibration split may enter the tuning review queue." }, { status: 400 });
+    if (queue.holdoutIncluded !== false
+      || queue.sourceCorpusAssignment !== RL_PRIVATE_REVIEW_SET.sourceCorpusAssignment
+      || queue.schemaVersion !== RL_PRIVATE_REVIEW_SET.queueSchemaVersion
+      || queue.sourceReportFingerprint !== RL_PRIVATE_REVIEW_SET.sourceReportFingerprint
+      || queue.labelSetVersion !== RL_LABEL_SET_VERSION) {
+      return Response.json({ error: "Only the exact locked calibration_dev opportunity set may enter the tuning review queue." }, { status: 400 });
     }
     const candidateKeys = new Set(candidates.map(candidate => candidate.id));
     const replayKeys = new Set(candidates.map(candidate => candidate.replayFingerprint));

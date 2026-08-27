@@ -35,7 +35,7 @@ test("expands every capability cell across detector, mode, cohort, evidence and 
   const kickoffPc = matrix.cells.find(cell => cell.detectorId === "kickoff.speed" && cell.mode === "1v1"
     && cell.rankCohort === "gold-platinum" && cell.platform === "pc" && cell.evidenceType === "replay_file");
   assert.equal(kickoffPc.validationState, "shadow_only");
-  assert.equal(kickoffPc.detectorVersion, "0.1.0");
+  assert.equal(kickoffPc.detectorVersion, "0.2.0");
   assert.equal(matrix.corpusCoverage.find(cell => cell.mode === "1v1" && cell.rankCohort === "gold-platinum").holdoutUsedForTuning, false);
 
   const unsupportedMode = matrix.cells.find(cell => cell.detectorId === "teamplay.double_commit" && cell.mode === "1v1"
