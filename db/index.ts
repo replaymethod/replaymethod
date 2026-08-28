@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 import { ensureConfiguredOwnerQaEntitlement } from "../lib/owner-qa-entitlement.mjs";
+import { hasCurrentProductSchema } from "../lib/database-schema-readiness.mjs";
 
 let productSchemaReady: Promise<void> | null = null;
 
@@ -13,7 +14,9 @@ async function ensureColumn(database: D1Database, table: string, column: string,
 
 export async function ensureProductSchema(database: D1Database) {
   if (!productSchemaReady) {
-    productSchemaReady = database.batch([
+    productSchemaReady = hasCurrentProductSchema(database).then((schemaIsCurrent) => {
+      if (schemaIsCurrent) return;
+      return database.batch([
       database.prepare(`CREATE TABLE IF NOT EXISTS waitlist (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         email text NOT NULL,
@@ -767,7 +770,7 @@ export async function ensureProductSchema(database: D1Database) {
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_evaluations_public_id_unique ON player_focus_evaluations (public_id)"),
       database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS player_focus_evaluations_focus_request_detector_unique ON player_focus_evaluations (focus_id, analysis_request_id, detector_id)"),
       database.prepare("CREATE INDEX IF NOT EXISTS player_focus_evaluations_focus_created_idx ON player_focus_evaluations (focus_id, created_at)")
-    ]).then(async () => {
+      ]).then(async () => {
       // Existing beta D1 databases predate the longitudinal focus columns.
       // Checked migrations remain canonical; these guarded additions keep
       // local/preview databases compatible when they are opened directly.
@@ -833,6 +836,7 @@ export async function ensureProductSchema(database: D1Database) {
           `Replay parsing and mode attribution passed calibration; this exact cell contains ${holdoutReplays} locked holdout replays. No exact detector scope has passed two-reviewer quality gates.`,
           `rl-parser-validation.2026-08-22.holdout-${holdoutReplays}`,
         )));
+      });
     }).catch((error) => {
       productSchemaReady = null;
       throw error;
