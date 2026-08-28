@@ -17,8 +17,8 @@ const normalized = {
   },
 };
 
-function run(detectorId, candidateCount, evidence, measurements = {}) {
-  return { detectorId, detectorVersion: "0.2.0", status: candidateCount ? "observed" : "no_signal", candidateCount, evidence, measurements };
+function run(detectorId, candidateCount, evidence, measurements = {}, implementationStatus = "measuring") {
+  return { detectorId, detectorVersion: "0.2.0", implementationStatus, status: candidateCount ? "observed" : "no_signal", candidateCount, evidence, measurements };
 }
 
 test("publishes only bounded experimental insights and preserves formal validation separation", () => {
@@ -57,4 +57,18 @@ test("does not turn generic shadow observations into advice", () => {
   )] }, normalized);
   assert.equal(output.findings.length, 0);
   assert.match(output.assessments[0].reason, /does not yet have a bounded Early Access interpretation/);
+});
+
+test("summarizes all nine customer-visible analysis areas without promoting a detector", () => {
+  const output = composeEarlyAccessOutput({
+    runs: [
+      run("boost.supersonic_waste", 0, []),
+      run("rotation.caught_ahead", 0, [], {}, "capability_abstention"),
+    ],
+    summary: { detectorCount: 60, measuring: 16, capabilityAbstained: 44, publicEligible: 0 },
+  }, normalized);
+  assert.equal(output.analysisCoverage.totalDetectors, 60);
+  assert.equal(output.analysisCoverage.measuringDetectors, 16);
+  assert.equal(output.analysisCoverage.categories.length, 9);
+  assert.equal(output.analysisCoverage.publicEligible, 0);
 });

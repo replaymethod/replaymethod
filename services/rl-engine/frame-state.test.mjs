@@ -38,13 +38,15 @@ test("normalizes named frame state for every replay player", () => {
     team_one: [{ name: "Orange", remote_id: { Steam: "orange-id" } }],
   });
 
-  assert.equal(frameState.schemaVersion, "rocket-league-frame-state.v1");
+  assert.equal(frameState.schemaVersion, "rocket-league-frame-state.v2");
   assert.equal(frameState.summary.frameCount, 2);
   assert.equal(frameState.summary.playerCount, 2);
   assert.equal(frameState.frames[0].ball.position.x, 10);
   assert.equal(frameState.frames[0].ball.linearVelocity.z, 18);
   assert.equal(frameState.frames[0].players[0].id, "epic:blue-id");
   assert.equal(frameState.frames[0].players[0].boost, 85);
+  assert.equal(frameState.frames[0].players[0].boostRaw, 85);
+  assert.ok(Math.abs(frameState.frames[0].players[0].boostPercent - (85 / 2.55)) < 1e-9);
   assert.equal(frameState.frames[0].players[0].position.x, 100);
   assert.equal(frameState.frames[0].players[1].team, 1);
   assert.equal(frameState.frames[0].players[1].angularVelocity.z, 211);

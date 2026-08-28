@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { ReplayMark } from "./ReplayMark";
 
 type Read = "challenge" | "rotate" | "boost";
 
@@ -91,7 +92,7 @@ export default function ReplayArenaWalkthrough() {
           <button type="button" aria-label={playing ? "Pause replay" : "Play replay"} onClick={() => { if (frame >= 100) setFrame(0); setPlaying(value => !value); }}>{playing ? "Ⅱ" : "▶"}</button>
           <span>{clock}</span>
           <div><input type="range" min="0" max="100" value={frame} aria-label="Replay timeline" onChange={event => { setPlaying(false); setRead(null); setLocked(false); setFrame(Number(event.target.value)); }} style={{ "--lens-progress": `${frame}%` } as CSSProperties} /><i className="setup" /><i className="decision" /><i className="goal" /></div>
-          <button type="button" aria-label="Restart replay" onClick={restart}>↻</button>
+          <button type="button" aria-label="Restart replay" onClick={restart}><ReplayMark /></button>
         </div>
         <div className="lens-timeline-labels"><span>SETUP</span><span>TEAMMATE COMMITS</span><span>GOAL</span></div>
       </div>

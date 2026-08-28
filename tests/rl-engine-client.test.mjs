@@ -17,7 +17,7 @@ test("requires a bounded private engine configuration", () => {
   assert.equal(local.timeoutMs, 5_000);
   const production = resolveRocketLeagueEngine({ RL_ENGINE_URL: "https://engine.example/base", RL_ENGINE_TOKEN: token, RL_ENGINE_TIMEOUT_MS: "999999" });
   assert.equal(production.endpoint.toString(), "https://engine.example/v1/analyze/rocket-league");
-  assert.equal(production.timeoutMs, 240_000);
+  assert.equal(production.timeoutMs, 120_000);
 });
 
 test("sends an HTTP-safe exact player identity through the versioned authenticated contract", async () => {
@@ -78,15 +78,24 @@ test("maps worker timeout, auth and transient HTTP failures without exposing the
   assert.doesNotMatch(source, /console\.(log|error).*RL_ENGINE_TOKEN/);
 });
 
-test("keeps the container non-root, health-checked and clear of replay calibration inputs", async () => {
-  const [dockerfile, dockerignore, server] = await Promise.all([
+test("keeps the container non-root, minimal, health-checked and clear of replay calibration inputs", async () => {
+  const [dockerfile, dockerignore, server, enginePackage, engineLock] = await Promise.all([
     readFile(new URL("../services/rl-engine/Dockerfile", import.meta.url), "utf8"),
     readFile(new URL("../.dockerignore", import.meta.url), "utf8"),
     readFile(new URL("../services/rl-engine/server.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../services/rl-engine/package.json", import.meta.url), "utf8"),
+    readFile(new URL("../services/rl-engine/package-lock.json", import.meta.url), "utf8"),
   ]);
+  const packageMetadata = JSON.parse(enginePackage);
+  const lockMetadata = JSON.parse(engineLock);
   assert.match(dockerfile, /USER node/);
   assert.match(dockerfile, /HEALTHCHECK/);
   assert.match(dockerfile, /STOPSIGNAL SIGTERM/);
+  assert.match(dockerfile, /services\/rl-engine\/package\.json services\/rl-engine\/package-lock\.json/);
+  assert.doesNotMatch(dockerfile, /COPY package\.json package-lock\.json/);
+  assert.deepEqual(Object.keys(packageMetadata.dependencies), ["@rlrml/subtr-actor"]);
+  assert.equal(packageMetadata.dependencies["@rlrml/subtr-actor"], "1.2.0");
+  assert.equal(lockMetadata.packages["node_modules/@rlrml/subtr-actor"].version, "1.2.0");
   assert.match(dockerignore, /\*\.replay/);
   assert.match(dockerignore, /docs\/\*\.json/);
   assert.match(dockerignore, /\.env\.\*/);

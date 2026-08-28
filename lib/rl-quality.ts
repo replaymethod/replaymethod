@@ -15,6 +15,7 @@ type ReviewRow = {
   reviewerQualification?: string | null;
   labelSetVersion?: string | null;
   reviewedAt?: string | null;
+  observationJson?: string | null;
 };
 
 type ReviewLabelRow = {
@@ -34,6 +35,18 @@ type ReviewLabelRow = {
 };
 
 const qualifiedReviewerContexts = new Set(["competitive_player", "rocket_league_coach", "replay_analyst"]);
+const opportunityStatuses = new Set(["firing", "non_firing", "abstained"]);
+
+function opportunityStatus(row: ReviewRow) {
+  try {
+    const observation = JSON.parse(row.observationJson || "{}") as Record<string, unknown>;
+    return typeof observation.opportunityStatus === "string" && opportunityStatuses.has(observation.opportunityStatus)
+      ? observation.opportunityStatus
+      : "firing";
+  } catch {
+    return "firing";
+  }
+}
 
 function playlistScopeQualifies(value: string | null | undefined, mode: string | null | undefined) {
   if (!mode) return false;
@@ -101,13 +114,18 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
     const labels = labelsByCandidate.get(row.id) ?? [];
     const decisions = labels.filter(label => label.verdict === "confirmed" || label.verdict === "rejected");
     const verdict = decisions.length >= 2 && decisions.every(label => label.verdict === decisions[0].verdict) ? decisions[0].verdict : null;
-    return { row, labels, decisions, verdict };
+    return { row, labels, decisions, verdict, opportunityStatus: opportunityStatus(row) };
   });
   const decided = consensus.filter(item => item.verdict != null);
-  const confirmed = decided.filter(item => item.verdict === "confirmed").length;
-  const rejected = decided.filter(item => item.verdict === "rejected").length;
+  const detectorDecisions = decided.filter(item => item.opportunityStatus !== "abstained");
+  const confirmed = detectorDecisions.filter(item => item.verdict === "confirmed").length;
+  const rejected = detectorDecisions.filter(item => item.verdict === "rejected").length;
+  const truePositives = detectorDecisions.filter(item => item.opportunityStatus === "firing" && item.verdict === "confirmed").length;
+  const falsePositives = detectorDecisions.filter(item => item.opportunityStatus === "firing" && item.verdict === "rejected").length;
+  const trueNegatives = detectorDecisions.filter(item => item.opportunityStatus === "non_firing" && item.verdict === "rejected").length;
+  const falseNegatives = detectorDecisions.filter(item => item.opportunityStatus === "non_firing" && item.verdict === "confirmed").length;
   const agreement = reviewerAgreementMetrics(qualifiedHistory);
-  const cohortCounts = decided.reduce<Record<string, number>>((counts, item) => {
+  const cohortCounts = detectorDecisions.reduce<Record<string, number>>((counts, item) => {
     const row = item.row;
     const key = row.mode && row.rankCohort ? `${row.mode}:${row.rankCohort}` : "unknown:unranked-unknown";
     counts[key] = (counts[key] ?? 0) + 1;
@@ -117,14 +135,21 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
     .filter(([key]) => !key.startsWith("unknown:") && !key.endsWith(":unranked-unknown"))
     .map(([, count]) => count);
   const metrics = {
-    replayCount: new Set(decided.map((item) => item.row.replayFingerprint)).size,
+    replayCount: new Set(detectorDecisions.map((item) => item.row.replayFingerprint)).size,
     reviewedPositives: confirmed,
     reviewedNegatives: rejected,
-    precision: decided.length ? confirmed / decided.length : null,
-    precisionLowerBound: wilsonLowerBound(confirmed, decided.length),
-    falsePositiveRate: decided.length ? rejected / decided.length : null,
-    timestampVerifiedRate: decided.length
-      ? decided.filter((item) => item.decisions.every(label => label.timestampVerified === true)).length / decided.length
+    truePositives,
+    falsePositives,
+    trueNegatives,
+    falseNegatives,
+    precision: truePositives + falsePositives ? truePositives / (truePositives + falsePositives) : null,
+    precisionLowerBound: wilsonLowerBound(truePositives, truePositives + falsePositives),
+    falsePositiveRate: trueNegatives + falsePositives ? falsePositives / (trueNegatives + falsePositives) : null,
+    recall: truePositives + falseNegatives ? truePositives / (truePositives + falseNegatives) : null,
+    specificity: trueNegatives + falsePositives ? trueNegatives / (trueNegatives + falsePositives) : null,
+    abstentionReviewed: decided.filter(item => item.opportunityStatus === "abstained").length,
+    timestampVerifiedRate: detectorDecisions.length
+      ? detectorDecisions.filter((item) => item.decisions.every(label => label.timestampVerified === true)).length / detectorDecisions.length
       : null,
     rankModeCohorts: coveredCohortCounts.length,
     minimumCohortSamples: coveredCohortCounts.length ? Math.min(...coveredCohortCounts) : 0,
@@ -132,7 +157,7 @@ export function detectorQualitySummary(rows: ReviewRow[], labelHistory: ReviewLa
     reviewerAgreement: agreement.rawAgreement,
     reviewerRawAgreement: agreement.rawAgreement,
     doubleReviewedCandidates: agreement.doubleReviewedCandidates,
-    labelProvenanceComplete: decided.length > 0 && decided.every(item => item.decisions.length >= 2 && new Set(item.decisions.map(label => label.reviewerId)).size >= 2),
+    labelProvenanceComplete: detectorDecisions.length > 0 && detectorDecisions.every(item => item.decisions.length >= 2 && new Set(item.decisions.map(label => label.reviewerId)).size >= 2),
     patchRegressionPassed: false,
     versionDriftPassed: false,
     confidenceCalibrationPassed: false,
@@ -186,7 +211,7 @@ export function reviewerOperationsSummary(rows: ReviewRow[], labelHistory: Revie
     const consensus = decided.length >= 2 && !uncertain && !disagreement && decided.every(label => label.verdict === decided[0].verdict)
       ? decided[0].verdict
       : null;
-    return { row, labels: candidateLabels, decided, uncertain, disagreement, consensus };
+    return { row, labels: candidateLabels, decided, uncertain, disagreement, consensus, opportunityStatus: opportunityStatus(row) };
   });
   const agreement = reviewerAgreementMetrics(labels.map(label => ({ ...label, candidateKey: candidateById.get(label.candidateId)?.candidateKey })));
   const cohorts = Object.values(Object.groupBy(states, item => `${item.row.mode ?? "unknown"}:${item.row.rankCohort ?? "unranked-unknown"}`)).map(items => {
@@ -209,7 +234,11 @@ export function reviewerOperationsSummary(rows: ReviewRow[], labelHistory: Revie
     agreement: agreement.rawAgreement,
     confirmed: states.filter(item => item.consensus === "confirmed").length,
     rejected: states.filter(item => item.consensus === "rejected").length,
-    falsePositives: states.filter(item => item.consensus === "rejected").length,
+    truePositives: states.filter(item => item.opportunityStatus === "firing" && item.consensus === "confirmed").length,
+    falsePositives: states.filter(item => item.opportunityStatus === "firing" && item.consensus === "rejected").length,
+    trueNegatives: states.filter(item => item.opportunityStatus === "non_firing" && item.consensus === "rejected").length,
+    falseNegatives: states.filter(item => item.opportunityStatus === "non_firing" && item.consensus === "confirmed").length,
+    abstentionReviewed: states.filter(item => item.opportunityStatus === "abstained" && item.labels.length >= 2).length,
     unresolved: states.filter(item => item.labels.length >= 2 && item.consensus == null).length,
     timestampVerifiedLabels: labels.filter(label => label.timestampVerified === true).length,
     timestampDenominator: labels.length,

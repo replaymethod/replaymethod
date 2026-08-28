@@ -143,6 +143,13 @@ export type PublicReportData = {
     formalValidationStatus: "not_validated";
     policyVersion: string | null;
     assessments: { detectorId: string; status: "experimental_insight" | "abstained"; reason: string }[];
+    analysisCoverage: null | {
+      totalDetectors: number;
+      measuringDetectors: number;
+      capabilityAbstained: number;
+      publicEligible: number;
+      categories: { id: string; label: string; total: number; measuring: number; capabilityAbstained: number; observed: number }[];
+    };
   };
   feedbackScore: number | null;
 };
@@ -297,6 +304,28 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
     recurrence: batchRecurrence,
   } : null;
   const rawAssessments = Array.isArray(earlyAccessMetadata.assessments) ? earlyAccessMetadata.assessments : [];
+  const rawCoverage = objectValue(earlyAccessMetadata.analysisCoverage);
+  const coverageCategories = Array.isArray(rawCoverage.categories) ? rawCoverage.categories.flatMap(item => {
+    const category = objectValue(item);
+    const id = nullableString(category.id);
+    const label = nullableString(category.label);
+    if (!id || !label) return [];
+    return [{
+      id,
+      label,
+      total: nullableNumber(category.total) ?? 0,
+      measuring: nullableNumber(category.measuring) ?? 0,
+      capabilityAbstained: nullableNumber(category.capabilityAbstained) ?? 0,
+      observed: nullableNumber(category.observed) ?? 0,
+    }];
+  }).slice(0, 9) : [];
+  const analysisCoverage = nullableNumber(rawCoverage.totalDetectors) === 60 && coverageCategories.length === 9 ? {
+    totalDetectors: 60,
+    measuringDetectors: nullableNumber(rawCoverage.measuringDetectors) ?? 0,
+    capabilityAbstained: nullableNumber(rawCoverage.capabilityAbstained) ?? 0,
+    publicEligible: nullableNumber(rawCoverage.publicEligible) ?? 0,
+    categories: coverageCategories,
+  } : null;
   const persistedEarlyAccess = earlyAccessMetadata.formalValidationStatus === "not_validated" ? {
     badge: "EARLY ACCESS BETA" as const,
     heading: "Built from your real replay. Refined through expert validation." as const,
@@ -304,6 +333,7 @@ export async function loadPublicReport(publicId: string, options: { earlyAccessO
     coachingStatus: earlyAccessMetadata.coachingStatus === "experimental_insight" ? "experimental_insight" as const : "abstained" as const,
     formalValidationStatus: "not_validated" as const,
     policyVersion: nullableString(earlyAccessMetadata.policyVersion),
+    analysisCoverage,
     assessments: rawAssessments.flatMap(item => {
       const assessment = objectValue(item);
       const detectorId = nullableString(assessment.detectorId);

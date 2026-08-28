@@ -7,7 +7,7 @@ const dataPath = new URL("../lib/report-data.ts", import.meta.url);
 
 test("keeps the private report centered on one evidence-backed finding", async () => {
   const [client, data] = await Promise.all([readFile(clientPath, "utf8"), readFile(dataPath, "utf8")]);
-  assert.match(client, /BIGGEST SUPPORTED OPPORTUNITY/);
+  assert.match(client, /YOUR CLEAREST REPEATED PATTERN/);
   assert.match(client, /THE DECISION TO FIX FIRST/);
   assert.match(client, /YOUR NEXT 3 MATCHES/);
   assert.match(client, /FULL MATCH STATS/);
@@ -18,9 +18,9 @@ test("keeps the private report centered on one evidence-backed finding", async (
 test("shows real time context only when structured evidence supplies it", async () => {
   const client = await readFile(clientPath, "utf8");
   assert.match(client, /timeZone: "UTC"/);
-  assert.match(client, /item\.timestamp != null \? `MATCH TIME/);
-  assert.match(client, /item\.round != null \? `ROUND/);
-  assert.match(client, /: item\.label/);
+  assert.match(client, /item\.round != null\s*\? `ROUND ·/);
+  assert.match(client, /:\s*item\.timestamp != null\s*\? `MATCH TIME ·/);
+  assert.match(client, /:\s*item\.label/);
 });
 
 test("makes verification conservative and independent from payment", async () => {
@@ -37,7 +37,7 @@ test("keeps confidence, limitations and feedback controls accessible", async () 
   assert.match(client, /Advanced details/);
   assert.match(client, /KNOWN LIMITATIONS/);
   assert.match(client, /aria-pressed=\{feedbackSignals\[key\] === value\}/);
-  assert.match(client, /product feedback only/);
+  assert.match(client, /A quick answer helps improve the product/);
   assert.match(client, /role="alert"/);
   assert.doesNotMatch(client, /\$\{confidence\}%/);
   assert.doesNotMatch(client, /shadowRun|review_candidates|shadow-runtime|rl_review_candidates/);
@@ -53,9 +53,9 @@ test("separates Early Access facts, experimental coaching, abstention and produc
   assert.match(client, /HONEST RESULT/);
   assert.match(client, /FULL MATCH STATS · UNAVAILABLE/);
   assert.match(client, /No missing match measures were estimated or presented as facts/);
-  assert.match(client, /They never change what the replay itself proved/);
+  assert.match(client, /It never changes\s+what the replay itself proved/);
   assert.match(client, /Was it clear why coaching was withheld\?/);
-  assert.match(client, /Free: find the pattern\. Premium: prove you fixed it\./);
+  assert.match(client, /Find the pattern\. Fix it\. Prove it changed\./);
   assert.match(client, /feedbackQuestions = data\.report/);
   assert.match(data, /formalValidationStatus: "not_validated"/);
   assert.match(data, /earlyAccess\?\.coachingStatus !== "abstained"/);

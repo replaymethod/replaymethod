@@ -30,6 +30,16 @@ const DECISION_EVENT_TYPES = new Set([
   "whiff",
 ]);
 
+export const EPISODE_TIMELINE_VERSION = "rocket-league-episode-timeline.v3";
+
+function normalizeEventFacts(type, payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return payload ?? {};
+  if (type === "boost_pickup" && payload.pad_type === "big") {
+    return { ...payload, pad_type: "large", source_pad_type: "big" };
+  }
+  return payload;
+}
+
 function identityValue(identity) {
   if (typeof identity === "string") return identity.toLowerCase();
   if (!identity || typeof identity !== "object") return "";
@@ -119,13 +129,18 @@ export function normalizeEpisodeTimeline(statsTimeline, subjectPlayerId) {
         ? (event.meta.team_is_team_0 ? 0 : 1)
         : null,
       ...timing(event),
-      facts: event?.payload?.payload ?? {},
+      facts: normalizeEventFacts(type, event?.payload?.payload),
     });
   }
 
   const phases = phaseSegments(statsTimeline?.frames ?? []);
+  events.sort((left, right) => (
+    (Number.isFinite(left.startTimeSeconds) ? left.startTimeSeconds : Infinity)
+    - (Number.isFinite(right.startTimeSeconds) ? right.startTimeSeconds : Infinity)
+    || left.id.localeCompare(right.id)
+  ));
   return {
-    schemaVersion: "rocket-league-episode-timeline.v1",
+    schemaVersion: EPISODE_TIMELINE_VERSION,
     subjectPlayerId: subjectId || null,
     phases,
     events,

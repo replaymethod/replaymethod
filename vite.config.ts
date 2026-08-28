@@ -27,6 +27,9 @@ const localBindingConfig = {
     REPLAYMETHOD_E2E_FIXTURES: process.env.REPLAYMETHOD_E2E_FIXTURES === "true" ? "true" : "false",
     ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? "",
     ADMIN_USER_ID: process.env.ADMIN_USER_ID ?? "",
+    RL_LOCAL_REVIEW_ENABLED: process.env.RL_LOCAL_REVIEW_ENABLED === "true" ? "true" : "false",
+    RL_LOCAL_REVIEW_OWNER_TOKEN: process.env.RL_LOCAL_REVIEW_OWNER_TOKEN ?? "",
+    RL_LOCAL_REVIEWER_TOKEN: process.env.RL_LOCAL_REVIEWER_TOKEN ?? "",
     ...Object.fromEntries(localBooleanBindings.map(key => [key, process.env[key] === "true" ? "true" : "false"])),
   },
   d1_databases: d1
@@ -57,6 +60,12 @@ export default defineConfig(async () => {
 
   // Wrangler snapshots its log path while the Cloudflare plugin is imported.
   const { cloudflare } = await import("@cloudflare/vite-plugin");
+  const localReviewStatePath = process.env.RL_LOCAL_REVIEW_STATE_PATH?.trim();
+  const persistState = localReviewStatePath === ":memory:"
+    ? false
+    : localReviewStatePath
+      ? { path: localReviewStatePath }
+      : true;
 
   return {
     server: {
@@ -72,6 +81,7 @@ export default defineConfig(async () => {
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
         inspectorPort: false,
+        persistState,
         config: localBindingConfig,
       }),
     ],

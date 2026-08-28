@@ -16,14 +16,16 @@ test("Rocket League intake fails closed before upload storage", async () => {
 
 test("production landing opens replay processing independently from detector publication", async () => {
   const landing = await read("../app/components/Landing.tsx");
+  const intake = await read("../app/analyze/BatchAnalyzeFlow.tsx");
   const home = await read("../app/page.tsx");
   assert.match(home, /RL_ENGINE_ENABLED/);
   assert.doesNotMatch(home, /RL_PUBLIC_DETECTORS_ENABLED/);
   assert.match(home, /RL_EARLY_ACCESS_OUTPUT_ENABLED/);
   assert.match(home, /RL_CALIBRATION_INTAKE_ENABLED/);
-  assert.match(landing, /href="\/analyze"/);
-  assert.match(landing, /Analyze my 10 replays/);
-  assert.match(landing, /engineOpen \? "Yes, after ten valid replays/);
+  assert.match(intake, /href="\/analyze"/);
+  assert.match(landing, /Analyze my replays/);
+  assert.match(landing, /BatchAnalyzeFlow engineOpen=\{engineOpen\} variant="hero"/);
+  assert.match(intake, /if \(!engineOpen\) return setMessage\("Replay processing is temporarily paused\."\)/);
   assert.doesNotMatch(landing, /Choose my game|Contribute one replay/);
 });
 

@@ -64,11 +64,14 @@ Do not say “get your free analysis,” “AI coach,” “rank up,” or imply
 
 ## Current approved private set
 
-- Set: `kickoff-calibration-2026-08-22.v1`.
-- 102 unique kickoff moments from 64 calibration replays.
-- Queue SHA-256: `937b94d07e31acc746e12424350c694770a63e5e0cdc63d2199eb6d390e533d7`.
-- Moments SHA-256: `895c21b10c43bd81ca01c5c4b5a83926f4a18c18cacfa363cb05771c7145466e`.
-- Manifest SHA-256: `66be35f92e7a7770e34d78a0ddf8caca8551314e1173073ce66adee6da435b01`.
+- Set: `engine-foundation-0.5-opportunity-calibration-2026-08-26.v1`.
+- 343 unique firing, non-firing and abstention moments from 85 `calibration_dev` replays.
+- Compressed queue SHA-256: `5610880fa34b1688064139f0fe1fe06ec53152ad6cd729d94a4ada3448d6062d`.
+- Compressed moments SHA-256: `934ca81ea5fca8858a43fe35b64cbfdddb4305934bbc0081438f91fb555c9871`.
+- Canonical queue JSON SHA-256: `493fb7be6747439124e857fa6a744f6354a93853d8d1c330d1998ce06c3b3af3`.
+- Canonical moments JSON SHA-256: `a53a0eda796edd8534846c921da6e4afc754e81db3da74ef1ea55d19af5628c7`.
+- Manifest SHA-256: `dac9ed20e482ed8258b4ad0614173d162427fefe5c0ddbee58d7ce749e9843b9`.
+- Source report fingerprint: `9a468554eb76498d04de36203542a30fb0cb741f16b54f5687ba1d3a04d4a75c`.
 - Holdout overlap: zero. Holdout is never shown or imported.
 
 The live import audit and progress report are owner-only. Candidate clips are stored under a private R2 prefix and have no public URL.

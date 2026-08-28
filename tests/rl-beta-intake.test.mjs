@@ -35,9 +35,14 @@ test("quality gate counts only current qualified independent review history", as
   assert.match(quality, /label\.labelSetVersion === RL_LABEL_SET_VERSION/);
   assert.match(quality, /labelProvenanceComplete/);
   assert.match(quality, /reviewerAgreement: agreement\.rawAgreement/);
-  assert.match(quality, /replayCount: new Set\(decided\.map/);
+  assert.match(quality, /replayCount: new Set\(detectorDecisions\.map/);
+  assert.match(quality, /opportunityStatus === "non_firing" && item\.verdict === "confirmed"/);
+  assert.match(quality, /abstentionReviewed/);
   assert.match(quality, /timestampVerified === true/);
   assert.match(reviewPage, /reviewerPlaylistScopes/);
+  assert.match(reviewPage, /splitRlReviewPasses/);
+  assert.match(reviewPage, /Pass 1 · calibration checkpoint/);
+  assert.match(reviewPage, /Pass 2 · complete calibration/);
   assert.match(reviewPage, /qualifiedModes\.has\(candidate\.mode\)/);
   assert.match(reviewPage, /privateMomentKeys/);
   assert.match(reviewPage, /rlReviewLabels/);
@@ -71,13 +76,16 @@ test("offline calibration follows the consented player identity", async () => {
 test("owner review-queue import keeps the holdout split out of tuning", async () => {
   const route = await read("../app/api/admin/rl-review-queue/route.ts");
   assert.match(route, /requireSiteAdminMutation/);
-  assert.match(route, /queue\.sourceCorpusAssignment !== "calibration"/);
+  assert.match(route, /queue\.sourceCorpusAssignment !== RL_PRIVATE_REVIEW_SET\.sourceCorpusAssignment/);
   assert.match(route, /queue\.holdoutIncluded !== false/);
-  assert.match(route, /Only the locked calibration split may enter the tuning review queue/);
+  assert.match(route, /Only the exact locked calibration_dev opportunity set may enter the tuning review queue/);
+  assert.match(route, /queue\.sourceReportFingerprint !== RL_PRIVATE_REVIEW_SET\.sourceReportFingerprint/);
   assert.match(route, /runtime\.BUCKET\.put/);
   assert.match(route, /moment_object_key/);
   assert.match(route, /RL_PRIVATE_REVIEW_SET\.queueSha256/);
   assert.match(route, /RL_PRIVATE_REVIEW_SET\.momentsSha256/);
+  assert.match(route, /RL_PRIVATE_REVIEW_SET\.queueContentSha256/);
+  assert.match(route, /DecompressionStream\("gzip"\)/);
   assert.match(route, /candidateKeys\.size !== RL_PRIVATE_REVIEW_SET\.candidateCount/);
   assert.match(route, /replayKeys\.size !== RL_PRIVATE_REVIEW_SET\.replayCount/);
   assert.match(route, /holdout_overlap_count/);

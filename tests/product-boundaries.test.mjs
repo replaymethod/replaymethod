@@ -96,10 +96,10 @@ test("the real-replay engine budget covers the largest calibration files without
     source("../services/rl-engine/server.mjs"),
     source("../lib/rl-engine-client.mjs"),
   ]);
-  assert.match(engine, /DEFAULT_JOB_TIMEOUT_MS = 180_000/);
-  assert.match(engine, /Math\.min\(235_000/);
-  assert.match(client, /RL_ENGINE_TIMEOUT_MS \|\| 180_000/);
-  assert.match(client, /Math\.min\(240_000/);
+  assert.match(engine, /DEFAULT_JOB_TIMEOUT_MS = 80_000/);
+  assert.match(engine, /Math\.min\(115_000/);
+  assert.match(client, /RL_ENGINE_TIMEOUT_MS \|\| 90_000/);
+  assert.match(client, /Math\.min\(120_000/);
 });
 
 test("admin exports and replay downloads neutralize active content", async () => {

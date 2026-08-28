@@ -1,11 +1,13 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { readLocalReviewSession } from "../lib/local-review-auth.mjs";
 
 export type ChatGPTUser = {
   id: string | null;
   displayName: string;
   email: string;
   fullName: string | null;
+  localRole?: "owner" | "reviewer";
 };
 
 const USER_EMAIL_HEADER = "oai-authenticated-user-email";
@@ -21,7 +23,10 @@ const CALLBACK_PATH = "/callback";
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   const requestHeaders = await headers();
   const email = requestHeaders.get(USER_EMAIL_HEADER);
-  if (!email) return null;
+  if (!email) {
+    const { env } = await import("cloudflare:workers");
+    return readLocalReviewSession(env, requestHeaders) as Promise<ChatGPTUser | null>;
+  }
 
   const encodedFullName = requestHeaders.get(USER_FULL_NAME_HEADER);
   const fullName =
