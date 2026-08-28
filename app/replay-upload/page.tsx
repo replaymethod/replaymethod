@@ -12,7 +12,7 @@ const replayPath = String.raw`%USERPROFILE%\Documents\My Games\Rocket League\TAG
 
 export default function ReplayUploadPage() {
   return <main className="replay-upload-page">
-    <CustomerHeader current="product" right={<Link className="rm-header-cta" href="/analyze">Back to upload <span aria-hidden="true">↗</span></Link>} />
+    <CustomerHeader current="product" right={<Link className="rm-header-cta" href="/analyze">Analyze <span aria-hidden="true">↗</span></Link>} />
     <section className="replay-upload-hero shell">
       <div className="replay-upload-copy"><span className="kicker">Rocket League · Windows PC</span><h1>Your replay files are already on your PC.</h1></div>
       <aside className="replay-upload-intro"><p>Open one folder, choose ten recent ranked matches and return to the upload. Keep every file in its original <strong>.replay</strong> format.</p><div><a href="#find-replays">Show me where</a><Link href="/analyze">Back to upload</Link></div><small>No install · No conversion · Private processing</small></aside>

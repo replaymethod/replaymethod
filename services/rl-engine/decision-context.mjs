@@ -3,7 +3,7 @@ import { buildTacticalSpatialState, speed3d } from "./tactical-spatial.mjs";
 
 import { boostRawToPercent } from "./boost-units.mjs";
 
-export const DECISION_CONTEXT_VERSION = "rocket-league-decision-context@0.5.0";
+export const DECISION_CONTEXT_VERSION = "rocket-league-decision-context@0.8.0";
 
 const CHALLENGE_EVENT_TYPES = new Set(["fifty_fifty", "whiff"]);
 
@@ -110,6 +110,20 @@ function subjectKickoffTeam(event, subjectId) {
   return null;
 }
 
+function subjectKickoffEntry(event, subjectId) {
+  const entries = [
+    event?.facts?.team_zero_taker,
+    event?.facts?.team_one_taker,
+    ...(event?.facts?.team_zero_non_takers ?? []),
+    ...(event?.facts?.team_one_non_takers ?? []),
+  ].filter(Boolean);
+  return entries.find((entry) => identityValue(entry?.player) === subjectId) ?? null;
+}
+
+function actionTag(event) {
+  return event?.facts?.tags?.find((tag) => tag.group === "action")?.value ?? null;
+}
+
 function eventBallPosition(event) {
   const value = event?.facts?.ball_position;
   if (Array.isArray(value)) return { x: value[0], y: value[1], z: value[2] };
@@ -135,11 +149,30 @@ function opportunityTypes(event, input) {
   if (CHALLENGE_EVENT_TYPES.has(event.type) && event.subjectInvolved) types.push("challenge_quality");
   if (CHALLENGE_EVENT_TYPES.has(event.type) && event.subjectInvolved) types.push("challenge_dive");
   if (CHALLENGE_EVENT_TYPES.has(event.type) && event.subjectInvolved) types.push("defensive_commitment");
-  if (event.type === "boost_pickup" && isPrimarySubjectEvent(event, input.subjectId)) types.push("boost_overfill");
+  if (event.type === "boost_pickup" && isPrimarySubjectEvent(event, input.subjectId)) {
+    types.push("boost_overfill", "boost_route_pickup");
+  }
   if (event.type === "kickoff" && subjectKickoffTeam(event, input.subjectId) !== null) types.push("kickoff_contact");
   if (event.type === "kickoff" && subjectKickoffTeam(event, input.subjectId) !== null) types.push("kickoff_speed");
+  if (event.type === "kickoff" && input.mode !== "1v1" && subjectKickoffEntry(event, input.subjectId)) types.push("kickoff_support");
   if (event.type === "touch" && isPrimarySubjectEvent(event, input.subjectId)) types.push("possession_giveaway");
+  if (event.type === "touch" && isPrimarySubjectEvent(event, input.subjectId)) {
+    types.push("tactical_touch", "defensive_positioning");
+    const action = actionTag(event);
+    if (["clear", "boom"].includes(action)) types.push("possession_clear");
+    if (action === "shot") types.push("shot_execution", "shot_follow_up");
+    if (action === "save") types.push("post_save_recovery");
+  }
   if (event.type === "center" && isPrimarySubjectEvent(event, input.subjectId)) types.push("offense_center_outcome");
+  if (event.type === "center" && isPrimarySubjectEvent(event, input.subjectId)) types.push("attack_creation");
+  if (event.type === "pass" && event.subjectInvolved) types.push("attack_pass_sequence");
+  if (event.type === "backboard" && event.subjectInvolved) types.push("backboard_creation");
+  if (["player_possession", "controlled_play"].includes(event.type) && event.subjectInvolved) types.push("possession_sequence");
+  if (event.type === "respawn" && event.subjectInvolved && ["demo", "demolition"].includes(event.facts?.kind)) {
+    types.push("demolition_reentry");
+  }
+  if (event.type === "shadow_defense" && event.subjectInvolved) types.push("defensive_shadow");
+  if (event.type === "one_timer" && event.subjectInvolved) types.push("shot_execution", "shot_follow_up");
   if (event.type === "touch" && isPrimarySubjectEvent(event, input.subjectId) && isDefensiveClear(event, input.subjectTeam)) {
     types.push("defensive_clear_outcome");
     types.push("defensive_commitment");
@@ -148,8 +181,14 @@ function opportunityTypes(event, input) {
     || (CHALLENGE_EVENT_TYPES.has(event.type) && event.subjectInvolved))) {
     types.push("team_spacing_decision");
     types.push("team_commitment_decision");
+    types.push("team_support_decision");
+    types.push("rotation_transition");
   }
-  return types;
+  if (CHALLENGE_EVENT_TYPES.has(event.type) && event.subjectInvolved) types.push("tactical_challenge");
+  if (input.mode !== "1v1" && event.type === "first_man_change" && event.subjectInvolved) {
+    types.push("rotation_transition", "team_support_decision");
+  }
+  return [...new Set(types)];
 }
 
 function eventQualifier(type, event) {
@@ -206,6 +245,8 @@ function eventContext(input, event, window, type) {
       sameLaneTeammates: spatial.sameLaneTeammates ?? null,
       nearestTeammateDistanceToSubject: spatial.nearestTeammateDistanceToSubject ?? null,
       nearestTeammateDistanceToBall: spatial.nearestTeammateDistanceToBall ?? null,
+      nearestTeammatePosition: spatial.nearestTeammatePosition ?? null,
+      minimumTeammateBoostPercent: spatial.minimumTeammateBoostPercent ?? null,
       nearestTeammateTowardBall: spatial.nearestTeammateTowardBall ?? null,
       subjectTowardBall: spatial.subjectTowardBall ?? null,
       fieldZone: spatial.fieldZone ?? "unknown",
@@ -213,6 +254,10 @@ function eventContext(input, event, window, type) {
       pressure: spatial.pressure ?? "unknown",
       coverage: spatial.coverage ?? "unknown",
       goalSideTeammates: spatial.goalSideTeammates ?? null,
+      subjectDistanceToOwnGoal: spatial.subjectDistanceToOwnGoal ?? null,
+      ballDistanceToOwnGoal: spatial.ballDistanceToOwnGoal ?? null,
+      nearestOpponentDistance: spatial.nearestOpponentDistance ?? null,
+      opponentCount: spatial.opponentCount ?? null,
       score: score.score,
       scoreDifferential: score.scoreDifferential,
       clock: score.clock,
@@ -287,6 +332,8 @@ function frameOpportunity(input, { id, opportunityType, frame, eventFacts, outco
       sameLaneTeammates: spatial.sameLaneTeammates ?? null,
       nearestTeammateDistanceToSubject: spatial.nearestTeammateDistanceToSubject ?? null,
       nearestTeammateDistanceToBall: spatial.nearestTeammateDistanceToBall ?? null,
+      nearestTeammatePosition: spatial.nearestTeammatePosition ?? null,
+      minimumTeammateBoostPercent: spatial.minimumTeammateBoostPercent ?? null,
       nearestTeammateTowardBall: spatial.nearestTeammateTowardBall ?? null,
       subjectTowardBall: spatial.subjectTowardBall ?? null,
       fieldZone: spatial.fieldZone ?? "unknown",
@@ -294,6 +341,10 @@ function frameOpportunity(input, { id, opportunityType, frame, eventFacts, outco
       pressure: spatial.pressure ?? "unknown",
       coverage: spatial.coverage ?? "unknown",
       goalSideTeammates: spatial.goalSideTeammates ?? null,
+      subjectDistanceToOwnGoal: spatial.subjectDistanceToOwnGoal ?? null,
+      ballDistanceToOwnGoal: spatial.ballDistanceToOwnGoal ?? null,
+      nearestOpponentDistance: spatial.nearestOpponentDistance ?? null,
+      opponentCount: spatial.opponentCount ?? null,
       score: score.score,
       scoreDifferential: score.scoreDifferential,
       clock: score.clock,
@@ -317,6 +368,53 @@ function frameOpportunity(input, { id, opportunityType, frame, eventFacts, outco
       detailFrameCount: 0,
     },
   };
+}
+
+function mechanicsOpportunities(input) {
+  const opportunities = [];
+  const add = (episode, opportunityType) => {
+    const frame = closestFrame(input.frameState?.frames ?? [], episode.timestampSeconds);
+    const opportunity = frameOpportunity(input, {
+      id: `decision:${episode.id}:${opportunityType}`,
+      opportunityType,
+      frame,
+      eventFacts: {
+        source_surface: episode.sourceSurface ?? episode.contactSurface ?? "unknown",
+        observed_action: episode.observedAction ?? null,
+        reception: episode.reception ?? null,
+        ...(episode.metrics ?? {}),
+      },
+    });
+    const eligible = opportunity.eligible && episode.eligible === true;
+    opportunities.push({
+      ...opportunity,
+      sourceEventId: episode.sourceEventId ?? null,
+      sourceEventType: episode.sourceEventType ?? "mechanics_episode",
+      timestampSeconds: episode.timestampSeconds,
+      frame: episode.frame ?? opportunity.frame,
+      eligible,
+      abstainReasons: eligible
+        ? []
+        : [...new Set([...(opportunity.abstainReasons ?? []), ...(episode.abstainReasons ?? [])])],
+      mechanics: {
+        modelVersion: input.mechanicsModel?.schemaVersion ?? null,
+        episodeId: episode.id,
+        sourceSurface: episode.sourceSurface ?? episode.contactSurface ?? "unknown",
+        metrics: episode.metrics ?? {},
+      },
+    });
+  };
+
+  for (const recovery of input.mechanicsModel?.recoveries ?? []) {
+    add(recovery, "landing_execution");
+    if (recovery.sourceSurface === "aerial") add(recovery, "post_aerial_exit");
+    if (recovery.sourceSurface === "wall") add(recovery, "wall_to_ground_transition");
+  }
+  for (const touch of input.mechanicsModel?.touches ?? []) {
+    add(touch, "touch_control_execution");
+    if (touch.contactSurface === "wall") add(touch, "wall_control_execution");
+  }
+  return opportunities;
 }
 
 function subjectMacroFrames(input) {
@@ -512,7 +610,7 @@ function landingContexts(input) {
   return contexts;
 }
 
-export function buildDecisionContexts({ normalized, frameState, episodeTimeline, adaptiveSampling }) {
+export function buildDecisionContexts({ normalized, frameState, episodeTimeline, adaptiveSampling, mechanicsModel }) {
   const subjectId = String(normalized?.subjectPlayerId ?? "").toLowerCase();
   const roster = frameState?.players ?? frameState?.frames?.[0]?.players ?? [];
   const subject = roster.find((player) => player.id.toLowerCase() === subjectId);
@@ -523,11 +621,11 @@ export function buildDecisionContexts({ normalized, frameState, episodeTimeline,
   const windowsByEvent = new Map((adaptiveSampling?.windows ?? []).map((window) => [window.eventId, window]));
   const detailFramesByIndex = new Map((adaptiveSampling?.detailFrames ?? []).map((frame) => [frame.index, frame]));
   const phases = episodeTimeline?.phases ?? [];
-  const input = { normalized, frameState, episodeTimeline, adaptiveSampling, subjectId, subjectTeam, teamByPlayer, events, phases, mode, detailFramesByIndex };
+  const input = { normalized, frameState, episodeTimeline, adaptiveSampling, mechanicsModel, subjectId, subjectTeam, teamByPlayer, events, phases, mode, detailFramesByIndex };
   const eventOpportunities = events.filter((event) => Number.isFinite(event.startTimeSeconds))
     .flatMap((event) => opportunityTypes(event, input)
       .map((type) => eventContext(input, event, windowsByEvent.get(event.id), type)));
-  const opportunities = [...eventOpportunities, ...landingContexts(input), ...continuousFrameContexts(input)]
+  const opportunities = [...eventOpportunities, ...landingContexts(input), ...continuousFrameContexts(input), ...mechanicsOpportunities(input)]
     .sort((left, right) => left.timestampSeconds - right.timestampSeconds || left.id.localeCompare(right.id));
 
   return {

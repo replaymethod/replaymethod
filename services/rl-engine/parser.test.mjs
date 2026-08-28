@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { normalizeReplayMetadata } from "./parser.mjs";
+import { normalizeReplayMetadata, PARSER_VERSION } from "./parser.mjs";
+
+test("reports the installed parser package version instead of a handwritten label", async () => {
+  const packageMetadata = JSON.parse(await readFile(new URL("package.json", import.meta.resolve("@rlrml/subtr-actor")), "utf8"));
+  assert.equal(PARSER_VERSION, `subtr-actor@${packageMetadata.version}`);
+});
 
 test("normalizes current subtr-actor replay metadata", () => {
   const normalized = normalizeReplayMetadata({

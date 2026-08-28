@@ -120,18 +120,45 @@ No threshold, context rule or detector logic may change after holdout access. A
 change requires a new version and a new untouched holdout; the old result cannot
 be retuned into a pass.
 
-## Current blocker
+## Current 0.9 state
+
+The engine now has 60 measuring contracts and zero capability-only catalog
+lanes. The new corpus plan requires exactly 1,000 Ballchasing replays across
+Seasons 21–23, all Gold–Grand Champion rank groups and 1v1/2v2/3v3. It assigns
+700 `calibration_dev`, 150 `challenge` and 150 `frozen_blind_holdout` rows only
+after all 45 cells are complete. One player appearance across the complete new
+corpus prevents player leakage between splits.
+
+Acquisition is resumable and runs only with `BALLCHASING_API_TOKEN` injected
+into the local process environment; the token is not stored in source or corpus
+artifacts. The in-progress private corpus must not be treated as split or
+calibrated until all 45 cells are complete. The existing Season 21 120-replay
+development split may be used for 0.9 engineering smoke and deterministic
+regression only. Its challenge and frozen holdout remain closed. The 0.9 review
+package must be regenerated from the new 700-replay development split before
+human labeling.
+See
+[`RL_MASTER_CALIBRATION_1000_2026-08-28.md`](RL_MASTER_CALIBRATION_1000_2026-08-28.md).
+
+No current 0.9 expert labels, accuracy metrics or activation candidates exist.
+
+## Superseded 0.8 review package
 
 All 0.5 and 0.6 queues are superseded and must not be labeled. The current
-0.7 master queue is an owner audit artifact and contains hidden model status.
-It covers all 20 measuring contracts with hierarchical round-robin selection
-across mode/rank cohort and then context. Rare status classes are exhausted,
-not duplicated or synthetically filled.
+0.8 master queue supersedes every unlabeled 0.7 set. It is an owner audit
+artifact and contains hidden model status. It covers all 25 measuring contracts
+with hierarchical round-robin selection across mode/rank cohort and then
+context. Rare status classes are exhausted, not duplicated or synthetically
+filled.
 
 Reviewers receive separate redacted `rocket-league-blind-reviewer-packet.v1`
 files that omit model status, classification, reasons and model evidence. Each
-of two packets contains the same 2,276 candidates in a different order and
-eight rounds. Both are bound to label handbook SHA-256
-`ed56cdcd71243ffc02cce6fd94f18ab217472c29fbda1d0f095758aa76a344ef`.
+of two packets contains the same 2,788 candidates in a different order and 12
+resume-safe rounds of 232–233 decisions. Both are bound to the exact 0.8 label
+handbook SHA-256
+`9b09bc3f4c53fc2c3704f007781bc3f2df6032b220bb6318d106ef0facd401b4`
+recorded in the generated review plan. All 2,788 anonymized moments exist with
+zero missing candidates or replays; packet coverage is identical, order is
+different and no hidden model field is present.
 There is still no complete independent two-reviewer label set; therefore there
 are no defensible detector accuracy metrics and no activation candidate.

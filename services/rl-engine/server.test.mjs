@@ -46,6 +46,8 @@ test("health endpoint is public and cache-safe", async () => withServer(async (b
     performanceSnapshotVersion: PERFORMANCE_SNAPSHOT_VERSION,
     activeRequests: 0,
     maxConcurrency: 1,
+    jobTimeoutMs: 80_000,
+    shutdownTimeoutMs: 30_000,
   });
 }));
 
@@ -231,6 +233,128 @@ test("long analysis is accepted once and polled idempotently", async () => {
       return result;
     },
   });
+});
+
+test("concurrency includes accepted asynchronous work instead of poisoning excess jobs", async () => {
+  let finish;
+  let calls = 0;
+  const result = new Promise((resolve) => { finish = resolve; });
+  await withServer(async (base) => {
+    const first = await fetch(`${base}/v1/analyze/rocket-league`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/octet-stream",
+        "X-Replay-Method-Request": requestId,
+        "X-Replay-Method-Player": "Player",
+      },
+      body: new Uint8Array([1]),
+    });
+    assert.equal(first.status, 202);
+
+    const second = await fetch(`${base}/v1/analyze/rocket-league`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/octet-stream",
+        "X-Replay-Method-Request": "22222222222222222222222222222222",
+        "X-Replay-Method-Player": "Player",
+      },
+      body: new Uint8Array([2]),
+    });
+    assert.equal(second.status, 503);
+    assert.equal((await second.json()).code, "rl_engine_busy");
+    assert.equal(calls, 1);
+
+    finish({ kind: "success", normalized: { game: "rocket-league" }, findings: [], versions: {}, estimatedCostMicros: 0 });
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const completed = await fetch(`${base}/v1/jobs/${requestId}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (completed.status === 200) break;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+  }, {
+    token,
+    maxConcurrency: 1,
+    processReplay: async () => {
+      calls += 1;
+      return result;
+    },
+  });
+});
+
+test("a failed asynchronous attempt is released so the preserved replay can retry", async () => {
+  let calls = 0;
+  await withServer(async (base) => {
+    const submit = () => fetch(`${base}/v1/analyze/rocket-league`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/octet-stream",
+        "X-Replay-Method-Request": requestId,
+        "X-Replay-Method-Player": "Player",
+      },
+      body: new Uint8Array([1]),
+    });
+
+    assert.equal((await submit()).status, 202);
+    let failed;
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      failed = await fetch(`${base}/v1/jobs/${requestId}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (failed.status !== 202) break;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    assert.equal(failed.status, 500);
+    assert.equal((await failed.json()).retryable, true);
+    assert.equal((await fetch(`${base}/v1/jobs/${requestId}`, { headers: { Authorization: `Bearer ${token}` } })).status, 404);
+
+    assert.equal((await submit()).status, 202);
+    let completed;
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      completed = await fetch(`${base}/v1/jobs/${requestId}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (completed.status !== 202) break;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    assert.equal(completed.status, 200);
+    assert.equal(calls, 2);
+  }, {
+    token,
+    processReplay: async () => {
+      calls += 1;
+      if (calls === 1) throw new Error("temporary parser host failure");
+      return { kind: "success", normalized: { game: "rocket-league" }, findings: [], versions: {}, estimatedCostMicros: 0 };
+    },
+  });
+});
+
+test("graceful shutdown waits for accepted asynchronous work", async () => {
+  let finish;
+  const result = new Promise((resolve) => { finish = resolve; });
+  const server = createServer({ token, processReplay: async () => result });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  const base = `http://127.0.0.1:${address.port}`;
+  const accepted = await fetch(`${base}/v1/analyze/rocket-league`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/octet-stream",
+      "X-Replay-Method-Request": requestId,
+      "X-Replay-Method-Player": "Player",
+    },
+    body: new Uint8Array([1]),
+  });
+  assert.equal(accepted.status, 202);
+
+  let shutdownFinished = false;
+  const shutdown = server.gracefulShutdown({ timeoutMs: 1_000 }).then((value) => {
+    shutdownFinished = true;
+    return value;
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(shutdownFinished, false);
+  finish({ kind: "success", normalized: { game: "rocket-league" }, findings: [], versions: {}, estimatedCostMicros: 0 });
+  assert.deepEqual(await shutdown, { drained: true, activeRequests: 0 });
 });
 
 test("Early Access output requires both the host kill switch and the web request", async () => {

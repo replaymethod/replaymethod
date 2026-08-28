@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return <main className="legal-shell">
-    <CustomerHeader compact right={<Link className="rm-header-cta" href="/">Back home <span aria-hidden="true">↗</span></Link>} />
+    <CustomerHeader compact right={<Link className="rm-header-cta" href="/analyze">Analyze <span aria-hidden="true">↗</span></Link>} />
     <header><span>PRIVACY</span><h1>Your data should never be another hidden system.</h1><p>This notice explains what Replay Method collects when you contribute a replay, request an analysis, receive a beta report, join product updates or accept a private product-review invitation—and how you stay in control.</p><small>Last updated: 23 August 2026</small></header>
     <div className="legal-grid">
       <aside><b>Quick version</b><p>We use the match evidence you submit to create your private report. A customer analysis replay is not used for calibration, training or evaluation unless you give a separate explicit opt-in. Product-update email is optional. We do not sell your data or use advertising cookies.</p><a href="mailto:contact@replaymethod.xyz?subject=Replay%20Method%20privacy%20request">Make a privacy request →</a></aside>

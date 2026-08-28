@@ -3,8 +3,8 @@ import { detectorCatalogSummary } from "./detector-catalog.mjs";
 import { decisionEngineMetadata, runShadowDetectors, SHADOW_RUNTIME_VERSION } from "./shadow-runtime.mjs";
 import { composeEarlyAccessOutput, EARLY_ACCESS_POLICY_VERSION } from "./early-access.mjs";
 
-export const ANALYZER_VERSION = "rocket-league-analyzer@0.7.0";
-export const DETECTOR_VERSION = "rocket-league-detectors@0.7.0-shadow";
+export const ANALYZER_VERSION = "rocket-league-analyzer@0.9.0";
+export const DETECTOR_VERSION = "rocket-league-detectors@0.9.0-shadow";
 export const COACHING_VERSION = "coaching.v1";
 
 export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnabled = false, earlyAccessOutputEnabled = false } = {}) {
@@ -82,6 +82,14 @@ export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnab
         schemaVersion: decisionEngine.schemaVersion,
         context: decisionEngine.context,
         adaptiveSampling: decisionEngine.adaptiveSampling,
+        mechanics: decisionEngine.mechanics,
+        superAnalysis: {
+          schemaVersion: decisionEngine.superAnalysis.schemaVersion,
+          status: decisionEngine.superAnalysis.status,
+          publicationStatus: decisionEngine.superAnalysis.publicationStatus,
+          privateReviewCandidateCount: decisionEngine.superAnalysis.privateReviewCandidates.length,
+          weeklyPlanStatus: decisionEngine.superAnalysis.weeklyPlan.status,
+        },
         detectors: decisionEngine.detectors.map((detector) => ({
           detectorId: detector.detectorId,
           eligibleOpportunities: detector.eligibleOpportunities,

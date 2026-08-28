@@ -12,6 +12,7 @@ import ReviewQueueImport from "./ReviewQueueImport";
 import ReplayCorpusStatusForm from "./ReplayCorpusStatusForm";
 import { percentage, reviewerOperationsSummary } from "../../lib/rl-quality";
 import ProductReviewerAccessForm from "./ProductReviewerAccessForm";
+import { ReplayMark } from "../components/ReplayMark";
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +106,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const topSources = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
   return <main className="admin-shell">
-    <header className="admin-top"><div><span className="logo" aria-hidden="true" /><b>Replay Method operations</b></div><div><span>{user.email}</span><a href={chatGPTSignOutPath("/")}>Sign out</a></div></header>
+    <header className="admin-top"><div><span className="logo" aria-hidden="true"><ReplayMark /></span><b>Replay Method operations</b></div><div><span>{user.email}</span><a href={chatGPTSignOutPath("/")}>Sign out</a></div></header>
     <section className="admin-heading"><div><span>MISSION CONTROL</span><h1>{productAnalyses.length} match analyses</h1><p>Monitor automated ingestion, failures, coaching quality and the real improvement funnel from one place. Owner QA runs are operational records but excluded from these product statistics.</p></div><div className="admin-heading-actions"><Link className="export-button" href="/admin/rl-review">RL review lab →</Link><Link className="export-button" href="/product-review">Product review →</Link><Link className="export-button" href="/api/admin/waitlist">Waitlist CSV ↓</Link></div></section>
     <section className="admin-launch"><div><span>ROCKET LEAGUE LINKS</span><b>Use the calibration link for research recruitment. Send players to the ten-replay analysis only when the public engine gate is open.</b></div><Link href="/rocket-league-beta?utm_source=community&utm_campaign=rl-calibration-01">Replay contribution ↗</Link><Link href="/analyze?utm_source=community&utm_campaign=rl-analysis-01">10-replay analysis ↗</Link><Link href="/guides/rocket-league-replay-review-checklist?utm_source=community&utm_campaign=rl-guide-01">Replay review guide ↗</Link></section>
     <section className="admin-stats"><article><span>Running / queued</span><b>{runningAnalyses}</b></article><article><span>Reports ready</span><b>{readyAnalyses}</b></article><article><span>Blocked</span><b>{blockedAnalyses}</b></article><article><span>Failed</span><b>{failedAnalyses}</b></article><article><span>Avg. processing</span><b>{averageDuration}</b></article><article><span>Estimated engine cost</span><b>${estimatedCost.toFixed(4)}</b></article><article><span>Avg. report rating</span><b>{averageRating}</b></article><article><span>Unique visits</span><b>{visitors}</b></article><article><span>Analysis submitted</span><b>{uniqueFor("analysis_submit")}</b></article></section>

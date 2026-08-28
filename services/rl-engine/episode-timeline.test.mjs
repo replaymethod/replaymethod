@@ -29,7 +29,7 @@ test("segments match phases and preserves subject-backed decision events", () =>
     ] },
   }, "epic:subject-id");
 
-  assert.equal(timeline.schemaVersion, "rocket-league-episode-timeline.v2");
+  assert.equal(timeline.schemaVersion, "rocket-league-episode-timeline.v3");
   assert.deepEqual(timeline.phases.map((phase) => phase.phase), [
     "kickoff_countdown", "active_play", "post_goal",
   ]);
@@ -43,6 +43,19 @@ test("segments match phases and preserves subject-backed decision events", () =>
   assert.deepEqual(timeline.events[0].participantPlayerIds, ["epic:subject-id"]);
   assert.equal(timeline.events[0].team, 0);
   assert.equal(timeline.events[0].startTimeSeconds, 4);
+});
+
+test("normalizes the parser's big boost-pad value to the canonical large value with provenance", () => {
+  const timeline = normalizeEpisodeTimeline({
+    frames: [],
+    events: { events: [{
+      meta: { id: "boost:1", stream: "boost_pickup", primary_player: { Epic: "subject-id" } },
+      payload: { kind: "boost_pickup", payload: { player: { Epic: "subject-id" }, pad_type: "big", overfill_amount: 42 } },
+    }] },
+  }, "epic:subject-id");
+  assert.equal(timeline.events[0].facts.pad_type, "large");
+  assert.equal(timeline.events[0].facts.source_pad_type, "big");
+  assert.equal(timeline.events[0].facts.overfill_amount, 42);
 });
 
 test("keeps opponent events without falsely attributing them to the subject", () => {

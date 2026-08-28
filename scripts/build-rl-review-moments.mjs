@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve, sep } from "node:path";
 import { buildReplayEvidence, inspectReplayRoster } from "../services/rl-engine/parser.mjs";
+import { containsSensitiveIdentifier } from "../services/rl-engine/review-privacy.mjs";
 
 const WINDOW_BEFORE_SECONDS = 4;
 const WINDOW_AFTER_SECONDS = 4;
@@ -156,9 +157,10 @@ if (!targets.length) {
     moments,
   };
 
+  if (containsSensitiveIdentifier(artifact, sensitiveValues)) {
+    throw new Error("Privacy check failed: a source player identifier remained in the artifact.");
+  }
   const json = `${JSON.stringify(artifact)}\n`;
-  const leakedValue = [...sensitiveValues].find((value) => value.length >= 3 && json.toLowerCase().includes(value.toLowerCase()));
-  if (leakedValue) throw new Error("Privacy check failed: a source player identifier remained in the artifact.");
   const destination = resolve(output);
   mkdirSync(dirname(destination), { recursive: true });
   writeFileSync(destination, json);

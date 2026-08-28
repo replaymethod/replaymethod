@@ -15,6 +15,11 @@ unpublished equivalent. Public claims must remain narrower than the evidence.
 - [RL Coach](https://rlcoach.org/) publicly emphasizes replay parsing, AI
   coaching, mistake reports, mechanic guides and short training plans.
 
+These checks matter because none of the following is a defensible standalone
+wedge anymore: “AI coach”, seven-day plan, mechanic guide, replay viewer,
+heatmap, per-touch score, rank comparison or conversational voice. At least one
+current product publicly markets each of those features.
+
 ## Defensible Replay Method wedge
 
 The differentiated target is not “more AI notes” or another replay grade. It is
@@ -28,6 +33,10 @@ an auditable behavior-improvement loop with all of these properties together:
 5. the engine can return improvement, regression, resolution or inconclusive;
 6. human-review moments and label provenance remain auditable;
 7. public output remains gated when evidence is insufficient.
+8. mechanics evidence separates observed body/ball kinematics from unavailable
+   controller input, camera, intent, comms and fatigue;
+9. a heavy internal movement model collapses to one correction hypothesis and
+   a short remeasurement plan only after the exact detector passes its gate.
 
 The reviewed competitor pages describe replay grades, threat, stats, AI notes,
 training and trend displays. They do not publicly document this complete
@@ -39,6 +48,10 @@ claim.
 
 Safe: “Replay Method is being built to measure the same versioned decision
 pattern before and after practice, with explicit abstention and replay evidence.”
+
+Also safe after the 0.8 contract is integrated: “Replay Method separates what
+the replay proves from what it cannot observe, then remeasures the same movement
+pattern after practice.”
 
 Unsafe today: “No competitor can do this”, “the most accurate Rocket League
 coach”, or any superiority claim without a reproducible head-to-head benchmark.

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return <main className="legal-shell">
-    <CustomerHeader compact right={<Link className="rm-header-cta" href="/">Back home <span aria-hidden="true">↗</span></Link>} />
+    <CustomerHeader compact right={<Link className="rm-header-cta" href="/analyze">Analyze <span aria-hidden="true">↗</span></Link>} />
     <header><span>SERVICE AND WAITLIST TERMS</span><h1>No card. No hidden purchase.</h1><p>These terms explain today&apos;s free beta request and the paid subscription terms that will apply only after checkout is separately opened.</p><small>Last updated: 20 August 2026</small></header>
     <div className="legal-grid">
       <aside><b>The deal today</b><p>You are joining a waitlist, not buying a subscription. Nothing is charged and no payment details are collected.</p><Link href="/privacy">Read our privacy notice →</Link></aside>

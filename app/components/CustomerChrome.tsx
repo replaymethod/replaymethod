@@ -18,10 +18,10 @@ export function CustomerHeader({ compact = false, current, right }: CustomerHead
       {!compact && <nav className="rm-main-nav" aria-label="Main navigation">
         <Link aria-current={current === "product" ? "page" : undefined} href="/#product">Product</Link>
         <Link aria-current={current === "method" ? "page" : undefined} href="/#method">How it works</Link>
-        <Link href="/#why">Why it works</Link>
+        <Link href="/#why">Evidence</Link>
         <Link href="/guides/rocket-league-replay-review-checklist">Field notes</Link>
       </nav>}
-      <div className="rm-header-action">{right || <><Link className="rm-header-login" aria-current={current === "report" ? "page" : undefined} href="/reports">My reports</Link><Link className="rm-header-cta" href="/analyze">Start free</Link></>}</div>
+      <div className="rm-header-action">{right || <><Link className="rm-header-login" aria-current={current === "report" ? "page" : undefined} href="/reports">My reports</Link><Link className="rm-header-cta" href="/analyze">Analyze</Link></>}</div>
     </div>
   </header>;
 }
@@ -29,9 +29,9 @@ export function CustomerHeader({ compact = false, current, right }: CustomerHead
 export function CustomerFooter() {
   return <footer className="rm-footer">
     <div className="rm-shell rm-footer-grid">
-      <div className="rm-footer-brand"><span className="rm-footer-wordmark"><span className="rm-wordmark-glyph" aria-hidden="true"><ReplayMark /></span><b>Replay Method</b></span><p>Replay intelligence for Rocket League. Find the decision that keeps repeating.</p></div>
+      <div className="rm-footer-brand"><span className="rm-footer-wordmark"><span className="rm-wordmark-glyph" aria-hidden="true"><ReplayMark /></span><b>Replay Method</b></span><p>Replay intelligence for Rocket League.</p></div>
       <nav aria-label="Product links"><span>Product</span><Link href="/analyze">Analyze replays</Link><Link href="/replay-upload">Find replay files</Link><Link href="/guides/rocket-league-replay-review-checklist">Replay review guide</Link></nav>
-      <nav aria-label="Method links"><span>Method</span><Link href="/#why">Why it works</Link><Link href="/#method">How it works</Link><Link href="/reports">My reports</Link></nav>
+      <nav aria-label="Method links"><span>Method</span><Link href="/#method">How it works</Link><Link href="/#why">Evidence standard</Link><Link href="/reports">My reports</Link></nav>
       <nav aria-label="Company links"><span>Company</span><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a></nav>
       <small>Independent product. Not affiliated with Epic Games or Psyonix.</small>
     </div>

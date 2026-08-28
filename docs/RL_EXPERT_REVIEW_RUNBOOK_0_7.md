@@ -9,17 +9,23 @@ The current label set is
 `rocket-league-expert-labels.v8-all-contracts-context-0.5`. Do not label any
 0.5 or 0.6 artifact; those sets are preserved only for audit.
 
+Do not distribute the earlier `0.7-balanced-all-contracts` queue or packets.
+They carried a handwritten `subtr-actor@1.2.2` provenance label while the
+locked parser was `1.2.0`. The replacement candidate payload is exactly
+identical, but only the `0.7-parser-truth` queue and packets are bound to the
+corrected reproducibility fingerprint.
+
 Current private artifacts live under the task's `work/grand-calibration`
 directory:
 
-- `opportunity-review-queue-0.7-balanced-all-contracts.json`: owner-only
+- `opportunity-review-queue-0.7-parser-truth.json`: owner-only
   master; never give it to a reviewer or adjudicator because it contains model
   decisions.
 - `opportunity-review-moments-0.7-balanced-all-contracts.json`: shared,
   anonymized playback evidence.
-- `blind-reviewer-packets-0.7-balanced-all-contracts/reviewer-a.json`:
+- `blind-reviewer-packets-0.7-parser-truth/reviewer-a.json`:
   Reviewer A only.
-- `blind-reviewer-packets-0.7-balanced-all-contracts/reviewer-b.json`:
+- `blind-reviewer-packets-0.7-parser-truth/reviewer-b.json`:
   Reviewer B only.
 
 The exact definitions are in `docs/RL_LABEL_HANDBOOK_0_7.md`; SHA-256
@@ -28,11 +34,11 @@ The exact definitions are in `docs/RL_LABEL_HANDBOOK_0_7.md`; SHA-256
 Verify hashes before distribution:
 
 ```text
-Master queue  5bd0d565ab44ceb563e931da61636f9de7a65d7cc3eb63acde72ef66fc269b73
+Master queue  43de8148bbd36516f5937480d1bc6ace67604401300c745d2ab1d39de191585d
 Moments       fd725505d7f27ba0a5dec125aca620f2f715b636d1806112633ec32faa098a50
-Review plan   4bf7056ba6cc02b5a842daf712dc9995badd5bdc8346f87cda772d823c239ffc
-Reviewer A    bed3835cfec27d8aaeaff623b2b9ece21390fbafc770879e7e0ab41af1b981f4
-Reviewer B    de29f4c0acfb7a8eb7530e54eff063e51f0f5e4073a81cd7a0da254724df08ec
+Review plan   a1c09b97825a83aabe6f2993d211b87333e2c734e69cf6d50287b90f0cdac426
+Reviewer A    ea1a44919d0010110c7c50e9edd43048dd1214b6f9842207ae34f07cb6dc5a03
+Reviewer B    aaa29a00303fefe3c96798040d97f8c6c2ca6688ef901320a7edb0991a631732
 ```
 
 ## Reviewer separation
@@ -60,7 +66,7 @@ fields and writes progress atomically to a separate file.
 
 ```bash
 node scripts/start-rl-blind-review.mjs \
-  --packet blind-reviewer-packets-0.7-balanced-all-contracts/reviewer-a.json \
+  --packet blind-reviewer-packets-0.7-parser-truth/reviewer-a.json \
   --moments opportunity-review-moments-0.7-balanced-all-contracts.json \
   --handbook /absolute/repository/path/docs/RL_LABEL_HANDBOOK_0_7.md \
   --output reviewer-a-complete.json \
@@ -79,7 +85,7 @@ After both packets are complete, run from the private artifact directory:
 
 ```bash
 npm run rl-engine:review-merge -- \
-  --queue opportunity-review-queue-0.7-balanced-all-contracts.json \
+  --queue opportunity-review-queue-0.7-parser-truth.json \
   --submission reviewer-a-complete.json \
   --submission reviewer-b-complete.json \
   --output blind-review-merge-0.7-balanced-all-contracts.json
@@ -95,7 +101,7 @@ redacted queue and records rationale. Then run:
 
 ```bash
 npm run rl-engine:review-finalize -- \
-  --queue opportunity-review-queue-0.7-balanced-all-contracts.json \
+  --queue opportunity-review-queue-0.7-parser-truth.json \
   --merge blind-review-merge-0.7-balanced-all-contracts.json \
   --adjudication completed-adjudication-0.7-balanced-all-contracts.json \
   --output final-calibration-0.7-balanced-all-contracts.json

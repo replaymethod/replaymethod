@@ -38,9 +38,9 @@ test("keeps the public product Rocket League-only", async () => {
     source("../app/[game]/page.tsx"),
     source("../app/sitemap.ts"),
   ]);
-  assert.match(landing, /href="\/analyze"/);
-  assert.match(batchFlow, /Drop your 10 replays here/);
-  assert.match(landing, /Start free analysis/);
+  assert.match(batchFlow, /href="\/analyze"/);
+  assert.match(batchFlow, /Drop 10 original \.replay files/);
+  assert.match(landing, /Analyze my replays/);
   assert.match(batchFlow, /START MY PRIVATE ANALYSIS/);
   assert.match(batchFlow, /\{validCount\}\/10/);
   assert.match(batchFlow, /same player.*same ranked.*playlist/is);
@@ -57,13 +57,13 @@ test("puts the product action before explanatory browsing", async () => {
     source("../app/rocket-league-beta/ReplayContribution.tsx"),
   ]);
   assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
-  assert.match(landing, /Stop guessing\.<br \/>See the decision holding you back\./);
-  assert.doesNotMatch(landing, /<BatchAnalyzeFlow/);
-  assert.match(batchFlow, /Start your private analysis/);
-  assert.match(batchFlow, /Drop your 10 replays here/);
+  assert.match(landing, /Stop losing for<br \/>the same reason\./);
+  assert.match(landing, /<BatchAnalyzeFlow engineOpen=\{engineOpen\} variant="hero" \/>/);
+  assert.match(batchFlow, /Analyze your replays/);
+  assert.match(batchFlow, /Drop 10 original \.replay files/);
   assert.match(batchFlow, /Open full upload page/);
-  assert.match(landing, /One common mistake\. Two very different outcomes\./);
-  assert.match(landing, /A pattern needs evidence\.<br \/>Not confidence theatre\./);
+  assert.match(landing, /See the pattern\.<br \/>Open the proof\./);
+  assert.match(landing, /No clear pattern means no invented answer\./);
   assert.doesNotMatch(landing, /Free first analysis · No card required · Replays stay private|One free analysis · no card · private report|Replay Method · Experimental early access/);
   assert.ok(landing.indexOf("<HowItWorks") < landing.indexOf("<ProductMoment"));
   assert.match(contribution, /replay && <section className="rl-intake-context"/);

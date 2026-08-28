@@ -29,12 +29,17 @@ names preserve their exact identity.
 
 - `GET /livez` proves that the process can answer HTTP.
 - `GET /healthz` returns 200 only when the bearer token configuration is valid;
-  it also reports engine/parser versions and current concurrency.
+  the worker pool is ready and the process is not draining. It also reports
+  engine/parser versions and current concurrency.
 - `RL_ENGINE_TOKEN` is required on both services and must be 24–512 characters.
 - `RL_ENGINE_MAX_CONCURRENCY` defaults to 1 and is clamped to 1–8. Capacity
   responses are retryable rather than queued inside the parser process.
 - `RL_ENGINE_TIMEOUT_MS` belongs to the web service, defaults to 90 seconds,
   and is clamped to 5–120 seconds.
+- `RL_ENGINE_JOB_TIMEOUT_MS` belongs to the native service, defaults to 80
+  seconds and is clamped to 5–115 seconds.
+- `RL_ENGINE_SHUTDOWN_TIMEOUT_MS` defaults to 30 seconds and is clamped to
+  1–120 seconds. New work is rejected while the process drains.
 - `RL_ENGINE_URL` must use HTTPS outside explicit loopback development.
 - `RL_ENGINE_ENABLED=true` is required before the web adapter calls the worker.
 - `RL_PUBLIC_DETECTORS_ENABLED=true` is a separate process-level publication
@@ -45,25 +50,36 @@ names preserve their exact identity.
   enable or validate a detector.
 - `BACKGROUND_PROCESSING_ENABLED=true` permits automatic retry scheduling.
 
-The server sets bounded header/request/keep-alive behavior, drains on SIGTERM
-or SIGINT, and logs only the request ID, stable error code, and retryability.
-It does not log parser messages, player names, bearer tokens, or replay bytes.
+The server sets bounded header/request/keep-alive behavior and tracks accepted
+asynchronous analysis against the same concurrency limit as synchronous work.
+Completed job IDs are idempotent during the bounded retention window. A failed
+job is returned once and then released, so the preserved replay can be retried
+with the same public job ID instead of polling a poisoned result indefinitely.
+
+SIGTERM or SIGINT stops new work and waits for accepted work up to the bounded
+shutdown deadline. If the deadline expires, the process exits unsuccessfully
+so the durable web job can retry from its preserved upload. Logs contain only
+the request ID, stable error code and retryability; they do not contain parser
+messages, player names, bearer tokens or replay bytes.
 
 ## Container verification
 
-Build from the repository root so the package lock and engine source are the
-only required inputs:
+Build from the repository root. The image installs the engine-owned lockfile,
+which contains only the exact `@rlrml/subtr-actor@1.2.0` runtime dependency;
+it does not install the web application's Next, React, Stripe or database
+packages:
 
 ```bash
 docker build -f services/rl-engine/Dockerfile -t replay-method-rl-engine:local .
 docker run --rm --env-file /path/to/rl-engine.env -p 8788:8788 replay-method-rl-engine:local
 ```
 
-The environment file should contain `RL_ENGINE_TOKEN`, `PORT=8788`, and an
-optional `RL_ENGINE_MAX_CONCURRENCY`. Never place a real token in an image,
-compose file, command history, source, or screenshot. Confirm `/livez` and
-`/healthz`, then exercise an authenticated invalid-file request before any
-representative replay is used.
+The environment file should contain `RL_ENGINE_TOKEN`, `PORT=8788`, and
+optionally `RL_ENGINE_MAX_CONCURRENCY`, `RL_ENGINE_JOB_TIMEOUT_MS` and
+`RL_ENGINE_SHUTDOWN_TIMEOUT_MS`. Never place a real token in an image, compose
+file, command history, source, or screenshot. Confirm `/livez` and `/healthz`,
+then exercise an authenticated invalid-file request before any representative
+replay is used.
 
 ## Detector program
 
@@ -71,8 +87,10 @@ The candidate catalog lives in `services/rl-engine/detector-catalog.mjs`. It
 currently spans boost economy, rotation, challenges, recovery, possession,
 offense, defense, kickoffs and team coordination. Catalog inclusion does not make
 a detector public. All 60 entries now have a versioned shadow executor and
-remain `public: false`; 40 deliberately stop at capability abstention until
-their required evidence models exist.
+remain `public: false`. Engine 0.9 gives every lane a real opportunity
+denominator with firing, non-firing and abstained states. Counterfactual-heavy
+lanes measure a narrow replay-visible proxy and explicitly abstain from the
+stronger alternative-action claim.
 
 The research and rationale behind this broader shape are recorded in
 [`COMPETITIVE_INTELLIGENCE.md`](COMPETITIVE_INTELLIGENCE.md).
@@ -101,18 +119,16 @@ leak" is a report-prioritization rule, not a restriction to one internal detecto
 
 ## Current private calibration system
 
-Twenty measuring shadow probes currently cover boost reserve, supersonic boost
-waste, kickoff timing, first-touch outcomes, challenge dives, teammate spacing,
-double commitments, recovery momentum loss, first-touch retention, contextual
-challenge quality, post-landing re-entry, boost overfill, kickoff-contact
-leverage, general giveaways, center follow-up and defensive-clear follow-up.
-The set also includes normalized defensive reserve, last-layer overextension,
-challenge coverage and last-player challenge contracts. The other 40 catalog
-entries execute a versioned capability check and abstain
-instead of fabricating an assessment. None is public by default.
+All 60 shadow lanes now own a versioned opportunity contract. The original 25
+contracts remain intact. Engine 0.9 adds 35 contracts across critical boost
+exposure and routing, rotation and defensive geometry, challenge timing,
+re-entry, possession sequences, shot creation, defense, kickoff support and
+team coordination. Each new classifier names the measured proxy and preserves
+the missing intent, communication, route-feasibility or counterfactual evidence
+as an abstention reason. None is public by default.
 
-The `0.7.0` shadow runtime gives all 20 measuring lanes a versioned opportunity
-contract; no measuring lane is positive-candidate-only. Whole-match movement
+The `0.9.0` shadow runtime has no positive-candidate-only or capability-only
+lane. Whole-match movement
 remains sampled at 10 Hz. A bounded
 30 Hz detail lane retains a deduplicated frame pool only around subject-linked
 touches, challenges, kickoffs and recovery events. Context records access
@@ -122,13 +138,39 @@ the attributable next outcome where available.
 Contextual detectors must account for firings, non-firings and abstentions in
 the same denominator. Opportunity contract `0.2.0` deduplicates source IDs,
 records integrity failures and blocks an integrity-failed review queue. Decision
-context `0.5.0` adds canonical mode, phase/live state, score differential,
+context `0.7.0` adds canonical mode, phase/live state, score differential,
 coverage, defensive layer, role, field zone, a labeled kinematic intercept
 proxy, explicit access margins and shared teammate-to-subject/ball approach
-geometry. Tactical spatial `0.2.0` supplies those deterministic primitives.
+geometry, teammate reserve/position and bounded goal-distance primitives.
+Tactical spatial `0.3.0` supplies those deterministic primitives.
 Frame state v2 preserves raw 0–255 replay
 boost while exposing normalized 0–100 percent; gameplay thresholds must consume
 the normalized field.
+Mechanics model `0.1.0` converts retained 30 Hz windows into versioned touch and
+recovery episodes. It measures contact surface, car-ball relative speed,
+approach angle, post-touch separation, landing body alignment, heading-to-travel,
+wall departure and time to useful re-entry. It explicitly does not infer
+controller inputs, camera, intent, communications, fatigue or motor impairment.
+Super Analysis `0.2.0` preserves that evidence boundary and withholds both the
+primary focus and weekly plan until the exact detector passes its independent
+quality gate. It may group observations inside a bounded eight-second window
+as a private root-cause candidate, but marks the relationship as temporal and
+never as proven causation.
+Mechanics Signature `0.1.0` aggregates version-compatible replays into
+within-player medians, interquartile ranges and dispersion by contact/recovery
+surface. It refuses mixed model versions and does not create a skill grade,
+diagnosis, rank benchmark or improvement claim. Mechanics Signature Comparison
+`0.1.0` can remeasure two distinct version- and threshold-compatible windows.
+It reports descriptive median and dispersion deltas, withholds sparse metrics
+and keeps `improvementClaimEligible: false` until a calibrated focus defines
+the valid direction and comparable-context evidence.
+The master-corpus tool locks 1,000 replays across Seasons 21–23, Gold through
+Grand Champion and all 45 season/mode/rank cells. It assigns an exact
+700/150/150 calibration/challenge/frozen split only after ingestion completes,
+uses one appearance per player across the complete corpus and keeps all raw
+bytes outside Git. See
+[`RL_MASTER_CALIBRATION_1000_2026-08-28.md`](RL_MASTER_CALIBRATION_1000_2026-08-28.md).
+
 Batch aggregation `1.3.0` compares those opportunities
 across matches and contexts privately. The Pattern Memory `0.2.0` layer then
 freezes the detector version, opportunity/context schema, context and evidence
@@ -167,7 +209,18 @@ coverage and reviewer agreement, and exclude synthetic fixtures from evidence
 counts. Promotion and demotion are intended to persist to the additive quality
 snapshot and lifecycle-event tables before an operator changes a public flag.
 
+The current market and technical prioritization is recorded in
+[`RL_ENGINE_MOAT_RESEARCH_2026-08-28.md`](RL_ENGINE_MOAT_RESEARCH_2026-08-28.md).
+Its immediate recommendation is a Verified Improvement Loop over another
+generic grade/report surface. Counterfactual simulation remains a private R&D
+lane until replay-action uncertainty and replay-to-simulator divergence have
+been measured.
+
 ## Versioning
+
+The parser identity is resolved from the installed package metadata at process
+startup. The current locked parser is `subtr-actor@1.2.0`; a handwritten
+version string must not be used as calibration provenance.
 
 Pin and record:
 

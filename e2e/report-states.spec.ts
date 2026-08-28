@@ -22,6 +22,7 @@ test.describe("private report states", () => {
     await expect(page.getByText("PAUSED", { exact: true })).toBeVisible();
     await expect(page.getByText("Replay not verified", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: /couldn’t read this replay/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Choose a fresh replay set/i })).toHaveAttribute("href", "/analyze");
   });
 
   test("a completed Early Access report separates verified facts, one experimental insight and the next rule", async ({ page }) => {
@@ -72,6 +73,9 @@ test.describe("private report states", () => {
     await expect(page.getByText(/did not turn neutral measurements into a fake mistake or generic drill/i)).toBeVisible();
     await expect(page.getByText("EARLY ACCESS PRODUCT FEEDBACK", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Evidence status and sample size").getByText("FACTS ONLY", { exact: true })).toBeVisible();
+    await expect(page.getByText("YOUR MATCH · VERIFIED RESULT", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Examples", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Next 3", exact: true })).toHaveCount(0);
   });
 
   test("missing detailed measures keep the Match facts destination truthful and navigable", async ({ page }) => {

@@ -22,8 +22,9 @@ test("production landing opens replay processing independently from detector pub
   assert.doesNotMatch(home, /RL_PUBLIC_DETECTORS_ENABLED/);
   assert.match(home, /RL_EARLY_ACCESS_OUTPUT_ENABLED/);
   assert.match(home, /RL_CALIBRATION_INTAKE_ENABLED/);
-  assert.match(landing, /href="\/analyze"/);
-  assert.match(landing, /Start free analysis/);
+  assert.match(intake, /href="\/analyze"/);
+  assert.match(landing, /Analyze my replays/);
+  assert.match(landing, /BatchAnalyzeFlow engineOpen=\{engineOpen\} variant="hero"/);
   assert.match(intake, /if \(!engineOpen\) return setMessage\("Replay processing is temporarily paused\."\)/);
   assert.doesNotMatch(landing, /Choose my game|Contribute one replay/);
 });

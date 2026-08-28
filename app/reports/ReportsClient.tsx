@@ -123,7 +123,7 @@ export default function ReportsClient() {
 
   return (
     <main className="reports-page">
-      <CustomerHeader current="report" right={<Link className="rm-header-cta" href="/analyze" onClick={trackNewAnalysis}>New analysis <span aria-hidden="true">↗</span></Link>} />
+      <CustomerHeader current="report" right={<Link className="rm-header-cta" href="/analyze" onClick={trackNewAnalysis}>Analyze <span aria-hidden="true">↗</span></Link>} />
       <section className="reports-shell shell" id="report-history">
         <span>{historyMode === "verified" ? "EMAIL-VERIFIED HISTORY" : "DEVICE-SAVED HISTORY"}</span>
         <h1>Your reports.</h1>

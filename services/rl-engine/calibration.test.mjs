@@ -16,9 +16,17 @@ import {
   buildBlindReviewerPackets,
   mergeBlindReviewerSubmissions,
   finalizeBlindReviewAdjudication,
+  detectorReviewQuestion,
 } from "./calibration.mjs";
+import { ROCKET_LEAGUE_DETECTOR_CATALOG } from "./detector-catalog.mjs";
 
 const TEST_LABEL_MANUAL_FINGERPRINT = "a".repeat(64);
+
+test("every catalog lane has a detector-specific blind review question", () => {
+  for (const detector of ROCKET_LEAGUE_DETECTOR_CATALOG) {
+    assert.notEqual(detectorReviewQuestion(detector.id), "Is the described behavior present in this gameplay moment?", detector.id);
+  }
+});
 
 test("aggregates replay coverage while keeping public quality gates closed", () => {
   const report = aggregateCalibrationRuns([
@@ -345,6 +353,30 @@ test("opportunity sampling balances mode and rank cohorts before contexts", () =
   const queue = buildOpportunityReviewQueue(report, { detectorIds: ["boost.overfill"], perStatus: 3, maxPerReplay: 2 });
   assert.deepEqual(new Set(queue.candidates.map((candidate) => candidate.mode)), new Set(["1v1", "2v2", "3v3"]));
   assert.match(queue.selection.strategy, /mode\/rank cohorts/);
+});
+
+test("mechanics opportunity queues use detector-specific blind questions", () => {
+  const report = {
+    schemaVersion: "test-report",
+    reproducibilityFingerprint: "mechanics-fingerprint",
+    replays: [{
+      replayFingerprint: "mechanics-replay", evidenceSource: "real_replay", mode: "2v2",
+      rankCohort: "diamond-champion", cohortKey: "2v2:diamond-champion",
+      corpusAssignment: "calibration_dev", subjectRosterIndex: 0,
+      attributionState: "verified", modeMatchesManifest: true,
+      opportunityContracts: [{
+        detectorId: "recovery.landing_orientation", detectorVersion: "0.1.0",
+        opportunityType: "landing_execution",
+        evaluations: [{ opportunityId: "landing-1", timestampSeconds: 10, frame: 100, status: "firing" }],
+      }],
+    }],
+  };
+  const queue = buildOpportunityReviewQueue(report, {
+    detectorIds: ["recovery.landing_orientation"],
+    perStatus: 1,
+  });
+  assert.match(queue.candidates[0].reviewQuestion, /landing orientation/i);
+  assert.doesNotMatch(queue.candidates[0].reviewQuestion, /described behavior/i);
 });
 
 test("opportunity metrics expose false negatives instead of using candidate count as denominator", () => {

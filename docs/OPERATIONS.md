@@ -121,7 +121,9 @@ Deploy the checkpoint only after preview passes. Do not alter domain DNS during 
 
 Before a later explicit worker deployment:
 
-1. Build the checked-in `services/rl-engine/Dockerfile` from a clean source SHA.
+1. Build the checked-in `services/rl-engine/Dockerfile` from a clean source SHA
+   and its engine-owned package lock. The image must not install web-only
+   runtime dependencies.
 2. Scan the image and confirm it runs as the non-root `node` user.
 3. Inject `RL_ENGINE_TOKEN` through the host secret manager; use the same value
    for the web binding without logging either value.
@@ -131,8 +133,9 @@ Before a later explicit worker deployment:
    versions. A missing/invalid token must make readiness return 503.
 6. Exercise 401, 400 metadata validation, 415 content type, 422 invalid replay,
    503 capacity, and web-client timeout/retry behavior in preview.
-7. Confirm SIGTERM drains in-flight work and a due retry remains claimable after
-   service restart.
+7. Confirm SIGTERM rejects new work, drains accepted work within
+   `RL_ENGINE_SHUTDOWN_TIMEOUT_MS`, and that a forced-timeout job remains
+   claimable from the durable web queue after service restart.
 8. Do not enable a public detector. Deployment readiness and coaching quality
    promotion are separate gates.
 

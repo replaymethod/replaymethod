@@ -1,18 +1,24 @@
-# Rocket League engine truth matrix — 2026-08-27
+# Rocket League engine truth matrix — 2026-08-28
 
 Status: code-verified local audit. This document does not authorize detector
 activation, public coaching-policy changes, holdout access or release actions.
+
+This file preserves the detailed engine 0.8 baseline. Engine 0.9 execution
+status and the 35 newly defined proxy contracts are documented in
+[`RL_ENGINE_TRUTH_MATRIX_0_9_2026-08-28.md`](RL_ENGINE_TRUTH_MATRIX_0_9_2026-08-28.md).
+Rows marked `Missing` below are historical 0.8 states and must not be used as
+the current 0.9 implementation count.
 
 ## Verified counts
 
 | Measure | Count | Meaning |
 | --- | ---: | --- |
 | Catalogued | 60 | Versioned catalog entries across all nine analysis areas. |
-| Executable lanes | 60 | 20 measuring probes plus 40 explicit capability checks. |
-| Measuring telemetry | 20 | Produces replay-derived measurements or candidates. |
-| Opportunity contracts | 20 | Every measuring lane counts firing, non-firing and abstained decisions against one denominator. |
+| Executable lanes | 60 | 25 measuring probes plus 35 explicit capability checks. |
+| Measuring telemetry | 25 | Produces replay-derived measurements or candidates. |
+| Opportunity contracts | 25 | Every measuring lane counts firing, non-firing and abstained decisions against one denominator. |
 | Positive-episode only | 0 | No measuring lane is limited to positive candidates. |
-| Capability-abstaining | 40 | No opportunity is classified; status is `capability_abstained`. |
+| Capability-abstaining | 35 | No opportunity is classified; status is `capability_abstained`. |
 | Expert-calibrated | 0 | No detector has a complete independent two-reviewer label set. |
 | Holdout-tested for current frozen detector rules | 0 | The frozen holdout was not opened in this run. |
 | Formally customer-enabled | 0 | No activation record passes the public gate. |
@@ -23,9 +29,11 @@ detector accuracy.
 
 ## Evidence and artifact status
 
-- Current code versions: analyzer/detector bundle/shadow runtime `0.7.0`,
-  decision context `0.5.0`, tactical spatial `0.2.0`, opportunity contract
-  `0.2.0`, Pattern Memory `0.2.0`, batch aggregation `1.3.0`.
+- Current code versions: analyzer/detector bundle/shadow runtime `0.8.0`,
+  normalizer `0.7.0`, decision context `0.6.0`, mechanics model `0.1.0`,
+  Super Analysis `0.2.0`, mechanics signature/comparison `0.1.0`, tactical
+  spatial `0.2.0`, opportunity contract `0.2.0`, Pattern Memory `0.2.0` and
+  batch aggregation `1.3.0`.
 - The authorized active review import is still the `0.3.0` three-detector set:
   343 moments from 85 of 120 `calibration_dev` replays. It was not modified.
 - The unlabeled `0.5.0` checkpoint is superseded and must not be labeled because
@@ -34,29 +42,39 @@ detector accuracy.
   context-only sampler selected 867 1v1 candidates but only 34 3v3 candidates.
 - Both `0.6.0` review queues are superseded by the current `0.7.0` set and must
   not be labeled. They are preserved for audit only.
-- The private, non-activated `0.7.0` checkpoint covers all 20 opportunity
+- The previous, superseded and non-activated `0.7.0` checkpoint covers all 20 opportunity
   detectors: 2,276 candidates and 2,276 moments from 119 `calibration_dev`
   replays, with zero missing or extra IDs. It contains 602 1v1, 961 2v2 and
   713 3v3 candidates; rank cohorts contain 827 gold–platinum, 844
   diamond–champion and 605 grand-champion–SSL candidates. Two blind reviewer
-  assignments require 4,552 independent decisions before adjudication.
-- Two current calibration runs reproduce fingerprint
-  `4064952115b86d701917f0d69eb6d9fd04096b42e49252877a077cd9e4af557a`
-  with no opportunity-count or version drift. They contain 66,359 evaluations:
-  7,704 firing, 43,572 non-firing and 15,083 abstained.
-- Current queue SHA-256:
-  `5bd0d565ab44ceb563e931da61636f9de7a65d7cc3eb63acde72ef66fc269b73`.
-- Current moments SHA-256:
-  `fd725505d7f27ba0a5dec125aca620f2f715b636d1806112633ec32faa098a50`.
-- Current independent-review plan SHA-256:
-  `4bf7056ba6cc02b5a842daf712dc9995badd5bdc8346f87cda772d823c239ffc`.
-- Label handbook SHA-256:
-  `ed56cdcd71243ffc02cce6fd94f18ab217472c29fbda1d0f095758aa76a344ef`.
+  assignments would require 4,552 independent decisions before adjudication;
+  they must not be labeled after the 0.8 replacement.
+- The current private, non-activated `0.8.0` queue supersedes every unlabeled
+  `0.7.0` review set. It covers all 25 opportunity contracts with 2,788 unique
+  candidates from 119 `calibration_dev` replays: 830 firing, 1,000 non-firing
+  and 958 abstained. Rare classes are exhausted, not duplicated.
+- Two current 0.8 calibration runs reproduce fingerprint
+  `dd9a3fb39619f7101a0a09b5241253c2ecde7e2f6b3fbe085403488fe661e1a3`
+  and canonical outcome hash
+  `7a32f17000769fb5709f625201562f2d49ef17c7b500aa80fb56e7768a9771a7`
+  with no opportunity-count or version drift. They contain 83,557 evaluations:
+  7,823 firing, 50,715 non-firing and 25,019 abstained.
+- Current 0.8 queue SHA-256:
+  `6539914433a33b2685ba47884cb598741632d00ed2be4e9f0a4dfa4b8b20441a`.
+- Current 0.8 moments SHA-256:
+  `c734303a1a09a735aee12ee53da4a32e08da0b50eeb3f0cefbfc59e5775e8aaa`.
+  All 2,788 IDs were materialized; missing candidate and replay counts are zero.
+- Current 0.8 independent-review plan SHA-256:
+  `9ff268177492b253a735895b1d5798493f380dff9b2f6261553f7a75d57c2458`.
+- 0.8 label handbook SHA-256:
+  `9b09bc3f4c53fc2c3704f007781bc3f2df6032b220bb6318d106ef0facd401b4`.
   The plan and both redacted packets carry this fingerprint.
 - Reviewer A packet SHA-256:
-  `bed3835cfec27d8aaeaff623b2b9ece21390fbafc770879e7e0ab41af1b981f4`.
+  `21c9d5b415f6b740cb9f549787eb19dd2fbedb45a6788fd0ea7c21e87f6e69af`.
   Reviewer B packet SHA-256:
-  `de29f4c0acfb7a8eb7530e54eff063e51f0f5e4073a81cd7a0da254724df08ec`.
+  `83c966c8af5fed817625b34d788ce9f31369c8cb5fa848c0e3571e1c43b9b462`.
+  Both cover the same 2,788 IDs in different orders, with zero model-status,
+  classification, evidence, reason or outcome fields.
 - The private merge tool rejects label leakage, provenance drift, incomplete or
   non-identical coverage and reused reviewer identities before joining blind
   gameplay truth to hidden model decisions.
@@ -83,7 +101,7 @@ detector accuracy.
 ## Detector matrix
 
 `Defined` means a firing/non-firing/abstention contract exists. `Missing` means
-no gameplay denominator is claimed. Engine 0.7 has no `episode-only` measuring
+no gameplay denominator is claimed. Engine 0.8 has no `episode-only` measuring
 lane.
 
 ### Boost economy
@@ -130,9 +148,9 @@ lane.
 
 | Detector | v | Exact target | Required telemetry | Opportunity | Current truth / primary confounder and blocker |
 | --- | --- | --- | --- | --- | --- |
-| `recovery.landing_orientation` | 0.1.0 | Landing orientation delays next useful action | D30, DC | Missing | Needs car orientation/contact and useful next job. |
-| `recovery.post_aerial_exit` | 0.1.0 | Slow exit after an aerial involvement | D30, EV, DC | Missing | Controlled landing/reset can be correct. |
-| `recovery.wall_to_ground` | 0.1.0 | Wall exit loses avoidable tempo | D30, FS, DC | Missing | Needs surface transition and feasible alternative mechanics. |
+| `recovery.landing_orientation` | 0.1.0 | Landing alignment delays stable, useful-speed re-entry | D30, DC | Defined: `landing_execution` | Measures replay-visible body/heading alignment and re-entry timing; the intended next job and controller technique remain unknown. Private and unlabeled. |
+| `recovery.post_aerial_exit` | 0.1.0 | Post-aerial alignment delays controlled re-entry | D30, EV, DC | Defined: `post_aerial_exit` | Controlled reset/wait can be correct; ambiguous or short windows abstain. Private and unlabeled. |
+| `recovery.wall_to_ground` | 0.1.0 | Wall departure delays stable ground movement | D30, FS, DC | Defined: `wall_to_ground_transition` | One firing exists in calibration_dev; route intent and an alternative mechanic are not proven. Private and unlabeled. |
 | `recovery.demolition_reentry` | 0.1.0 | Respawn route fails to restore required coverage | FS, EV, ROLE | Missing | Spawn choice and live team role must be inferred. |
 | `recovery.momentum_loss` | 0.2.0 | Post-landing momentum loss that delays the re-entry speed band | D30, FS, DC | Defined: `recovery_reentry` | Deliberate reset/wait and the correct next job remain unresolved. Private and unlabeled. |
 | `recovery.play_reentry` | 0.1.0 | Recovery path delays a useful role re-entry | FS, D30, DC, ROLE | Missing | Needs explicit useful-job and route-alternative model. |
@@ -145,9 +163,9 @@ lane.
 | `possession.first_touch` | 0.2.0 | Hard low/medium-pressure first touch followed by opponent control | EV, FS, DC | Defined: `first_touch_quality` | A softer feasible alternative is not proven from next-event ownership; high-pressure relief abstains. Private and unlabeled. |
 | `possession.giveaway` | 0.2.0 | Low-pressure subject touch followed by opponent possession | EV, DC | Defined: `possession_giveaway` | Next opponent event can be a contest rather than surrendered control. Private and unlabeled. |
 | `possession.panic_clear` | 0.1.0 | Clear under available control feeds opponent | EV, DC, COUNTER | Missing | Needs control-space and alternative-action model. |
-| `possession.control_space` | 0.1.0 | Available controllable space is not used | FS, EV, DC, COUNTER | Missing | Reachable opponent pressure and mechanical feasibility needed. |
+| `possession.control_space` | 0.1.0 | Touch execution loses retained close-control space | FS, D30, EV, DC | Defined: `touch_control_execution` | Measures post-touch distance/control window under bounded pressure; it does not prove the optimal alternative input. Private and unlabeled. |
 | `possession.touch_frequency` | 0.1.0 | Extra touch reduces next option value | EV, D30, DC, COUNTER | Missing | Requires option-value model and touch sequence ownership. |
-| `possession.wall_control` | 0.1.0 | Wall possession breaks before a useful continuation | FS, EV, DC | Missing | Intent, boost and opponent interception window needed. |
+| `possession.wall_control` | 0.1.0 | Wall touch loses a replay-visible controlled continuation | FS, D30, EV, DC | Defined: `wall_control_execution` | Intent, direct controller inputs and longer alternative-action value remain unknown. Private and unlabeled. |
 | `possession.first_touch_retention` | 0.2.0 | Comparable first touch followed by team/opponent control | EV, FS, DC | Defined: `first_touch_retention` | High-pressure relief abstains; bounded next-event ownership is not full possession proof. Private and unlabeled. |
 
 ### Offense and creation
@@ -195,13 +213,16 @@ lane.
 
 - Original supported PC replays can be validated, player-attributed and parsed
   into versioned 10 Hz frame state, event timeline and bounded 30 Hz detail.
-- All 60 catalog lanes execute privately; 20 measure telemetry and 40 stop at
+- All 60 catalog lanes execute privately; 25 measure telemetry and 35 stop at
   explicit capability abstention.
-- Twenty private detectors account for firing, non-firing and abstained
+- Twenty-five private detectors account for firing, non-firing and abstained
   opportunities. Their classifications remain unvalidated coaching hypotheses.
 - Pattern Memory can freeze and compare the same private detector/context/
   threshold definition across match windows and can abstain on inadequate
   exposure. It does not prove causation or improvement.
+- Mechanics Signature Comparison can report version-compatible median and
+  dispersion deltas, but it explicitly refuses an improvement claim until the
+  metric direction and comparable context are validated.
 
 ## Claims that remain prohibited
 

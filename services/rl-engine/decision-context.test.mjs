@@ -34,7 +34,7 @@ test("builds comparable first-touch context with access, pressure, coverage and 
     episodeTimeline: { events: [firstTouch, opponentTouch] },
     adaptiveSampling: { detailSampleRateHz: 30, detailFrames: [frame], windows: [{ eventId: "touch:1", sampleRateHz: 30, frameIndexes: [30] }] },
   });
-  assert.equal(result.opportunities.length, 5);
+  assert.equal(result.opportunities.length, 9);
   const retention = result.opportunities.find((item) => item.opportunityType === "first_touch_retention");
   assert.equal(retention.context.accessOrder, "first");
   assert.equal(retention.context.accessBasis, "kinematic_intercept_proxy_v1");
@@ -61,7 +61,7 @@ test("builds attributable boost, kickoff, center and defensive-clear opportuniti
     ],
   };
   const events = [
-    { id: "boost:1", type: "boost_pickup", playerId: "epic:subject", subjectInvolved: true, team: 0, startTimeSeconds: 1, startFrame: 10, facts: { pad_type: "large", overfill_amount: 32, boost_before: 80, boost_after: 100 } },
+    { id: "boost:1", type: "boost_pickup", playerId: "epic:subject", subjectInvolved: true, team: 0, startTimeSeconds: 1, startFrame: 10, facts: { pad_type: "large", source_pad_type: "big", overfill_amount: 32, boost_before: 80, boost_after: 100 } },
     { id: "kickoff:1", type: "kickoff", subjectInvolved: true, startTimeSeconds: 2, startFrame: 20, facts: { team_zero_taker: { player: { Epic: "subject" } }, kickoff_type: "standard", direction: "left", winning_team_is_team_0: false } },
     { id: "center:1", type: "center", playerId: "epic:subject", subjectInvolved: true, team: 0, startTimeSeconds: 3, startFrame: 30, facts: { ball_travel_distance: 1800 } },
     { id: "clear:1", type: "touch", playerId: "epic:subject", subjectInvolved: true, team: 0, startTimeSeconds: 4, startFrame: 40, facts: { ball_position: [0, -2000, 100], tags: [{ group: "action", value: "clear" }] } },
@@ -106,4 +106,24 @@ test("turns complete boost presses and zero-reserve episodes into decision oppor
   assert.equal(press.eligible, true);
   assert.ok(Math.abs(zero.eventFacts.duration_seconds - 0.2) < 1e-9);
   assert.equal(zero.eventFacts.ended_with_reserve, true);
+});
+
+test("creates demolition re-entry for the parser's demo respawn kind but never for kickoff respawns", () => {
+  const frame = {
+    index: 10, timeSeconds: 1, secondsRemaining: 250,
+    ball: { position: { x: 0, y: 0, z: 100 }, linearVelocity: { x: 0, y: 0, z: 0 } },
+    players: [player("epic:subject", 0, 500, 0, -1600), player("epic:opponent", 1, 1000, 0, 300)],
+  };
+  const result = buildDecisionContexts({
+    normalized: { subjectPlayerId: "epic:subject", mode: "Ranked Duel" },
+    frameState: { sampleRateHz: 10, players: frame.players, frames: [frame] },
+    episodeTimeline: { events: [
+      { id: "spawn:kickoff", type: "respawn", playerId: "epic:subject", subjectInvolved: true, startTimeSeconds: 1, facts: { kind: "kickoff" } },
+      { id: "spawn:demo", type: "respawn", playerId: "epic:subject", subjectInvolved: true, startTimeSeconds: 2, facts: { kind: "demo" } },
+    ] },
+    adaptiveSampling: { detailFrames: [], windows: [] },
+  });
+  const reentries = result.opportunities.filter((item) => item.opportunityType === "demolition_reentry");
+  assert.equal(reentries.length, 1);
+  assert.equal(reentries[0].sourceEventId, "spawn:demo");
 });

@@ -494,6 +494,15 @@ export default function ReportClient({
       "subject_player_ambiguous",
     ].includes(data.processing?.errorCode || "") &&
     Boolean(data.processing?.candidatePlayers.length);
+  const freshReplayRequired =
+    stopped &&
+    [
+      "unsupported_or_invalid_replay",
+      "invalid_replay",
+      "empty_replay",
+      "file_too_large",
+      "raw_input_missing",
+    ].includes(data.processing?.errorCode || "");
   const evidence = data.report?.evidenceDetails.length
     ? data.report.evidenceDetails.map((item) => ({
         label:
@@ -567,6 +576,14 @@ export default function ReportClient({
     )
     .slice(0, 5);
   const strongestMoments = momentFeed.slice(0, 3);
+  const reportSections: [string, string][] = [
+    isBatch ? ["report-summary", "Pattern"] : ["report-strength", "What worked"],
+    ["decision-first", data.report ? (isBatch ? "Why" : "Decision") : "Honest result"],
+    ...(momentFeed.length ? ([["moments", "Examples"]] as [string, string][]) : []),
+    ...(data.report ? ([["action-plan", "Next 3"]] as [string, string][]) : []),
+    ["performance", "Match facts"],
+    ["confidence", "Confidence"],
+  ];
   const feedbackQuestions = data.report
     ? ([
         [
@@ -641,8 +658,8 @@ export default function ReportClient({
         right={
           <>
             <Link href="/reports">My reports</Link>
-            <button className="rm-header-cta" type="button" onClick={copyLink}>
-              {copied ? "Copied ✓" : "Copy private link"}
+            <button className="rm-header-cta" type="button" onClick={copyLink} aria-label={copied ? "Private report link copied" : "Copy private report link"}>
+              {copied ? "Copied ✓" : "Copy link"}
               <span aria-hidden="true">↗</span>
             </button>
           </>
@@ -700,6 +717,12 @@ export default function ReportClient({
               {stoppedCopy?.body ||
                 "Replay Method is reading the submitted match, measuring repeated patterns and selecting one evidence-backed coaching focus."}
             </p>
+            {freshReplayRequired && (
+              <div className="report-recovery-actions" aria-label="Replay recovery options">
+                <Link href="/analyze">Choose a fresh replay set →</Link>
+                <a href="mailto:contact@replaymethod.xyz?subject=Replay%20Method%20replay%20support">Ask about this file</a>
+              </div>
+            )}
             {identityResolvable && (
               <section
                 className="player-resolution"
@@ -839,8 +862,12 @@ export default function ReportClient({
                   <div className="marcel-badges">
                     <span>
                       {isBatch
-                        ? "YOUR CLEAREST REPEATED PATTERN"
-                        : "YOUR MATCH · ONE CLEAR FOCUS"}
+                        ? data.report
+                          ? "YOUR CLEAREST REPEATED PATTERN"
+                          : "YOUR TEN MATCHES · VERIFIED RESULT"
+                        : data.report
+                          ? "YOUR MATCH · ONE CLEAR FOCUS"
+                          : "YOUR MATCH · VERIFIED RESULT"}
                     </span>
                     {data.earlyAccess && <em>{data.earlyAccess.badge}</em>}
                   </div>
@@ -866,8 +893,8 @@ export default function ReportClient({
                     aria-label="Report overview"
                   >
                     <span className="active">Overview</span>
-                    <span>Evidence</span>
-                    <span>Next 3</span>
+                    <span>{data.report ? "Evidence" : "Verified facts"}</span>
+                    <span>{data.report ? "Next 3" : "Why no answer"}</span>
                     <small>
                       {isBatch ? "10 verified replays" : "Private replay"}
                     </small>
@@ -994,24 +1021,7 @@ export default function ReportClient({
               </section>
 
               <nav className="report-section-nav" aria-label="Report sections">
-                {(isBatch
-                  ? [
-                      ["report-summary", "Pattern"],
-                      ["decision-first", "Why"],
-                      ["moments", "Examples"],
-                      ["action-plan", "Next 3"],
-                      ["performance", "Match facts"],
-                      ["confidence", "Confidence"],
-                    ]
-                  : [
-                      ["report-strength", "What worked"],
-                      ["decision-first", "Decision"],
-                      ["moments", "Examples"],
-                      ["action-plan", "Next 3"],
-                      ["performance", "Match facts"],
-                      ["confidence", "Confidence"],
-                    ]
-                ).map(([id, label], index) => (
+                {reportSections.map(([id, label], index) => (
                   <button
                     type="button"
                     disabled={!interactive}

@@ -672,6 +672,41 @@ export function finalizeBlindReviewAdjudication(reviewQueue, mergeResult, adjudi
 }
 
 const reviewQuestions = Object.freeze({
+  "boost.low_exposure": "Did low or zero boost materially remove a useful option in this critical context?",
+  "boost.large_pad_detour": "Did the large-pad route materially remove the player's useful involvement in the play?",
+  "boost.small_pad_blindness": "Was a reachable small-pad route clearly available and materially better than the observed route?",
+  "boost.teammate_starvation": "Did this boost pickup materially remove a teammate's needed reserve or coverage option?",
+  "rotation.caught_ahead": "Was the player caught ahead of the ball in a way that materially exposed the transition?",
+  "rotation.cut": "Did this intervention take a covered teammate's turn and reduce team options?",
+  "rotation.same_lane": "Did same-lane positioning duplicate coverage or remove a useful team lane?",
+  "rotation.spacing_too_far": "Was the nearest support layer too far away to provide a useful option in this moment?",
+  "rotation.back_post_bypass": "Did the defensive route bypass a reachable back-post entry and materially reduce save options?",
+  "rotation.goal_side_loss": "Did the player surrender goal-side position and materially weaken the defensive layer?",
+  "rotation.backboard_uncovered": "Was a replay-visible backboard threat left without an appropriate defensive layer?",
+  "challenge.late": "Was this challenge meaningfully late relative to replay-visible access and consequence?",
+  "challenge.fake_opportunity": "Was a fake challenge clearly available and materially better than the observed commitment?",
+  "challenge.low_probability_aerial": "Was this aerial commitment low-probability and did it create material team risk?",
+  "challenge.advantage_state": "Was this challenge choice materially wrong for the score, clock and coverage state?",
+  "recovery.demolition_reentry": "Did the respawn route measurably delay restoration of useful coverage or access?",
+  "recovery.play_reentry": "Did the recovery path measurably delay useful re-entry into the live play?",
+  "possession.panic_clear": "Did this clear unnecessarily return possession despite replay-visible control space?",
+  "possession.touch_frequency": "Did an extra touch materially reduce the next controllable option in this sequence?",
+  "offense.shot_quality": "Did this shot have materially lower threat than a replay-visible stronger possession option?",
+  "offense.open_net_execution": "Was the net genuinely open, and did the execution fail a materially convertible chance?",
+  "offense.pass_lane": "Was a reachable higher-value pass lane clearly available and missed?",
+  "offense.follow_up": "Did the team's follow-up structure materially fail after this shot?",
+  "offense.backboard_use": "Was a reachable backboard creation option clearly available and materially better?",
+  "defense.near_post_trap": "Did near-post positioning materially reduce the player's save or exit options?",
+  "defense.corner_overcommit": "Did this defensive-corner commitment materially expose the middle?",
+  "defense.goal_line_congestion": "Did goal-line positioning duplicate a teammate's coverage and remove a useful layer?",
+  "defense.shadow_distance": "Did the observed shadow distance materially concede the attacker's decisive option?",
+  "defense.post_save_recovery": "Did the post-save action fail to create replay-visible relief or team access?",
+  "kickoff.cheat_distance": "Was the non-taker's kickoff distance materially wrong for the replay-visible outcome?",
+  "kickoff.role_compliance": "Did the subject's kickoff role leave a material immediate coverage gap?",
+  "teamplay.support_angle": "Did the support angle materially remove a pass, challenge or coverage option?",
+  "teamplay.role_overlap": "Did role overlap materially duplicate responsibility and leave useful space empty?",
+  "teamplay.trust_break": "Did the subject override a clearly covered teammate and materially reduce team options?",
+  "teamplay.transition_balance": "Did the team transition lack a materially necessary attack-defense layer?",
   "boost.zero_duration": "Did zero boost materially reduce this player's useful options in this moment?",
   "boost.supersonic_waste": "Was boost spent without creating useful additional speed or positional value?",
   "kickoff.speed": "Was this kickoff arrival or contact meaningfully late for the spawn and approach?",
@@ -692,7 +727,16 @@ const reviewQuestions = Object.freeze({
   "possession.giveaway": "Did this low-pressure touch surrender controllable possession to the opponent?",
   "offense.center_to_opponent": "Did this center favor an opponent follow-up over a reachable teammate continuation?",
   "defense.clear_direction": "Did this defensive clear direction enable an avoidable opponent recycle?",
+  "recovery.landing_orientation": "Did this landing orientation measurably delay stable, useful movement after contact with the surface?",
+  "recovery.post_aerial_exit": "Did the player's post-aerial orientation measurably delay a controlled re-entry into the next play?",
+  "recovery.wall_to_ground": "Did this wall-to-ground transition measurably delay stable, useful ground movement?",
+  "possession.control_space": "Did this touch execution reduce controllable follow-up space despite a replay-visible controlled option?",
+  "possession.wall_control": "Did this wall touch execution surrender a replay-visible controllable continuation?",
 });
+
+export function detectorReviewQuestion(detectorId) {
+  return reviewQuestions[detectorId] ?? "Is the described behavior present in this gameplay moment?";
+}
 
 export function aggregateCalibrationRuns(entries, failures = []) {
   const detectors = new Map();
@@ -786,7 +830,7 @@ export function buildReviewQueue(calibrationReport) {
           gameVersion: replay.gameVersion ?? null,
           detectorId: run.detectorId,
           detectorVersion: run.detectorVersion,
-          reviewQuestion: reviewQuestions[run.detectorId] ?? "Is this detector candidate correct and useful?",
+          reviewQuestion: detectorReviewQuestion(run.detectorId),
           timestampSeconds: evidence.timeSeconds ?? evidence.startTimeSeconds ?? null,
           frame: evidence.frame ?? evidence.startFrame ?? null,
           observation: evidence,
@@ -829,7 +873,7 @@ function opportunityCandidates(calibrationReport, detectorIds) {
           opportunityType: contract.opportunityType,
           opportunityStatus: evaluation.status,
           opportunityContextKey: evaluation.contextKey ?? "unknown",
-          reviewQuestion: reviewQuestions[contract.detectorId] ?? "Is the described behavior present in this gameplay moment?",
+          reviewQuestion: detectorReviewQuestion(contract.detectorId),
           timestampSeconds: evaluation.timestampSeconds,
           frame: evaluation.frame ?? null,
           observation: {
@@ -975,6 +1019,86 @@ export function buildOpportunityReviewQueue(calibrationReport, {
       detectorStatusCounts,
     },
     candidates,
+  };
+}
+
+/**
+ * Merge shard-local candidate pools without ever materializing one giant
+ * calibration report. The final sampling pass is global and uses the exact
+ * same cohort/context balancing and replay cap as an unsharded queue.
+ */
+export function mergeOpportunityReviewQueues(queues, {
+  sourceReportFingerprint,
+  sourceShardFingerprints = [],
+  perStatus = 40,
+  maxPerReplay = 2,
+} = {}) {
+  if (!Array.isArray(queues) || !queues.length) throw new Error("At least one shard review queue is required.");
+  if (!/^[a-f0-9]{64}$/.test(String(sourceReportFingerprint ?? ""))) {
+    throw new Error("Merged review queue requires the combined shard-manifest fingerprint.");
+  }
+  if (!Number.isInteger(perStatus) || perStatus < 1 || !Number.isInteger(maxPerReplay) || maxPerReplay < 1) {
+    throw new Error("Merged review queue limits must be positive integers.");
+  }
+  const reference = queues[0];
+  for (const queue of queues) {
+    if (queue.schemaVersion !== OPPORTUNITY_REVIEW_QUEUE_VERSION
+      || queue.sourceReportVersion !== reference.sourceReportVersion
+      || queue.labelSetVersion !== reference.labelSetVersion
+      || queue.sourceCorpusAssignment !== "calibration_dev"
+      || queue.holdoutIncluded !== false
+      || queue.blindReview !== true) {
+      throw new Error("Shard review queues have incompatible or unsafe provenance.");
+    }
+  }
+  const actualShardFingerprints = queues.map((queue) => queue.sourceReportFingerprint).sort();
+  const expectedShardFingerprints = [...sourceShardFingerprints].sort();
+  if (expectedShardFingerprints.length && JSON.stringify(actualShardFingerprints) !== JSON.stringify(expectedShardFingerprints)) {
+    throw new Error("Shard review queue fingerprints do not match the calibration shard manifest.");
+  }
+  const candidates = queues.flatMap((queue) => queue.candidates ?? []);
+  const candidateIds = candidates.map((candidate) => candidate.id);
+  if (candidateIds.some((id) => !id) || new Set(candidateIds).size !== candidateIds.length) {
+    throw new Error("Shard review candidates must be unique.");
+  }
+  const orderedCandidates = candidates.sort((left, right) => (
+    left.detectorId.localeCompare(right.detectorId)
+    || left.opportunityStatus.localeCompare(right.opportunityStatus)
+    || left.opportunityContextKey.localeCompare(right.opportunityContextKey)
+    || left.replayFingerprint.localeCompare(right.replayFingerprint)
+    || left.timestampSeconds - right.timestampSeconds
+    || left.id.localeCompare(right.id)
+  ));
+  const groups = Map.groupBy(orderedCandidates, (candidate) => `${candidate.detectorId}:${candidate.opportunityStatus}`);
+  const selected = [...groups.values()].flatMap((rows) => balancedOpportunitySample(rows, perStatus, maxPerReplay));
+  const detectorIds = [...new Set(queues.flatMap((queue) => queue.selection?.detectorIds ?? []))].sort();
+  const statusCounts = Object.fromEntries([...Map.groupBy(selected, (candidate) => candidate.opportunityStatus).entries()]
+    .map(([key, rows]) => [key, rows.length]));
+  const detectorStatusCounts = Object.fromEntries([...Map.groupBy(selected, (candidate) => candidate.detectorId).entries()]
+    .map(([detectorId, rows]) => [detectorId, Object.fromEntries([...Map.groupBy(rows, (candidate) => candidate.opportunityStatus).entries()]
+      .map(([status, statusRows]) => [status, statusRows.length]))]));
+  return {
+    schemaVersion: OPPORTUNITY_REVIEW_QUEUE_VERSION,
+    sourceReportVersion: reference.sourceReportVersion,
+    sourceReportFingerprint,
+    sourceShardReportFingerprints: actualShardFingerprints,
+    generatedAt: new Date().toISOString(),
+    labelSetVersion: reference.labelSetVersion,
+    sourceCorpusAssignment: "calibration_dev",
+    holdoutIncluded: false,
+    blindReview: true,
+    selection: {
+      detectorIds,
+      strategy: "Global hierarchical round-robin over shard-local complete candidate pools, balanced across mode/rank cohorts and opportunity contexts with a per-replay cap.",
+      requestedPerDetectorStatus: perStatus,
+      maxPerReplayPerDetectorStatus: maxPerReplay,
+      availableCandidates: queues.reduce((sum, queue) => sum + (queue.selection?.availableCandidates ?? 0), 0),
+      candidatePoolSize: candidates.length,
+      selectedCandidates: selected.length,
+      statusCounts,
+      detectorStatusCounts,
+    },
+    candidates: selected,
   };
 }
 

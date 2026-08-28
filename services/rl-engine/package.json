@@ -1,0 +1,12 @@
+{
+  "name": "@replay-method/rocket-league-engine",
+  "version": "0.9.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@rlrml/subtr-actor": "1.2.0"
+  }
+}

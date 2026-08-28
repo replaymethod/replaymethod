@@ -12,6 +12,7 @@ import { splitRlReviewPasses } from "../../lib/rl-review";
 import ReviewerAccessForm from "../admin/ReviewerAccessForm";
 import ReviewQueueImport from "../admin/ReviewQueueImport";
 import { LocalReviewLogoutButton } from "../local-review-access/LocalReviewAccessForm";
+import { ReplayMark } from "../components/ReplayMark";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,7 @@ export default async function LocalReviewOwnerPage() {
 
   return <main className="local-owner-shell">
     <nav className="local-owner-nav">
-      <div><span className="logo" aria-hidden="true" /><b>Replay Method</b><i>ENGINE CALIBRATION</i></div>
+      <div><span className="logo" aria-hidden="true"><ReplayMark /></span><b>Replay Method</b><i>ENGINE CALIBRATION</i></div>
       <div><span>{user.displayName}</span><Link href="/admin?view=full">Full operations ↗</Link></div>
     </nav>
 

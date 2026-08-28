@@ -912,8 +912,10 @@ button.focus-mission{width:100%;color:#fff;text-align:left;cursor:pointer}button
 @media(max-width:560px){.product-review-shell{width:calc(100% - 28px)}.product-review-nav{align-items:flex-start;flex-direction:column;justify-content:center;gap:5px}.product-review-nav>div{align-items:flex-start}.product-review-hero{gap:22px;padding-top:42px}.product-review-hero h1{font-size:43px}.product-review-form>section{padding:17px}.product-review-checklist>article{grid-template-columns:1fr}.product-review-checklist>article>label:last-child{grid-column:auto}.product-review-actions{align-items:stretch;flex-direction:column}.product-review-actions small{margin:0}.product-review-actions button{width:100%}.admin-product-reviewers{margin-inline:14px}}
 .product-reviewer-access-form button.danger{border-color:#613244;background:#27111a;color:#ff9ab2}
 
-/* Exact historical Replay Method identity: Sites v12 / Git 900f6c1. */
-.logo{display:block;width:37px;height:37px;border-radius:0;background:url("/brand/replay-method-mark-v13.svg") center/contain no-repeat;box-shadow:none;color:transparent;font-size:0;line-height:0}
+/* Replay Method anchor identity: overlapping frames with a rewind cutout. */
+.logo{display:grid;width:37px;height:37px;place-items:center;border-radius:0;background:transparent!important;box-shadow:none;color:#091729;font-size:0;line-height:0}
+.logo svg{display:block;width:100%;height:100%}
+.admin-top .logo,.editor-nav .logo,.future-game-page .logo{color:#fff}
 .logo:before{content:none}
 
 /* MARCEL private report: one fast reveal, compressed evidence, progressive depth. */
@@ -1946,7 +1948,7 @@ body{min-height:100%;background:#f3f2ee}
   background:transparent;
 }
 :is(.report-page,.batch-intake-page,.replay-upload-page,.reports-page,.guide-page) .tool-nav .logo{
-  width:29px;height:29px;border:0;border-radius:8px;background:var(--el-ink);box-shadow:none;
+  width:29px;height:29px;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--el-ink);
 }
 :is(.report-page,.batch-intake-page,.replay-upload-page,.reports-page,.guide-page) .tool-nav .brand>span:last-child{
   color:var(--el-ink);font-size:0;font-weight:650;letter-spacing:-.035em;text-transform:none;
@@ -2142,7 +2144,7 @@ body{min-height:100%;background:#f3f2ee}
 /* Legal and payment: highly readable editorial documents. */
 .legal-shell{width:min(1240px,calc(100% - 64px));padding-bottom:120px;background:var(--el-paper)!important}
 .legal-shell .legal-nav{height:76px;border-bottom:1px solid var(--el-line)}
-.legal-shell .legal-nav .logo{width:29px;height:29px;border:0;border-radius:8px;background:var(--el-ink);box-shadow:none}
+.legal-shell .legal-nav .logo{width:29px;height:29px;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--el-ink)}
 .legal-shell>header{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.65fr);gap:25px 9vw;align-items:end;max-width:none;padding:104px 0 92px}
 .legal-shell>header>span{grid-column:1;color:#33332f;font-size:10px;letter-spacing:.08em}
 .legal-shell>header h1{grid-column:1;max-width:850px;margin:0;font-size:clamp(58px,7.3vw,96px);font-weight:410;line-height:.91;letter-spacing:-.075em}
@@ -2227,7 +2229,7 @@ body{min-height:100%;background:#f3f2ee}
   font-family:inherit;
 }
 :is(.report-page,.batch-intake-page,.replay-upload-page,.reports-page,.guide-page) .tool-nav .logo,
-.legal-shell .legal-nav .logo{background-color:var(--el-ink)}
+.legal-shell .legal-nav .logo{background-color:transparent;color:var(--el-ink)}
 .report-page .report-pending .scan-orb{
   background:radial-gradient(circle at 36% 29%,#fff 0 4%,#d8d1f4 14%,#7460d7 38%,#183857 65%,var(--el-ink) 79%);
 }
@@ -2394,7 +2396,7 @@ body{min-height:100%;background:#f3f2ee}
 :is(.report-page,.batch-intake-page,.replay-upload-page,.reports-page,.guide-page) .tool-nav .brand>span:last-child>span,
 .legal-shell .legal-nav .brand>span:last-child>span{color:inherit}
 :is(.report-page,.batch-intake-page,.replay-upload-page,.reports-page,.guide-page) .tool-nav .logo,
-.legal-shell .legal-nav .logo{width:28px;height:28px;border-radius:7px;background-color:var(--el-ink);box-shadow:none}
+.legal-shell .legal-nav .logo{width:28px;height:28px;border-radius:0;background-color:transparent;box-shadow:none;color:var(--el-ink)}
 :is(.report-page,.batch-intake-page,.replay-upload-page,.reports-page,.guide-page) .tool-nav :is(a,button),
 .legal-shell .legal-nav a{color:#465463;font-size:12px;font-weight:520}
 :is(.report-page,.batch-intake-page,.replay-upload-page,.reports-page,.guide-page,.legal-shell,.billing-result-page) :is(button,a){transition:color .18s ease,background-color .18s ease,border-color .18s ease,transform .18s ease}

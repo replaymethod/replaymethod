@@ -1,6 +1,93 @@
 # Rocket League master engine status
 
-Last verified: 2026-08-27
+Last verified: 2026-08-28
+
+## Engine Foundation 0.11 / engine 0.8 local work in progress
+
+Engine 0.8 adds a versioned `rocket-league-mechanics-model@0.1.0`. It derives
+touch and recovery episodes from replay-visible position, rotation, linear and
+angular velocity, boost, ball distance and parser events. Whole-match state
+remains 10 Hz; mechanics episodes use only the already bounded 30 Hz detail
+pool. The model explicitly does not infer controller input, camera view,
+communications, intent, fatigue or motor impairment.
+
+Five former capability-abstention lanes now have complete private opportunity
+contracts: `recovery.landing_orientation`, `recovery.post_aerial_exit`,
+`recovery.wall_to_ground`, `possession.control_space` and
+`possession.wall_control`. The fixed catalog remains 60 lanes: 25 measuring and
+35 capability-abstaining. Analyzer, detector bundle and shadow runtime are
+`0.8.0`; normalizer is `0.7.0`; decision context is `0.6.0`; mechanics is
+`0.1.0`; decision metadata is `0.7.0`; Super Analysis is `0.2.0`. All public
+gates remain closed.
+
+Super Analysis keeps private technical evidence separate from customer
+coaching. It records the observation, kinematic mechanism, causal boundary,
+correction hypothesis and exact remeasurement metrics. `primaryFocus` and the
+three-session weekly plan remain null/withheld until the exact detector has an
+eligible quality gate. The handoff schema is documented in
+`docs/RL_ENGINE_FRONTEND_CONTRACT_0_8.md`; no customer React or CSS was changed.
+
+Super Analysis also groups temporally adjacent private findings into bounded
+root-cause candidates, but labels every edge as sequence rather than causation.
+A separate `rocket-league-mechanics-signature@0.1.0` aggregator measures
+within-player kinematic medians and dispersion across version-compatible
+replays. It refuses mixed mechanics-model versions and does not emit a skill
+grade, diagnosis, rank benchmark or improvement claim. A separate
+`rocket-league-mechanics-signature-comparison@0.1.0` now compares compatible
+baseline/follow-up medians and dispersion. It keeps
+`improvementClaimEligible: false` until a calibrated focus supplies a validated
+metric direction and comparable-context gate.
+
+Two independent full `calibration_dev` executions parsed 120/120
+manifest-hash-verified real replays with zero failures, mode mismatches,
+attribution failures, duplicate opportunities or contract-integrity failures.
+Both produced fingerprint
+`dd9a3fb39619f7101a0a09b5241253c2ecde7e2f6b3fbe085403488fe661e1a3`
+and full canonical opportunity-outcome hash
+`7a32f17000769fb5709f625201562f2d49ef17c7b500aa80fb56e7768a9771a7`.
+Across 2,880 applicable replay-contract runs, engine 0.8 evaluated 83,557
+opportunities: 7,823 firing, 50,715 non-firing and 25,019 abstained. These are
+engine decisions, not expert correctness rates.
+
+| New private contract | Firing | Non-firing | Abstained | Total |
+| --- | ---: | ---: | ---: | ---: |
+| `possession.control_space` | 47 | 565 | 4,474 | 5,086 |
+| `possession.wall_control` | 23 | 142 | 437 | 602 |
+| `recovery.landing_orientation` | 38 | 2,293 | 3,528 | 5,859 |
+| `recovery.post_aerial_exit` | 10 | 3,208 | 959 | 4,177 |
+| `recovery.wall_to_ground` | 1 | 935 | 538 | 1,474 |
+
+Run A/B total runtime was 581.2/581.5 seconds, mean replay runtime was
+4.844/4.846 seconds, p95 was 8.680/8.627 seconds and maximum post-replay RSS
+observed was 846,397,440/861,224,960 bytes. RSS is a post-replay sample inside
+one long-lived process, not a per-request peak.
+
+The replacement blind queue uses
+`rocket-league-expert-labels.v9-mechanics-context-0.6` and covers all 25
+measuring contracts. It contains 2,788 unique candidates from 119 replays: 830
+firing, 1,000 non-firing and 958 abstained. Mode coverage is 754 1v1, 1,163
+2v2 and 871 3v3; rank-cohort coverage is 1,013 gold–platinum, 1,044
+diamond–champion and 731 grand-champion–SSL. Rare firing states are represented
+only as often as they exist: 38 landing-orientation, 10 post-aerial-exit and one
+wall-to-ground candidate. No example was duplicated or fabricated.
+
+All 2,788 anonymized eight-second moment windows were materialized from 119
+manifest-selected `calibration_dev` replays with zero missing IDs or source
+replays. Two permission-restricted, model-blind reviewer packets cover the same
+2,788 candidates in different orders and 12 resume-safe rounds of 232–233.
+They contain zero model-status, classification, reason, evidence or outcome
+fields. The full owner review therefore requires 5,576 independent decisions
+before separate adjudication.
+
+Final scoped verification passed 107/107 engine tests, 19/19 engine/web
+contract and production-boundary tests and engine/calibration lint with zero
+warnings. A real Ranked Doubles replay completed both directly and through the
+authenticated asynchronous service. Two direct runs produced byte-equivalent
+analysis JSON; the service returned HTTP 202 then 200, zero public findings and
+explicit `public_output_disabled`. Graceful SIGINT exited with code 0.
+
+No current-version expert labels exist, the frozen holdout remains untouched,
+and no detector, coaching policy, customer frontend or deployment was changed.
 
 ## Engine Foundation 0.10 / engine 0.7 local checkpoint
 
@@ -27,12 +114,21 @@ touch that concedes next control, while softer unresolved alternatives and
 high-pressure relief abstain.
 
 Two independent 120-replay `calibration_dev` runs reproduced fingerprint
-`4064952115b86d701917f0d69eb6d9fd04096b42e49252877a077cd9e4af557a`.
+`158a156c540e606f59abe91fdefc856ab4fdec2cc358165272769042d3674afa`.
 Each parsed 120/120 real replays with zero failures, mode mismatches, duplicate
 opportunities or integrity failures. Across 2,280 applicable replay-contract
 runs, the engine evaluated 66,359 opportunities: 7,704 firing, 43,572
 non-firing and 15,083 abstained. The apparent proportions are engine outputs,
 not expert correctness rates.
+
+The 2026-08-28 rerun corrected a provenance-only defect: engine 0.7 had
+handwritten `subtr-actor@1.2.2` while the locked and executed dependency was
+`1.2.0`. Parser version now resolves from the installed package metadata. A
+separate outcome hash over every opportunity ID, status, classification,
+context, reason and evidence remained
+`79c290df461044b5a6c26ef047842870455555bc98f70474b61e4977dfd4424d`
+across the old run and both corrected runs, so no gameplay decision or
+threshold changed.
 
 | Private contract | Firing | Non-firing | Abstained | Total |
 | --- | ---: | ---: | ---: | ---: |
@@ -57,10 +153,11 @@ not expert correctness rates.
 | `rotation.third_overextension` | 37 | 2,235 | 17 | 2,289 |
 | `teamplay.double_commit` | 376 | 3,841 | 623 | 4,840 |
 
-Long-lived-process runtime was 582.5 seconds in run A and 574.5 seconds in run
-B. Mean replay time was 4.85/4.79 seconds, p50 was 4.40/4.38 seconds and p95
-was 8.52/8.64 seconds. Maximum post-replay RSS observed was 825,229,312 and
-806,731,776 bytes; this is not a per-request peak-memory measurement.
+Long-lived-process runtime was 575.4 seconds in corrected run A and 574.0
+seconds in run B. Mean replay time was 4.80/4.78 seconds, p50 was 4.38/4.41
+seconds and p95 was 8.68/8.66 seconds. Maximum post-replay RSS observed was
+810,369,024 and 818,954,240 bytes; this is not a per-request peak-memory
+measurement.
 
 The current private review set is
 `rocket-league-expert-labels.v8-all-contracts-context-0.5`. Its master queue
@@ -436,6 +533,16 @@ graceful shutdown, and a container health check. The web client validates an
 HTTPS engine URL, enforces a bounded timeout, distinguishes auth/contract
 failures from transient capacity/network failures, and persists a real due
 time for automatic retries.
+
+Service `rl-engine.v1.1` also counts accepted asynchronous jobs against the
+same concurrency limit, releases failed job IDs after their result is observed
+so durable retries can resubmit, and reports its configured job/shutdown
+deadlines in readiness. Its service-owned lock installs only
+`@rlrml/subtr-actor@1.2.0`; parser provenance is resolved from that installed
+package rather than a handwritten version string. The final local build,
+218-test repository suite and lint pass on 2026-08-28. See
+`docs/RL_ENGINE_PRODUCTION_READINESS_2026-08-28.md` for exact runtime evidence
+and remaining external preview gates.
 
 Independent fail-closed switches gate worker calls, public detector output and
 background retries. Deploying the process cannot itself activate a detector.

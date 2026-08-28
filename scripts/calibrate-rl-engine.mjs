@@ -2,13 +2,13 @@
 import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, relative, resolve, sep } from "node:path";
-import { aggregateCalibrationRuns } from "../services/rl-engine/calibration.mjs";
+import { aggregateCalibrationRuns, calibrationFingerprint } from "../services/rl-engine/calibration.mjs";
 import { buildReplayEvidence, inspectReplayRoster, NORMALIZER_VERSION, PARSER_VERSION } from "../services/rl-engine/parser.mjs";
 import { runShadowDetectors, SHADOW_RUNTIME_VERSION } from "../services/rl-engine/shadow-runtime.mjs";
 import { cohortKey, normalizeMode, normalizeRankCohort } from "../services/rl-engine/context.mjs";
 
 function usage() {
-  console.error("Usage: node scripts/calibrate-rl-engine.mjs <file-or-directory> [...] [--metadata corpus.json] [--split calibration|calibration_dev] [--output report.json]");
+  console.error("Usage: node scripts/calibrate-rl-engine.mjs <file-or-directory> [...] [--metadata corpus.json] [--split calibration|calibration_dev] [--shard-index 0 --shard-count 4] [--output report.json]");
 }
 
 function replayFiles(target) {
@@ -24,12 +24,20 @@ const rawArgs = process.argv.slice(2);
 const outputIndex = rawArgs.indexOf("--output");
 const metadataIndex = rawArgs.indexOf("--metadata");
 const splitIndex = rawArgs.indexOf("--split");
+const shardIndexOption = rawArgs.indexOf("--shard-index");
+const shardCountOption = rawArgs.indexOf("--shard-count");
 const output = outputIndex >= 0 ? rawArgs[outputIndex + 1] : null;
 const metadataPath = metadataIndex >= 0 ? rawArgs[metadataIndex + 1] : null;
 const split = splitIndex >= 0 ? rawArgs[splitIndex + 1] : null;
-const optionIndexes = [outputIndex, metadataIndex, splitIndex].filter((index) => index >= 0).flatMap((index) => [index, index + 1]);
+const shardIndex = shardIndexOption >= 0 ? Number(rawArgs[shardIndexOption + 1]) : null;
+const shardCount = shardCountOption >= 0 ? Number(rawArgs[shardCountOption + 1]) : null;
+const optionIndexes = [outputIndex, metadataIndex, splitIndex, shardIndexOption, shardCountOption].filter((index) => index >= 0).flatMap((index) => [index, index + 1]);
 const targets = rawArgs.filter((arg, index) => !optionIndexes.includes(index));
-if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !metadataPath) || (split && !["calibration", "calibration_dev"].includes(split))) {
+const shardConfigured = shardIndexOption >= 0 || shardCountOption >= 0;
+const validShard = !shardConfigured || (Number.isInteger(shardIndex) && Number.isInteger(shardCount)
+  && shardCount > 0 && shardIndex >= 0 && shardIndex < shardCount);
+if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !metadataPath)
+  || (split && !["calibration", "calibration_dev"].includes(split)) || !validShard) {
   usage();
   process.exitCode = 1;
 } else {
@@ -67,10 +75,14 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
   }
   const unique = new Map();
   const selectedFiles = manifestFiles ?? resolvedTargets.flatMap((target) => replayFiles(target).map((file) => ({ file, expectedHash: null })));
+  const belongsToShard = (hash) => !shardConfigured
+    || Number.parseInt(String(hash).slice(0, 12), 16) % shardCount === shardIndex;
   for (const { file, expectedHash } of selectedFiles) {
+      if (expectedHash && !belongsToShard(expectedHash)) continue;
       const bytes = readFileSync(file);
       const hash = createHash("sha256").update(bytes).digest("hex");
       if (expectedHash && hash !== expectedHash) throw new Error(`Manifest SHA-256 mismatch for ${basename(file)}.`);
+      if (!belongsToShard(hash)) continue;
       const declared = metadata.replays?.[hash] ?? metadata.replays?.[hash.slice(0, 16)] ?? {};
       if (split && declared.assignment !== split) continue;
       if (!unique.has(hash)) unique.set(hash, { file, bytes: new Uint8Array(bytes), hash });
@@ -168,8 +180,19 @@ if (!targets.length || (outputIndex >= 0 && !output) || (metadataIndex >= 0 && !
     }
   }
 
-  const report = aggregateCalibrationRuns(entries, failures);
-  const json = `${JSON.stringify(report, null, 2)}\n`;
+  const aggregated = aggregateCalibrationRuns(entries, failures);
+  const unsignedReport = shardConfigured ? {
+    ...aggregated,
+    shard: {
+      method: "sha256-prefix-modulo-v1",
+      index: shardIndex,
+      count: shardCount,
+      split: split ?? null,
+      replayCount: entries.length,
+    },
+  } : aggregated;
+  const report = { ...unsignedReport, reproducibilityFingerprint: calibrationFingerprint(unsignedReport) };
+  const json = `${JSON.stringify(report)}\n`;
   if (output) {
     const destination = resolve(output);
     mkdirSync(dirname(destination), { recursive: true });

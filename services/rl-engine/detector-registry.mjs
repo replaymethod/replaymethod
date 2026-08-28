@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { ROCKET_LEAGUE_DETECTOR_CATALOG } from "./detector-catalog.mjs";
 
-export const DETECTOR_REGISTRY_VERSION = "rocket-league-detector-registry.v2";
+export const DETECTOR_REGISTRY_VERSION = "rocket-league-detector-registry.v3";
 export const ACTIVATION_RECORD_VERSION = "rocket-league-detector-activation.v1";
 
 const lifecycleTransitions = Object.freeze({
@@ -14,6 +14,41 @@ const lifecycleTransitions = Object.freeze({
 });
 
 const registryOverrides = Object.freeze({
+  "boost.low_exposure": { duplicateGroup: "boost-reserve", minimumSamples: 8 },
+  "boost.large_pad_detour": { duplicateGroup: "boost-routing", minimumSamples: 8 },
+  "boost.small_pad_blindness": { duplicateGroup: "boost-routing", minimumSamples: 8 },
+  "boost.teammate_starvation": { supportedModes: ["2v2", "3v3"], duplicateGroup: "boost-routing", minimumSamples: 8 },
+  "rotation.caught_ahead": { supportedModes: ["2v2", "3v3"], duplicateGroup: "transition-coverage", minimumSamples: 8 },
+  "rotation.cut": { supportedModes: ["2v2", "3v3"], duplicateGroup: "rotation-ownership", minimumSamples: 8 },
+  "rotation.same_lane": { supportedModes: ["2v2", "3v3"], duplicateGroup: "team-coverage", minimumSamples: 8 },
+  "rotation.spacing_too_far": { supportedModes: ["2v2", "3v3"], duplicateGroup: "team-coverage", minimumSamples: 8 },
+  "rotation.back_post_bypass": { supportedModes: ["2v2", "3v3"], duplicateGroup: "defensive-route", minimumSamples: 8 },
+  "rotation.goal_side_loss": { supportedModes: ["2v2", "3v3"], duplicateGroup: "defensive-route", minimumSamples: 8 },
+  "rotation.backboard_uncovered": { supportedModes: ["2v2", "3v3"], duplicateGroup: "defensive-route", minimumSamples: 8 },
+  "challenge.late": { duplicateGroup: "commitment-risk", minimumSamples: 8 },
+  "challenge.fake_opportunity": { duplicateGroup: "commitment-risk", minimumSamples: 8 },
+  "challenge.low_probability_aerial": { duplicateGroup: "commitment-risk", minimumSamples: 8 },
+  "challenge.advantage_state": { duplicateGroup: "commitment-risk", minimumSamples: 8 },
+  "recovery.demolition_reentry": { duplicateGroup: "recovery-tempo", minimumSamples: 8 },
+  "recovery.play_reentry": { duplicateGroup: "recovery-tempo", minimumSamples: 8 },
+  "possession.panic_clear": { duplicateGroup: "possession-control", minimumSamples: 8 },
+  "possession.touch_frequency": { duplicateGroup: "possession-control", minimumSamples: 8 },
+  "offense.shot_quality": { duplicateGroup: "shot-execution", minimumSamples: 8 },
+  "offense.open_net_execution": { duplicateGroup: "shot-execution", minimumSamples: 8 },
+  "offense.pass_lane": { supportedModes: ["2v2", "3v3"], duplicateGroup: "attack-creation", minimumSamples: 8 },
+  "offense.follow_up": { duplicateGroup: "shot-execution", minimumSamples: 8 },
+  "offense.backboard_use": { duplicateGroup: "attack-creation", minimumSamples: 8 },
+  "defense.near_post_trap": { duplicateGroup: "defensive-route", minimumSamples: 8 },
+  "defense.corner_overcommit": { duplicateGroup: "defensive-route", minimumSamples: 8 },
+  "defense.goal_line_congestion": { supportedModes: ["2v2", "3v3"], duplicateGroup: "team-coverage", minimumSamples: 8 },
+  "defense.shadow_distance": { duplicateGroup: "shadow-defense", minimumSamples: 8 },
+  "defense.post_save_recovery": { duplicateGroup: "defensive-recovery", minimumSamples: 8 },
+  "kickoff.cheat_distance": { supportedModes: ["2v2", "3v3"], duplicateGroup: "kickoff-support", minimumSamples: 8 },
+  "kickoff.role_compliance": { supportedModes: ["2v2", "3v3"], duplicateGroup: "kickoff-support", minimumSamples: 8 },
+  "teamplay.support_angle": { supportedModes: ["2v2", "3v3"], duplicateGroup: "team-coverage", minimumSamples: 8 },
+  "teamplay.role_overlap": { supportedModes: ["2v2", "3v3"], duplicateGroup: "team-coverage", minimumSamples: 8 },
+  "teamplay.trust_break": { supportedModes: ["2v2", "3v3"], duplicateGroup: "rotation-ownership", minimumSamples: 8 },
+  "teamplay.transition_balance": { supportedModes: ["2v2", "3v3"], duplicateGroup: "transition-coverage", minimumSamples: 8 },
   "boost.zero_duration": { version: "0.2.0", duplicateGroup: "boost-reserve", minimumSamples: 3 },
   "boost.overfill": { version: "0.3.0" },
   "kickoff.contact": { version: "0.2.0" },
@@ -40,6 +75,11 @@ const registryOverrides = Object.freeze({
   "possession.first_touch_retention": { version: "0.2.0", duplicateGroup: "possession-control", minimumSamples: 5 },
   "challenge.quality": { version: "0.3.0", duplicateGroup: "commitment-risk", minimumSamples: 5 },
   "recovery.reentry_quality": { version: "0.2.0", duplicateGroup: "recovery-tempo", minimumSamples: 5 },
+  "recovery.landing_orientation": { duplicateGroup: "recovery-execution", minimumSamples: 5 },
+  "recovery.post_aerial_exit": { duplicateGroup: "recovery-execution", minimumSamples: 5 },
+  "recovery.wall_to_ground": { duplicateGroup: "recovery-execution", minimumSamples: 5 },
+  "possession.control_space": { duplicateGroup: "possession-control", minimumSamples: 5 },
+  "possession.wall_control": { duplicateGroup: "possession-control", minimumSamples: 3 },
 });
 
 export const DETECTOR_REGISTRY = Object.freeze(ROCKET_LEAGUE_DETECTOR_CATALOG.map((entry) => Object.freeze({

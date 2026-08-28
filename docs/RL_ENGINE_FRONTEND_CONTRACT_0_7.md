@@ -59,3 +59,21 @@ No 0.7 detector currently passes that gate. No customer-visible frontend
 change is required for the private 0.7 checkpoint. If a future frontend task
 surfaces contract coverage, it must render firing, non-firing, abstained,
 capability-abstained, not-applicable and error as distinct states.
+
+## Preview integration handoff
+
+No React, CSS, copy or frontend-E2E change is required to connect the existing
+worker adapter. The frontend/deployment task owns only environment wiring:
+
+- `RL_ENGINE_ENABLED=true` in preview;
+- an HTTPS `RL_ENGINE_URL` for the private engine host;
+- the same 24–512-character `RL_ENGINE_TOKEN` in both secret managers;
+- `RL_ENGINE_TIMEOUT_MS=90000`;
+- `BACKGROUND_PROCESSING_ENABLED=true` for durable retries;
+- `RL_PUBLIC_DETECTORS_ENABLED=false` and
+  `RL_EARLY_ACCESS_OUTPUT_ENABLED=false`.
+
+The preview must preserve a raw upload when the engine returns 202, 503 or a
+network timeout and poll/retry the existing durable web job. Deployment must
+not be represented as detector validation. The full host-side gate and current
+runtime evidence are in `docs/RL_ENGINE_PRODUCTION_READINESS_2026-08-28.md`.

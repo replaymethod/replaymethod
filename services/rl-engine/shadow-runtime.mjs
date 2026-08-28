@@ -5,9 +5,12 @@ import { decisionContextSummary } from "./decision-context.mjs";
 import { buildOpportunityContract, opportunityContractSummary } from "./opportunity-contract.mjs";
 import { ROCKET_LEAGUE_DETECTOR_CATALOG } from "./detector-catalog.mjs";
 import { boostDeltaRawToPercent, boostRawToPercent } from "./boost-units.mjs";
+import { mechanicsModelSummary } from "./mechanics-model.mjs";
+import { composeSuperAnalysis } from "./super-analysis.mjs";
+import { EXPANDED_MEASURING_DETECTORS } from "./expanded-detectors.mjs";
 
-export const SHADOW_RUNTIME_VERSION = "rocket-league-shadow-runtime@0.7.0";
-export const DECISION_ENGINE_METADATA_VERSION = "rocket-league-decision-engine-metadata@0.5.0";
+export const SHADOW_RUNTIME_VERSION = "rocket-league-shadow-runtime@0.9.0";
+export const DECISION_ENGINE_METADATA_VERSION = "rocket-league-decision-engine-metadata@0.8.0";
 
 function contractEvidence(contract, description) {
   return contract.evaluations.filter((evaluation) => evaluation.status === "firing").slice(0, 20).map((evaluation) => ({
@@ -679,6 +682,199 @@ function defensiveReserve(evidence) {
   };
 }
 
+function landingOrientationQuality(evidence) {
+  const detectorId = "recovery.landing_orientation";
+  const detectorVersion = "0.1.0";
+  const contract = buildOpportunityContract({
+    detectorId,
+    detectorVersion,
+    opportunityType: "landing_execution",
+    decisionContext: evidence.decisionContext,
+    classify(opportunity) {
+      const facts = opportunity.eventFacts ?? {};
+      const item = {
+        sourceSurface: facts.source_surface ?? "unknown",
+        uprightDeviationDegrees: Number.isFinite(facts.uprightDeviationDegrees) ? facts.uprightDeviationDegrees : null,
+        forwardToVelocityDegrees: Number.isFinite(facts.forwardToVelocityDegrees) ? facts.forwardToVelocityDegrees : null,
+        timeToUsefulSpeed: Number.isFinite(facts.timeToUsefulSpeed) ? facts.timeToUsefulSpeed : null,
+        touchdownPlanarSpeed: Number.isFinite(facts.touchdownPlanarSpeed) ? facts.touchdownPlanarSpeed : null,
+      };
+      if (!Number.isFinite(item.uprightDeviationDegrees) || !Number.isFinite(item.timeToUsefulSpeed)) {
+        return { status: "abstained", classification: "landing_kinematics_unresolved", reasons: ["Landing rotation or bounded post-landing speed was unavailable."], evidence: item };
+      }
+      const misaligned = item.uprightDeviationDegrees >= 35
+        || (Number.isFinite(item.forwardToVelocityDegrees) && item.forwardToVelocityDegrees >= 100);
+      const aligned = item.uprightDeviationDegrees <= 15
+        && (!Number.isFinite(item.forwardToVelocityDegrees) || item.forwardToVelocityDegrees <= 45);
+      if (misaligned && item.timeToUsefulSpeed >= 1) {
+        return { status: "firing", classification: "misaligned_landing_delayed_reentry", evidence: item };
+      }
+      if (aligned && item.timeToUsefulSpeed <= 0.8) {
+        return { status: "non_firing", classification: "aligned_landing_prompt_reentry", evidence: item };
+      }
+      return { status: "abstained", classification: "landing_value_ambiguous", reasons: ["Body alignment and re-entry timing did not jointly prove a costly or clean landing."], evidence: item };
+    },
+  });
+  return {
+    candidateCount: contract.summary.firingOpportunities,
+    measurements: opportunityContractSummary(contract),
+    evidence: contractEvidence(contract, (evaluation) => `The car landed ${Number(evaluation.evidence?.uprightDeviationDegrees ?? 0).toFixed(1)} degrees from upright and required ${Number(evaluation.evidence?.timeToUsefulSpeed ?? 0).toFixed(2)} seconds to restore useful speed.`),
+    opportunityContract: contract,
+  };
+}
+
+function postAerialExitQuality(evidence) {
+  const detectorId = "recovery.post_aerial_exit";
+  const detectorVersion = "0.1.0";
+  const contract = buildOpportunityContract({
+    detectorId,
+    detectorVersion,
+    opportunityType: "post_aerial_exit",
+    decisionContext: evidence.decisionContext,
+    classify(opportunity) {
+      const facts = opportunity.eventFacts ?? {};
+      const item = {
+        timeToUsefulSpeed: Number.isFinite(facts.timeToUsefulSpeed) ? facts.timeToUsefulSpeed : null,
+        timeToStableHeading: Number.isFinite(facts.timeToStableHeading) ? facts.timeToStableHeading : null,
+        postLandingPeakSpeed: Number.isFinite(facts.postLandingPeakSpeed) ? facts.postLandingPeakSpeed : null,
+        uprightDeviationDegrees: Number.isFinite(facts.uprightDeviationDegrees) ? facts.uprightDeviationDegrees : null,
+      };
+      if (!Number.isFinite(item.timeToUsefulSpeed)) {
+        return { status: "abstained", classification: "aerial_exit_unresolved", reasons: ["The retained post-aerial window did not establish time to useful speed."], evidence: item };
+      }
+      if (item.timeToUsefulSpeed >= 1.1 && (!Number.isFinite(item.timeToStableHeading) || item.timeToStableHeading >= 0.8)) {
+        return { status: "firing", classification: "slow_post_aerial_exit", evidence: item };
+      }
+      if (item.timeToUsefulSpeed <= 0.7 && (!Number.isFinite(item.timeToStableHeading) || item.timeToStableHeading <= 0.6)) {
+        return { status: "non_firing", classification: "prompt_post_aerial_exit", evidence: item };
+      }
+      return { status: "abstained", classification: "aerial_exit_value_ambiguous", reasons: ["The exit mixed useful and delayed kinematic signals."], evidence: item };
+    },
+  });
+  return {
+    candidateCount: contract.summary.firingOpportunities,
+    measurements: opportunityContractSummary(contract),
+    evidence: contractEvidence(contract, (evaluation) => `After aerial involvement, useful speed returned after ${Number(evaluation.evidence?.timeToUsefulSpeed ?? 0).toFixed(2)} seconds.`),
+    opportunityContract: contract,
+  };
+}
+
+function wallToGroundQuality(evidence) {
+  const detectorId = "recovery.wall_to_ground";
+  const detectorVersion = "0.1.0";
+  const contract = buildOpportunityContract({
+    detectorId,
+    detectorVersion,
+    opportunityType: "wall_to_ground_transition",
+    decisionContext: evidence.decisionContext,
+    classify(opportunity) {
+      const facts = opportunity.eventFacts ?? {};
+      const item = {
+        wallToGroundSeconds: Number.isFinite(facts.wallToGroundSeconds) ? facts.wallToGroundSeconds : null,
+        timeToUsefulSpeed: Number.isFinite(facts.timeToUsefulSpeed) ? facts.timeToUsefulSpeed : null,
+        uprightDeviationDegrees: Number.isFinite(facts.uprightDeviationDegrees) ? facts.uprightDeviationDegrees : null,
+        pressure: opportunity.context?.pressure ?? "unknown",
+      };
+      if (![item.wallToGroundSeconds, item.timeToUsefulSpeed].every(Number.isFinite)) {
+        return { status: "abstained", classification: "wall_transition_unresolved", reasons: ["The wall departure or post-landing speed window was incomplete."], evidence: item };
+      }
+      if (item.wallToGroundSeconds >= 0.7 && item.timeToUsefulSpeed >= 1) {
+        return { status: "firing", classification: "wall_exit_lost_tempo", evidence: item };
+      }
+      if (item.wallToGroundSeconds <= 0.45 && item.timeToUsefulSpeed <= 0.8) {
+        return { status: "non_firing", classification: "wall_exit_preserved_tempo", evidence: item };
+      }
+      return { status: "abstained", classification: "wall_transition_value_ambiguous", reasons: ["Transition duration and useful-speed recovery did not agree strongly enough."], evidence: item };
+    },
+  });
+  return {
+    candidateCount: contract.summary.firingOpportunities,
+    measurements: opportunityContractSummary(contract),
+    evidence: contractEvidence(contract, (evaluation) => `The wall-to-ground transition took ${Number(evaluation.evidence?.wallToGroundSeconds ?? 0).toFixed(2)} seconds before a further ${Number(evaluation.evidence?.timeToUsefulSpeed ?? 0).toFixed(2)}-second useful-speed recovery.`),
+    opportunityContract: contract,
+  };
+}
+
+function controlSpaceQuality(evidence) {
+  const detectorId = "possession.control_space";
+  const detectorVersion = "0.1.0";
+  const contract = buildOpportunityContract({
+    detectorId,
+    detectorVersion,
+    opportunityType: "touch_control_execution",
+    decisionContext: evidence.decisionContext,
+    classify(opportunity) {
+      const facts = opportunity.eventFacts ?? {};
+      const item = {
+        pressure: opportunity.context?.pressure ?? "unknown",
+        nextTeam: opportunity.outcome?.nextTeam ?? "unknown",
+        nextEventSeconds: opportunity.outcome?.nextEventSeconds ?? null,
+        relativeCarBallSpeed: Number.isFinite(facts.relativeCarBallSpeed) ? facts.relativeCarBallSpeed : null,
+        postTouchCloseControlFraction: Number.isFinite(facts.postTouchCloseControlFraction) ? facts.postTouchCloseControlFraction : null,
+        postTouchMedianDistanceToBall: Number.isFinite(facts.postTouchMedianDistanceToBall) ? facts.postTouchMedianDistanceToBall : null,
+        observedAction: facts.observed_action ?? "unclassified",
+      };
+      if (![item.postTouchCloseControlFraction, item.postTouchMedianDistanceToBall].every(Number.isFinite)) {
+        return { status: "abstained", classification: "touch_control_window_unresolved", reasons: ["The post-touch proximity window was incomplete."], evidence: item };
+      }
+      if (item.pressure === "high") {
+        return { status: "abstained", classification: "forced_touch_unresolved", reasons: ["Immediate opponent pressure prevents a claim that control space was available."], evidence: item };
+      }
+      if (item.nextTeam === "opponent" && item.postTouchCloseControlFraction <= 0.25 && item.postTouchMedianDistanceToBall >= 650) {
+        return { status: "firing", classification: "available_space_touch_separated_control", evidence: item };
+      }
+      if (item.nextTeam === "subject_team" && item.postTouchCloseControlFraction >= 0.5) {
+        return { status: "non_firing", classification: "touch_preserved_close_control", evidence: item };
+      }
+      return { status: "abstained", classification: "control_value_ambiguous", reasons: ["Proximity and next-access evidence did not establish lost or preserved control."], evidence: item };
+    },
+  });
+  return {
+    candidateCount: contract.summary.firingOpportunities,
+    measurements: opportunityContractSummary(contract),
+    evidence: contractEvidence(contract, (evaluation) => `In non-high pressure, the post-touch median ball distance reached ${Number(evaluation.evidence?.postTouchMedianDistanceToBall ?? 0).toFixed(0)} units before attributable opponent access.`),
+    opportunityContract: contract,
+  };
+}
+
+function wallControlQuality(evidence) {
+  const detectorId = "possession.wall_control";
+  const detectorVersion = "0.1.0";
+  const contract = buildOpportunityContract({
+    detectorId,
+    detectorVersion,
+    opportunityType: "wall_control_execution",
+    decisionContext: evidence.decisionContext,
+    classify(opportunity) {
+      const facts = opportunity.eventFacts ?? {};
+      const item = {
+        nextTeam: opportunity.outcome?.nextTeam ?? "unknown",
+        nextEventSeconds: opportunity.outcome?.nextEventSeconds ?? null,
+        postTouchCloseControlFraction: Number.isFinite(facts.postTouchCloseControlFraction) ? facts.postTouchCloseControlFraction : null,
+        postTouchMedianDistanceToBall: Number.isFinite(facts.postTouchMedianDistanceToBall) ? facts.postTouchMedianDistanceToBall : null,
+        approachToBallDegrees: Number.isFinite(facts.approachToBallDegrees) ? facts.approachToBallDegrees : null,
+      };
+      if (![item.postTouchCloseControlFraction, item.postTouchMedianDistanceToBall].every(Number.isFinite)) {
+        return { status: "abstained", classification: "wall_control_window_unresolved", reasons: ["The retained wall-touch control window was incomplete."], evidence: item };
+      }
+      if (item.nextTeam === "opponent" && Number(item.nextEventSeconds) <= 3
+        && item.postTouchCloseControlFraction <= 0.2 && item.postTouchMedianDistanceToBall >= 700) {
+        return { status: "firing", classification: "wall_touch_broke_control_early", evidence: item };
+      }
+      if (item.nextTeam === "subject_team" && item.postTouchCloseControlFraction >= 0.45) {
+        return { status: "non_firing", classification: "wall_touch_retained_control", evidence: item };
+      }
+      return { status: "abstained", classification: "wall_control_value_ambiguous", reasons: ["The wall touch did not prove an early breakdown or retained control."], evidence: item };
+    },
+  });
+  return {
+    candidateCount: contract.summary.firingOpportunities,
+    measurements: opportunityContractSummary(contract),
+    evidence: contractEvidence(contract, (evaluation) => `The wall touch separated the player from the ball to a ${Number(evaluation.evidence?.postTouchMedianDistanceToBall ?? 0).toFixed(0)}-unit median before opponent access.`),
+    opportunityContract: contract,
+  };
+}
+
 const MEASURING_DETECTORS = Object.freeze([
   Object.freeze({ id: "boost.zero_duration", version: "0.2.0", modes: ["1v1", "2v2", "3v3"], evaluate: zeroBoostExposureContract }),
   Object.freeze({ id: "boost.supersonic_waste", version: "0.4.0", modes: ["1v1", "2v2", "3v3"], evaluate: supersonicBoostEfficiency }),
@@ -700,36 +896,24 @@ const MEASURING_DETECTORS = Object.freeze([
   Object.freeze({ id: "rotation.third_overextension", version: "0.1.0", modes: ["2v2", "3v3"], evaluate: thirdOverextension }),
   Object.freeze({ id: "challenge.teammate_coverage", version: "0.1.0", modes: ["2v2", "3v3"], evaluate: challengeCoverageQuality }),
   Object.freeze({ id: "challenge.last_player", version: "0.1.0", modes: ["2v2", "3v3"], evaluate: lastPlayerChallenge }),
+  Object.freeze({ id: "recovery.landing_orientation", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: landingOrientationQuality }),
+  Object.freeze({ id: "recovery.post_aerial_exit", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: postAerialExitQuality }),
+  Object.freeze({ id: "recovery.wall_to_ground", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: wallToGroundQuality }),
+  Object.freeze({ id: "possession.control_space", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: controlSpaceQuality }),
+  Object.freeze({ id: "possession.wall_control", version: "0.1.0", modes: ["1v1", "2v2", "3v3"], evaluate: wallControlQuality }),
 ]);
 
-function capabilityAbstention(definition) {
-  return () => ({
-    candidateCount: 0,
-    implementationStatus: "capability_abstention",
-    measurements: {
-      opportunityContractStatus: "not_defined",
-      blockedBy: definition.requirements,
-      abstentionReason: "The executable lane is present, but its eligibility denominator and required evidence model are not yet complete.",
-    },
-    abstention: {
-      code: "capability_not_proven",
-      detail: "No gameplay opportunity was classified. This lane must not be interpreted as a non-firing detector result.",
-    },
-    evidence: [],
-  });
-}
+const measuringById = new Map([...MEASURING_DETECTORS, ...EXPANDED_MEASURING_DETECTORS]
+  .map((detector) => [detector.id, detector]));
 
-const measuringById = new Map(MEASURING_DETECTORS.map((detector) => [detector.id, detector]));
+if (measuringById.size !== ROCKET_LEAGUE_DETECTOR_CATALOG.length) {
+  const missing = ROCKET_LEAGUE_DETECTOR_CATALOG.filter((definition) => !measuringById.has(definition.id)).map((definition) => definition.id);
+  throw new Error(`Every catalog lane must have a measuring opportunity contract. Missing: ${missing.join(", ")}`);
+}
 
 export const SHADOW_DETECTORS = Object.freeze(ROCKET_LEAGUE_DETECTOR_CATALOG.map((definition) => {
   const measuring = measuringById.get(definition.id);
-  return Object.freeze(measuring ? { ...measuring, implementationStatus: "measuring" } : {
-    id: definition.id,
-    version: "0.1.0",
-    modes: ["1v1", "2v2", "3v3"],
-    implementationStatus: "capability_abstention",
-    evaluate: capabilityAbstention(definition),
-  });
+  return Object.freeze({ ...measuring, implementationStatus: "measuring" });
 }));
 
 export function decisionEngineMetadata(evidence, shadowRun) {
@@ -737,6 +921,8 @@ export function decisionEngineMetadata(evidence, shadowRun) {
     schemaVersion: DECISION_ENGINE_METADATA_VERSION,
     context: decisionContextSummary(evidence.decisionContext),
     adaptiveSampling: adaptiveSamplingSummary(evidence.adaptiveSampling),
+    mechanics: mechanicsModelSummary(evidence.mechanicsModel),
+    superAnalysis: composeSuperAnalysis(shadowRun, evidence.mechanicsModel),
     detectors: shadowRun.runs.filter((run) => run.opportunityContract)
       .map((run) => opportunityContractSummary(run.opportunityContract, { includeEvaluations: true })),
   };

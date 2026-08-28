@@ -1,4 +1,4 @@
-export const TACTICAL_SPATIAL_VERSION = "rocket-league-tactical-spatial@0.2.0";
+export const TACTICAL_SPATIAL_VERSION = "rocket-league-tactical-spatial@0.3.0";
 export const ACCESS_BASIS = "kinematic_intercept_proxy_v1";
 
 export function distance3d(a, b) {
@@ -130,12 +130,16 @@ export function buildTacticalSpatialState(frame, subjectId) {
     && Math.abs(player.position.y - subject.position.y) <= 1600).length;
   const teammateGeometry = teammates.map((player) => ({
     id: player.id.toLowerCase(),
+    position: player.position ?? null,
+    boostPercent: Number.isFinite(player.boostPercent) ? player.boostPercent : null,
     distanceToSubject: distance3d(player.position, subject.position),
     distanceToBall: Number.isFinite(player.distanceToBall) ? player.distanceToBall : distance3d(player.position, frame.ball.position),
     towardBall: movingToward(player, frame.ball.position),
   })).sort((left, right) => (left.distanceToBall ?? Infinity) - (right.distanceToBall ?? Infinity) || left.id.localeCompare(right.id));
   const nearestTeammateToBall = teammateGeometry[0] ?? null;
   const nearestTeammateDistanceToSubject = teammateGeometry.map((item) => item.distanceToSubject)
+    .filter(Number.isFinite).sort((left, right) => left - right)[0] ?? null;
+  const minimumTeammateBoostPercent = teammateGeometry.map((item) => item.boostPercent)
     .filter(Number.isFinite).sort((left, right) => left - right)[0] ?? null;
   // Preserve geometric pressure as its own stable primitive. Intercept order is
   // exported separately and must not silently redefine this distance band.
@@ -169,9 +173,14 @@ export function buildTacticalSpatialState(frame, subjectId) {
     sameLaneTeammates,
     nearestTeammateDistanceToSubject,
     nearestTeammateDistanceToBall: nearestTeammateToBall?.distanceToBall ?? null,
+    nearestTeammatePosition: nearestTeammateToBall?.position ?? null,
+    minimumTeammateBoostPercent,
     nearestTeammateTowardBall: nearestTeammateToBall?.towardBall ?? null,
     subjectTowardBall: movingToward(subject, frame.ball.position),
     nearestOpponentDistance,
+    opponentCount: opponents.length,
+    subjectDistanceToOwnGoal: Number.isFinite(goalY) ? Math.hypot(subject.position.x ?? 0, subject.position.y - goalY) : null,
+    ballDistanceToOwnGoal: Number.isFinite(goalY) ? Math.hypot(frame.ball.position.x ?? 0, frame.ball.position.y - goalY) : null,
     pressure,
   };
 }

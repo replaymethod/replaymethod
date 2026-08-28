@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./customer-system.css";
+import "./premium-pass.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://replaymethod.xyz"),
@@ -14,23 +15,23 @@ export const metadata: Metadata = {
     siteName: "Replay Method",
     title: "Replay Method — Find the decision keeping you stuck",
     description: "Upload ten ranked Rocket League replays. See what keeps happening and get one focus for your next session.",
-    images: [{ url: "/brand/og-replay-method-v13-1200x630.png", width: 1200, height: 630, alt: "Replay Method — Find the decision keeping you stuck." }]
+    images: [{ url: "/brand/og-replay-method-v16-1200x630.png", width: 1200, height: 630, alt: "Replay Method — Find the decision keeping you stuck." }]
   },
   twitter: {
     card: "summary_large_image",
     title: "Replay Method — Find the decision keeping you stuck",
     description: "Upload ten ranked Rocket League replays. See what keeps happening and get one focus for your next session.",
-    images: ["/brand/og-replay-method-v13-1200x630.png"]
+    images: ["/brand/og-replay-method-v16-1200x630.png"]
   },
   icons: {
     icon: [
-      { url: "/brand/replay-method-mark-v13-16.png", sizes: "16x16", type: "image/png" },
-      { url: "/brand/replay-method-mark-v13-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/brand/replay-method-mark-v13-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/brand/replay-method-mark-v16-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/brand/replay-method-mark-v16-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/replay-method-mark-v16-48.png", sizes: "48x48", type: "image/png" },
       { url: "/favicon.svg", type: "image/svg+xml" }
     ],
-    shortcut: "/brand/replay-method-mark-v13-32.png",
-    apple: [{ url: "/brand/replay-method-apple-touch-v13-180.png", sizes: "180x180", type: "image/png" }]
+    shortcut: "/brand/replay-method-mark-v16-32.png",
+    apple: [{ url: "/brand/replay-method-apple-touch-v16-180.png", sizes: "180x180", type: "image/png" }]
   },
   verification: { google: process.env.GOOGLE_SITE_VERIFICATION }
 };

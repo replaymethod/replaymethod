@@ -99,7 +99,7 @@ export default function ReplayContribution({ intakeOpen, compact = false }: { in
   if (!intakeOpen) {
     return <section className={`rl-intake-closed ${compact ? "compact" : ""}`} id="beta-intake" aria-labelledby="rl-intake-title">
       <span>ROCKET LEAGUE BETA · PAUSED</span>
-      <h1 id="rl-intake-title">Replay uploads are closed right now.</h1>
+      <h2 id="rl-intake-title">Replay uploads are closed right now.</h2>
       <p>The secure intake is ready, but no file is accepted while the collection switch is off.</p>
       <Link href="/analyze">Start with the 10-replay product <b>→</b></Link>
     </section>;
@@ -109,7 +109,7 @@ export default function ReplayContribution({ intakeOpen, compact = false }: { in
     return <section className={`rl-intake-success ${compact ? "compact" : ""}`} id="beta-intake" aria-live="polite">
       <i>✓</i>
       <span>REPLAY SECURED</span>
-      <h1>Your replay made it.</h1>
+      <h2>Your replay made it.</h2>
       <p>Reference <b>{reference}</b>. The file and consent are stored privately. It is now waiting for a real parser and reviewer check—this is not a generated analysis.</p>
       <div><b>What happens next?</b><ol><li>The replay is checked for usable match evidence.</li><li>Qualified reviewers label detector moments independently.</li><li>Only validated patterns may later enter player reports.</li></ol></div>
       <button type="button" onClick={() => { setReplay(null); setReference(""); setStatus("idle"); }}>Send another replay</button>
@@ -119,7 +119,7 @@ export default function ReplayContribution({ intakeOpen, compact = false }: { in
   return <form className={`rl-intake ${compact ? "compact" : ""}`} id="beta-intake" onSubmit={submit} aria-labelledby="rl-intake-title">
     <header>
       <span>START HERE</span>
-      <h1 id="rl-intake-title">{compact ? "Drop your replay." : "Your replay is the starting point."}</h1>
+      <h2 id="rl-intake-title">{compact ? "Drop your replay." : "Your replay is the starting point."}</h2>
       <p>{compact ? "Choose the original PC file. The next step appears instantly." : "Choose one original PC replay. We ask only for the context required to keep the evidence honest."}</p>
     </header>
 

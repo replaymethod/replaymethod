@@ -70,16 +70,16 @@ test("executes shadow observations without making them public findings", () => {
   const result = runShadowDetectors(evidenceFixture());
   assert.equal(result.summary.detectorCount, 60);
   assert.equal(result.summary.executed, 60);
-  assert.equal(result.summary.measuringExecuted, 20);
+  assert.equal(result.summary.measuringExecuted, 60);
   assert.equal(result.summary.errors, 0);
   assert.ok(result.summary.observed >= 4);
   assert.equal(result.summary.publicEligible, 0);
-  assert.equal(result.summary.measuring, 20);
-  assert.equal(result.summary.capabilityAbstained, 40);
-  const capability = result.runs.find((run) => run.detectorId === "boost.large_pad_detour");
-  assert.equal(capability.status, "capability_abstained");
-  assert.equal(capability.measurements.opportunityContractStatus, "not_defined");
-  assert.equal(capability.opportunityContract, undefined);
+  assert.equal(result.summary.measuring, 60);
+  assert.equal(result.summary.capabilityAbstained, 0);
+  const expanded = result.runs.find((run) => run.detectorId === "boost.large_pad_detour");
+  assert.equal(expanded.implementationStatus, "measuring");
+  assert.equal(expanded.status, "no_signal");
+  assert.equal(expanded.opportunityContract.summary.totalOpportunities, 0);
 
   const boost = result.runs.find((run) => run.detectorId === "boost.zero_duration");
   assert.equal(boost.candidateCount, 1);
@@ -147,8 +147,8 @@ test("marks teammate detectors not applicable in ranked 1v1", () => {
   const result = runShadowDetectors(evidence);
   assert.equal(result.runs.find((run) => run.detectorId === "rotation.spacing_too_close").status, "not_applicable");
   assert.equal(result.runs.find((run) => run.detectorId === "teamplay.double_commit").status, "not_applicable");
-  assert.equal(result.summary.notApplicable, 5);
-  assert.equal(result.summary.executed, 55);
+  assert.equal(result.summary.notApplicable, 21);
+  assert.equal(result.summary.executed, 39);
 });
 
 test("new decision detectors preserve non-firings beside candidates", () => {
@@ -190,7 +190,7 @@ test("new decision detectors preserve non-firings beside candidates", () => {
   assert.equal(challenge.candidateCount, 1);
   assert.equal(recovery.candidateCount, 1);
   const metadata = decisionEngineMetadata(evidence, result);
-  assert.equal(metadata.detectors.length, 20);
+  assert.equal(metadata.detectors.length, 60);
   assert.equal(metadata.detectors.find((item) => item.detectorId === "possession.first_touch_retention").evaluations.length, 2);
 });
 
@@ -299,6 +299,49 @@ test("eight legacy telemetry lanes now retain firing, non-firing and abstained d
   for (const detectorId of [
     "boost.zero_duration", "boost.supersonic_waste", "kickoff.speed", "possession.first_touch",
     "challenge.dive", "rotation.spacing_too_close", "teamplay.double_commit", "recovery.momentum_loss",
+  ]) {
+    const summary = result.runs.find((run) => run.detectorId === detectorId).opportunityContract.summary;
+    assert.equal(summary.firingOpportunities, 1, detectorId);
+    assert.equal(summary.nonFiringOpportunities, 1, detectorId);
+    assert.equal(summary.abstainedOpportunities, 1, detectorId);
+    assert.equal(summary.integrityPassed, true, detectorId);
+  }
+});
+
+test("mechanics lanes preserve explicit firing, non-firing and abstained denominators", () => {
+  const evidence = evidenceFixture();
+  const opportunity = (id, opportunityType, eventFacts, overrides = {}) => ({
+    id, opportunityType, eligible: true, timestampSeconds: 1, frame: 10,
+    contextKey: `2v2:${opportunityType}:${id}`,
+    context: { mode: "2v2", pressure: "low", coverage: "layered" },
+    eventFacts,
+    outcome: {},
+    ...overrides,
+  });
+  evidence.decisionContext = {
+    schemaVersion: "rocket-league-decision-context@0.6.0",
+    opportunities: [
+      opportunity("landing:fire", "landing_execution", { uprightDeviationDegrees: 45, forwardToVelocityDegrees: 120, timeToUsefulSpeed: 1.2 }),
+      opportunity("landing:ok", "landing_execution", { uprightDeviationDegrees: 5, forwardToVelocityDegrees: 20, timeToUsefulSpeed: 0.5 }),
+      opportunity("landing:abstain", "landing_execution", { uprightDeviationDegrees: 20, forwardToVelocityDegrees: 60, timeToUsefulSpeed: 0.9 }),
+      opportunity("aerial:fire", "post_aerial_exit", { timeToUsefulSpeed: 1.3, timeToStableHeading: 1 }),
+      opportunity("aerial:ok", "post_aerial_exit", { timeToUsefulSpeed: 0.5, timeToStableHeading: 0.3 }),
+      opportunity("aerial:abstain", "post_aerial_exit", { timeToUsefulSpeed: 0.9, timeToStableHeading: 0.7 }),
+      opportunity("wall-exit:fire", "wall_to_ground_transition", { wallToGroundSeconds: 0.9, timeToUsefulSpeed: 1.2 }),
+      opportunity("wall-exit:ok", "wall_to_ground_transition", { wallToGroundSeconds: 0.3, timeToUsefulSpeed: 0.5 }),
+      opportunity("wall-exit:abstain", "wall_to_ground_transition", { wallToGroundSeconds: 0.5, timeToUsefulSpeed: 0.9 }),
+      opportunity("control:fire", "touch_control_execution", { postTouchCloseControlFraction: 0.1, postTouchMedianDistanceToBall: 800 }, { outcome: { nextTeam: "opponent", nextEventSeconds: 1 } }),
+      opportunity("control:ok", "touch_control_execution", { postTouchCloseControlFraction: 0.8, postTouchMedianDistanceToBall: 200 }, { outcome: { nextTeam: "subject_team", nextEventSeconds: 1 } }),
+      opportunity("control:abstain", "touch_control_execution", { postTouchCloseControlFraction: 0.1, postTouchMedianDistanceToBall: 800 }, { context: { pressure: "high" }, outcome: { nextTeam: "opponent", nextEventSeconds: 1 } }),
+      opportunity("wall-control:fire", "wall_control_execution", { postTouchCloseControlFraction: 0.1, postTouchMedianDistanceToBall: 850 }, { outcome: { nextTeam: "opponent", nextEventSeconds: 1 } }),
+      opportunity("wall-control:ok", "wall_control_execution", { postTouchCloseControlFraction: 0.7, postTouchMedianDistanceToBall: 250 }, { outcome: { nextTeam: "subject_team", nextEventSeconds: 1 } }),
+      opportunity("wall-control:abstain", "wall_control_execution", { postTouchCloseControlFraction: 0.3, postTouchMedianDistanceToBall: 500 }, { outcome: { nextTeam: "unknown" } }),
+    ],
+  };
+  const result = runShadowDetectors(evidence);
+  for (const detectorId of [
+    "recovery.landing_orientation", "recovery.post_aerial_exit", "recovery.wall_to_ground",
+    "possession.control_space", "possession.wall_control",
   ]) {
     const summary = result.runs.find((run) => run.detectorId === detectorId).opportunityContract.summary;
     assert.equal(summary.firingOpportunities, 1, detectorId);
