@@ -9,6 +9,7 @@ function configuredValues(...values: Array<string | undefined>) {
 }
 
 export async function isConfiguredSiteAdmin(user: ChatGPTUser) {
+  if (user.localRole === "owner") return true;
   const { env } = await import("cloudflare:workers");
   const configured = env as unknown as { ADMIN_EMAIL?: string; ADMIN_EMAILS?: string; ADMIN_USER_ID?: string; ADMIN_USER_IDS?: string };
   const allowedUserIds = configuredValues(configured.ADMIN_USER_ID, configured.ADMIN_USER_IDS);

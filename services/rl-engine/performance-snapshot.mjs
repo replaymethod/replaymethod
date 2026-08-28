@@ -1,3 +1,5 @@
+import { boostRawToPercent } from "./boost-units.mjs";
+
 export const PERFORMANCE_SNAPSHOT_VERSION = "rocket-league-performance-snapshot@0.2.0";
 
 const SUPERSONIC_SPEED = 2200;
@@ -210,7 +212,11 @@ export function buildPerformanceSnapshot({ meta, subject, frameState, episodeTim
   });
   const sampleSeconds = subjectFrames.length / Math.max(1, frameState.sampleRateHz);
   const speeds = subjectFrames.map(({ player }) => speed3d(player.linearVelocity)).filter(Number.isFinite);
-  const boosts = subjectFrames.map(({ player }) => player.boost).filter(Number.isFinite).map((value) => value / 2.55);
+  const boosts = subjectFrames.map(({ player }) => (
+    Number.isFinite(player.boostPercent)
+      ? player.boostPercent
+      : boostRawToPercent(player.boostRaw ?? player.boost)
+  )).filter(Number.isFinite);
   const distances = subjectFrames.map(({ player, frame }) => distance3d(player.position, frame.ball.position)).filter(Number.isFinite);
   const requiredScoreboardFields = ["Score", "Goals", "Assists", "Saves", "Shots"];
   if (!subjectFrames.length || !speeds.length || !boosts.length || !distances.length

@@ -7,6 +7,7 @@ import { trackProductEvent, type ProductEvent } from "../../lib/client-analytics
 import { readApiResponse, uploadReplayInChunks, type StagedReplay } from "../../lib/client-replay-upload";
 import FreeAnalysisUsed, { FREE_ANALYSIS_USED_MESSAGE } from "../components/FreeAnalysisUsed";
 import OwnerVerificationRequired, { OWNER_VERIFICATION_REQUIRED_MESSAGE } from "../components/OwnerVerificationRequired";
+import { ReplayMark } from "../components/ReplayMark";
 
 const games: { key: AnalysisGame; mark: string; name: string; proof: string; input: string }[] = [
   { key: "league", mark: "L", name: "League of Legends", proof: "Official Riot connection in approval", input: "Riot ID and a representative match link" },
@@ -229,7 +230,7 @@ export default function AnalyzeFlow({ initialGame, initialHypothesis, initialPla
   }
 
   return <main className="intake-page">
-    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><Link href="/">Exit</Link></div></nav>
+    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true"><ReplayMark /></span><span>replay<span>method</span></span></Link><div><Link href="/reports">My reports</Link><Link href="/">Exit</Link></div></nav>
     <section className="intake-shell shell">
       <header className="intake-header"><div><span>PRIVATE PRODUCT BETA</span><h1>Know what is ready.<br /><em>Never submit into a dead end.</em></h1><p>{game === "league" || game === "valorant" ? "Join the official-access waitlist. Automated Riot match analysis is not live yet." : platform === "pc" ? engineOpen ? "Upload one original replay for an evidence check." : "The PC parser is online, but public coaching is still in quality validation." : videoOpen ? "Upload a gameplay video for the console beta." : "Console video analysis is not live yet. Join the waitlist for first access."}</p></div><aside><b>{game === "rocket-league" && platform === "pc" && engineOpen ? "01" : "$0"}</b><span>{game === "rocket-league" && platform === "pc" && engineOpen ? "ANALYSIS INCLUDED" : "WAITLIST"}</span><small>Private · No card · Clear status</small></aside></header>
       <div className="intake-progress" aria-label={`Step ${visibleStep} of ${visibleStepTotal}`}><i style={{ width: `${(visibleStep / visibleStepTotal) * 100}%` }} /><span>0{visibleStep} / 0{visibleStepTotal}</span></div>

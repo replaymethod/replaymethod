@@ -1,16 +1,17 @@
 import { buildReplayEvidence, NORMALIZER_VERSION, PARSER_VERSION } from "./parser.mjs";
 import { detectorCatalogSummary } from "./detector-catalog.mjs";
-import { runShadowDetectors, SHADOW_RUNTIME_VERSION } from "./shadow-runtime.mjs";
+import { decisionEngineMetadata, runShadowDetectors, SHADOW_RUNTIME_VERSION } from "./shadow-runtime.mjs";
 import { composeEarlyAccessOutput, EARLY_ACCESS_POLICY_VERSION } from "./early-access.mjs";
 
-export const ANALYZER_VERSION = "rocket-league-analyzer@0.2.0";
-export const DETECTOR_VERSION = "rocket-league-detectors@0.2.0-shadow";
+export const ANALYZER_VERSION = "rocket-league-analyzer@0.9.0";
+export const DETECTOR_VERSION = "rocket-league-detectors@0.9.0-shadow";
 export const COACHING_VERSION = "coaching.v1";
 
 export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnabled = false, earlyAccessOutputEnabled = false } = {}) {
   const evidence = buildReplayEvidence(bytes, requestedIdentity, rank);
   const normalized = evidence.normalized;
   const shadowRun = runShadowDetectors(evidence);
+  const decisionEngine = decisionEngineMetadata(evidence, shadowRun);
   const frameCount = evidence.frameState.summary.frameCount;
   const playerCount = evidence.frameState.summary.playerCount;
   const verifiedSummary = `Verified ${normalized.mode || "Rocket League match"}: ${frameCount.toLocaleString("en-US")} sampled frames and ${playerCount} players.`;
@@ -24,9 +25,11 @@ export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnab
         formalValidationStatus: earlyAccess.formalValidationStatus,
         coachingStatus: earlyAccess.findings.length ? "experimental_insight" : "abstained",
         assessments: earlyAccess.assessments,
+        analysisCoverage: earlyAccess.analysisCoverage,
         verifiedFacts: earlyAccess.verifiedFacts,
       },
       shadowEvaluation: shadowRun.summary,
+      decisionEngine,
     };
     const common = {
       kind: "success",
@@ -75,6 +78,26 @@ export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnab
         episodeTimeline: evidence.episodeTimeline.summary,
       },
       shadowRun: shadowRun.summary,
+      decisionEngine: {
+        schemaVersion: decisionEngine.schemaVersion,
+        context: decisionEngine.context,
+        adaptiveSampling: decisionEngine.adaptiveSampling,
+        mechanics: decisionEngine.mechanics,
+        superAnalysis: {
+          schemaVersion: decisionEngine.superAnalysis.schemaVersion,
+          status: decisionEngine.superAnalysis.status,
+          publicationStatus: decisionEngine.superAnalysis.publicationStatus,
+          privateReviewCandidateCount: decisionEngine.superAnalysis.privateReviewCandidates.length,
+          weeklyPlanStatus: decisionEngine.superAnalysis.weeklyPlan.status,
+        },
+        detectors: decisionEngine.detectors.map((detector) => ({
+          detectorId: detector.detectorId,
+          eligibleOpportunities: detector.eligibleOpportunities,
+          firingOpportunities: detector.firingOpportunities,
+          nonFiringOpportunities: detector.nonFiringOpportunities,
+          abstainedOpportunities: detector.abstainedOpportunities,
+        })),
+      },
     });
 
   // Parsing and normalization are still a successful product operation when
@@ -88,6 +111,7 @@ export function analyzeReplay(bytes, requestedIdentity, rank, { publicOutputEnab
       metadata: {
         ...normalized.metadata,
         shadowEvaluation: shadowRun.summary,
+        decisionEngine,
       },
     },
     findings: [],

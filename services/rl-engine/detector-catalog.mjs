@@ -46,6 +46,7 @@ const definitions = [
   ["challenge.low_probability_aerial", "challenge", "Low-probability aerial commitment", 3],
   ["challenge.last_player", "challenge", "Last-player challenge creates open net risk", 1],
   ["challenge.advantage_state", "challenge", "Challenge choice ignores score/time state", 3],
+  ["challenge.quality", "challenge", "Challenge outcome with access and coverage context", 1],
 
   ["recovery.landing_orientation", "recovery", "Landing orientation delays the next action", 1],
   ["recovery.post_aerial_exit", "recovery", "Slow exit after aerial involvement", 2],
@@ -53,6 +54,7 @@ const definitions = [
   ["recovery.demolition_reentry", "recovery", "Respawn route fails to restore coverage", 3],
   ["recovery.momentum_loss", "recovery", "Unforced momentum loss", 2],
   ["recovery.play_reentry", "recovery", "Recovery path delays useful re-entry", 2],
+  ["recovery.reentry_quality", "recovery", "Post-landing time to useful re-entry", 1],
 
   ["possession.first_touch", "possession", "First touch removes control", 1],
   ["possession.giveaway", "possession", "Possession is returned without pressure", 1],
@@ -60,6 +62,7 @@ const definitions = [
   ["possession.control_space", "possession", "Available control space is not used", 2],
   ["possession.touch_frequency", "possession", "Extra touch reduces the next option", 3],
   ["possession.wall_control", "possession", "Wall possession breaks down early", 3],
+  ["possession.first_touch_retention", "possession", "First-touch retention across comparable opportunities", 1],
 
   ["offense.shot_quality", "offense", "Low-threat shot ends a stronger possession", 2],
   ["offense.open_net_execution", "offense", "Open-net opportunity is not converted", 2],
@@ -87,24 +90,13 @@ const definitions = [
   ["teamplay.transition_balance", "teamplay", "Transition lacks attack-defense balance", 3],
 ];
 
-const shadowDetectorIds = new Set([
-  "boost.zero_duration",
-  "boost.supersonic_waste",
-  "kickoff.speed",
-  "possession.first_touch",
-  "challenge.dive",
-  "rotation.spacing_too_close",
-  "teamplay.double_commit",
-  "recovery.momentum_loss",
-]);
-
 export const ROCKET_LEAGUE_DETECTOR_CATALOG = Object.freeze(definitions.map(
   ([id, category, title, phase]) => Object.freeze({
     id,
     category,
     title,
     phase,
-    lifecycle: shadowDetectorIds.has(id) ? "shadow" : "discovery",
+    lifecycle: "shadow",
     public: false,
     requirements: Object.freeze([
       "frame-state",

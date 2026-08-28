@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { trackProductEvent } from "../../../lib/client-analytics";
+import { CustomerFooter, CustomerHeader } from "../../components/CustomerChrome";
 
 export default function BillingSuccessPage() {
   const [state, setState] = useState<"checking" | "active" | "pending">("checking");
@@ -32,6 +33,7 @@ export default function BillingSuccessPage() {
 
   return (
     <main className="billing-result-page">
+      <CustomerHeader compact right={<Link className="rm-header-cta" href="/reports">My reports <span aria-hidden="true">↗</span></Link>} />
       <section>
         <span>SECURE CHECKOUT RETURN</span>
         <h1>{state === "active" ? "Your improvement loop is active." : "Your payment is being confirmed."}</h1>
@@ -41,6 +43,7 @@ export default function BillingSuccessPage() {
           <Link href="/reports">View reports and billing</Link>
         </div>
       </section>
+      <CustomerFooter />
     </main>
   );
 }

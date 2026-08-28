@@ -9,9 +9,10 @@ import { PERFORMANCE_SNAPSHOT_VERSION } from "./performance-snapshot.mjs";
 export { PARSER_VERSION };
 
 export const MAX_REPLAY_BYTES = 16 * 1024 * 1024;
-export const ENGINE_VERSION = "rl-engine.v1";
+export const ENGINE_VERSION = "rl-engine.v1.1";
 export const MINIMUM_TOKEN_LENGTH = 24;
-export const DEFAULT_JOB_TIMEOUT_MS = 180_000;
+export const DEFAULT_JOB_TIMEOUT_MS = 80_000;
+export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 30_000;
 const ASYNC_JOB_RETENTION_MS = 10 * 60_000;
 const MAX_ASYNC_JOBS = 32;
 
@@ -120,7 +121,12 @@ function maximumConcurrency(value) {
 
 function jobTimeout(value) {
   const parsed = Number(value ?? DEFAULT_JOB_TIMEOUT_MS);
-  return Number.isFinite(parsed) ? Math.min(235_000, Math.max(5_000, Math.round(parsed))) : DEFAULT_JOB_TIMEOUT_MS;
+  return Number.isFinite(parsed) ? Math.min(115_000, Math.max(5_000, Math.round(parsed))) : DEFAULT_JOB_TIMEOUT_MS;
+}
+
+function shutdownTimeout(value) {
+  const parsed = Number(value ?? DEFAULT_SHUTDOWN_TIMEOUT_MS);
+  return Number.isFinite(parsed) ? Math.min(120_000, Math.max(1_000, Math.round(parsed))) : DEFAULT_SHUTDOWN_TIMEOUT_MS;
 }
 
 function replayWorkerError(payload) {
@@ -254,14 +260,28 @@ export function createServer(options = {}) {
   const publicOutputEnabled = options.publicOutputEnabled ?? process.env.RL_PUBLIC_DETECTORS_ENABLED === "true";
   const earlyAccessHostEnabled = options.earlyAccessOutputEnabled ?? process.env.RL_EARLY_ACCESS_OUTPUT_ENABLED === "true";
   const concurrencyLimit = maximumConcurrency(maxConcurrency);
+  const jobDeadlineMs = jobTimeout(options.jobTimeoutMs ?? process.env.RL_ENGINE_JOB_TIMEOUT_MS);
+  const shutdownDeadlineMs = shutdownTimeout(options.shutdownTimeoutMs ?? process.env.RL_ENGINE_SHUTDOWN_TIMEOUT_MS);
   const processor = options.processReplay ? null : createReplayProcessor({
     size: concurrencyLimit,
-    timeoutMs: options.jobTimeoutMs ?? process.env.RL_ENGINE_JOB_TIMEOUT_MS,
+    timeoutMs: jobDeadlineMs,
   });
   const processReplay = options.processReplay ?? processor.processReplay;
   const asyncJobs = new Map();
+  const inFlightJobs = new Set();
   const configured = typeof token === "string" && token.length >= MINIMUM_TOKEN_LENGTH && token.length <= 512;
   let activeRequests = 0;
+  let draining = false;
+  let processorClosePromise = null;
+
+  const closeProcessor = () => {
+    if (!processorClosePromise) processorClosePromise = processor?.close() ?? Promise.resolve();
+    return processorClosePromise;
+  };
+
+  const waitForInFlightJobs = async () => {
+    while (inFlightJobs.size) await Promise.allSettled([...inFlightJobs]);
+  };
 
   const pruneAsyncJobs = () => {
     const cutoff = Date.now() - ASYNC_JOB_RETENTION_MS;
@@ -286,7 +306,7 @@ export function createServer(options = {}) {
       return json(response, 200, { ok: true, service: "replay-method-rl-engine", status: "live" });
     }
     if (request.method === "GET" && url.pathname === "/healthz") {
-      const ready = configured && (processor?.isReady() ?? true);
+      const ready = configured && !draining && (processor?.isReady() ?? true);
       return json(response, ready ? 200 : 503, {
         ok: ready,
         service: "replay-method-rl-engine",
@@ -298,13 +318,18 @@ export function createServer(options = {}) {
         performanceSnapshotVersion: PERFORMANCE_SNAPSHOT_VERSION,
         activeRequests,
         maxConcurrency: concurrencyLimit,
+        jobTimeoutMs: jobDeadlineMs,
+        shutdownTimeoutMs: shutdownDeadlineMs,
       });
     }
     const asyncStatus = request.method === "GET" ? url.pathname.match(/^\/v1\/jobs\/([a-f0-9]{32})$/) : null;
     if (asyncStatus) {
       if (!authorized(request, token)) return json(response, 401, { error: "unauthorized" });
       pruneAsyncJobs();
-      return sendAsyncJob(response, asyncStatus[1], asyncJobs.get(asyncStatus[1]));
+      const job = asyncJobs.get(asyncStatus[1]);
+      const sent = sendAsyncJob(response, asyncStatus[1], job);
+      if (job?.state === "failed") asyncJobs.delete(asyncStatus[1]);
+      return sent;
     }
     if (request.method !== "POST" || !["/v1/analyze/rocket-league", "/v1/inspect/rocket-league"].includes(url.pathname)) {
       return json(response, 404, { error: "not_found" });
@@ -313,16 +338,6 @@ export function createServer(options = {}) {
     if (request.headers["content-type"]?.split(";")[0] !== "application/octet-stream") {
       return json(response, 415, { error: "application_octet_stream_required" });
     }
-    if (activeRequests >= concurrencyLimit) {
-      return json(response, 503, {
-        kind: "blocked",
-        code: "rl_engine_busy",
-        publicMessage: "The replay worker is at capacity. The upload is preserved for an automatic retry.",
-        internalMessage: "RL engine concurrency limit reached.",
-        retryable: true,
-      });
-    }
-
     let requestId = "invalid";
     let counted = false;
     try {
@@ -338,25 +353,41 @@ export function createServer(options = {}) {
         const existing = asyncJobs.get(requestId);
         if (existing) {
           request.resume();
+          if (existing.state === "failed") {
+            asyncJobs.delete(requestId);
+            return sendAsyncJob(response, requestId, existing);
+          }
           if (existing.player !== player || existing.rank !== rank || existing.earlyAccessOutputEnabled !== earlyAccessOutputEnabled) {
             throw new RequestContractError("job_identity_mismatch", "The replay job metadata did not match its original request.");
           }
           return sendAsyncJob(response, requestId, existing);
         }
+        if (draining) {
+          request.resume();
+          throw new EngineTransientError("rl_engine_shutdown", "The replay worker is restarting. Your upload is preserved for an automatic retry.");
+        }
+        if (activeRequests >= concurrencyLimit) {
+          request.resume();
+          throw new EngineTransientError("rl_engine_busy", "The replay worker is at capacity. Your upload is preserved for an automatic retry.");
+        }
         if (asyncJobs.size >= MAX_ASYNC_JOBS) {
+          request.resume();
           throw new EngineTransientError("rl_engine_job_capacity", "The replay worker is at capacity. Your upload is preserved for an automatic retry.");
         }
+        activeRequests += 1;
+        counted = true;
         const bytes = await readBody(request);
         const job = { state: "pending", player, rank, earlyAccessOutputEnabled, completedAt: 0, result: null, error: null };
         asyncJobs.set(requestId, job);
-        void processReplay({
+        counted = false;
+        const execution = Promise.resolve().then(() => processReplay({
           operation: "analyze",
           bytes,
           player,
           rank,
           publicOutputEnabled,
           earlyAccessOutputEnabled,
-        }).then((result) => {
+        })).then((result) => {
           job.state = "completed";
           job.result = result;
           job.completedAt = Date.now();
@@ -368,10 +399,25 @@ export function createServer(options = {}) {
             requestId,
             code: typeof error?.code === "string" ? error.code : "rl_engine_failure",
           });
+        }).finally(() => {
+          activeRequests = Math.max(0, activeRequests - 1);
         });
+        inFlightJobs.add(execution);
+        execution.then(
+          () => inFlightJobs.delete(execution),
+          () => inFlightJobs.delete(execution),
+        );
         return sendAsyncJob(response, requestId, job);
       }
 
+      if (draining) {
+        request.resume();
+        throw new EngineTransientError("rl_engine_shutdown", "The replay worker is restarting. Your upload is preserved for an automatic retry.");
+      }
+      if (activeRequests >= concurrencyLimit) {
+        request.resume();
+        throw new EngineTransientError("rl_engine_busy", "The replay worker is at capacity. Your upload is preserved for an automatic retry.");
+      }
       activeRequests += 1;
       counted = true;
       const bytes = await readBody(request);
@@ -400,8 +446,32 @@ export function createServer(options = {}) {
   server.keepAliveTimeout = 5_000;
   server.maxHeadersCount = 32;
   server.maxRequestsPerSocket = 100;
-  server.once("close", () => { void processor?.close(); });
-  server.once("error", () => { void processor?.close(); });
+  server.once("close", () => { void waitForInFlightJobs().then(closeProcessor); });
+  server.once("error", () => { void closeProcessor(); });
+  Object.defineProperty(server, "gracefulShutdown", {
+    value: async ({ timeoutMs = shutdownDeadlineMs } = {}) => {
+      draining = true;
+      const deadlineMs = shutdownTimeout(timeoutMs);
+      let timedOut = false;
+      let timeout;
+      const httpClosed = new Promise((resolve) => server.close(resolve));
+      server.closeIdleConnections?.();
+      await Promise.race([
+        Promise.all([httpClosed, waitForInFlightJobs()]),
+        new Promise((resolve) => {
+          timeout = setTimeout(() => {
+            timedOut = true;
+            resolve();
+          }, deadlineMs);
+          timeout.unref();
+        }),
+      ]);
+      if (timeout) clearTimeout(timeout);
+      if (timedOut) server.closeAllConnections();
+      await closeProcessor();
+      return { drained: !timedOut, activeRequests };
+    },
+  });
   return server;
 }
 
@@ -421,18 +491,14 @@ if (isMain) {
   server.listen(port, "0.0.0.0", () => {
     console.log(`Replay Method RL engine listening on :${port}`);
   });
-  const shutdown = (signal) => {
+  let shutdownStarted = false;
+  const shutdown = async (signal) => {
+    if (shutdownStarted) return;
+    shutdownStarted = true;
     console.log(`Replay Method RL engine received ${signal}; draining requests.`);
-    const deadline = setTimeout(() => {
-      server.closeAllConnections();
-      process.exit(1);
-    }, 10_000);
-    deadline.unref();
-    server.close(() => {
-      clearTimeout(deadline);
-      process.exit(0);
-    });
+    const result = await server.gracefulShutdown();
+    process.exit(result.drained ? 0 : 1);
   };
-  process.once("SIGTERM", () => shutdown("SIGTERM"));
-  process.once("SIGINT", () => shutdown("SIGINT"));
+  process.once("SIGTERM", () => { void shutdown("SIGTERM"); });
+  process.once("SIGINT", () => { void shutdown("SIGINT"); });
 }

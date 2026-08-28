@@ -1,0 +1,23 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F4F4F0"/>
+  <rect x="32" y="32" width="1136" height="566" rx="30" stroke="#D9DCD8"/>
+  <g transform="translate(76 66) scale(1.5)">
+    <path d="M5 9H9.5C14 9 13.5 18 18 18M5 27H9.5C14 27 13.5 18 18 18" stroke="#061A2E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="18" cy="18" r="2.35" fill="#061A2E"/>
+    <path d="M21 18C27.2 18 30 15.1 30 10.6C30 6.8 27.5 5.2 24.5 6.4" stroke="#061A2E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M24.9 3.9L23.7 6.8L26.8 7.8" stroke="#061A2E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="144" y="101" fill="#061A2E" font-family="Helvetica Neue,Arial,sans-serif" font-size="28" font-weight="600" letter-spacing="-1">Replay Method</text>
+  <text x="76" y="194" fill="#52606B" font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="600">REPLAY INTELLIGENCE FOR ROCKET LEAGUE</text>
+  <text x="76" y="286" fill="#061A2E" font-family="Helvetica Neue,Arial,sans-serif" font-size="66" font-weight="400" letter-spacing="-4">Find the decision</text>
+  <text x="76" y="354" fill="#061A2E" font-family="Helvetica Neue,Arial,sans-serif" font-size="66" font-weight="400" letter-spacing="-4">keeping you stuck.</text>
+  <text x="76" y="422" fill="#52606B" font-family="Helvetica Neue,Arial,sans-serif" font-size="24">10 ranked replays → one recurring decision → one focus.</text>
+  <g transform="translate(780 142)">
+    <rect width="318" height="330" rx="24" fill="#061A2E"/>
+    <path d="M40 94H95C150 94 142 165 190 165M40 236H95C150 236 142 165 190 165" stroke="#F4F4F0" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="190" cy="165" r="11" fill="#14BFD2"/>
+    <path d="M205 165C260 165 277 139 277 102C277 77 260 67 240 76" stroke="#7357FF" stroke-width="7" stroke-linecap="round"/>
+    <path d="M243 59L236 77L255 83" stroke="#7357FF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="40" y="292" fill="#F4F4F0" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="600">COMPARE → DECIDE → RECHECK</text>
+  </g>
+</svg>

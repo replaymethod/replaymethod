@@ -11,9 +11,18 @@ import {
 import { episodeTimelineSummary, normalizeEpisodeTimeline } from "./episode-timeline.mjs";
 import { frameStateSummary, normalizeFrameState } from "./frame-state.mjs";
 import { buildPerformanceSnapshot } from "./performance-snapshot.mjs";
+import { adaptiveSamplingSummary, buildAdaptiveWindows, DETAIL_SAMPLE_RATE_HZ } from "./adaptive-sampling.mjs";
+import { buildDecisionContexts, decisionContextSummary } from "./decision-context.mjs";
+import { buildMechanicsModel, mechanicsModelSummary } from "./mechanics-model.mjs";
 
-export const PARSER_VERSION = "subtr-actor@1.2.2";
-export const NORMALIZER_VERSION = "rocket-league-normalizer@0.4.0";
+const SUBTR_ACTOR_MODULE_URL = import.meta.resolve("@rlrml/subtr-actor");
+const SUBTR_ACTOR_PACKAGE = JSON.parse(readFileSync(new URL("package.json", SUBTR_ACTOR_MODULE_URL), "utf8"));
+if (typeof SUBTR_ACTOR_PACKAGE.version !== "string" || !/^\d+\.\d+\.\d+/.test(SUBTR_ACTOR_PACKAGE.version)) {
+  throw new Error("Could not resolve the installed subtr-actor parser version.");
+}
+
+export const PARSER_VERSION = `subtr-actor@${SUBTR_ACTOR_PACKAGE.version}`;
+export const NORMALIZER_VERSION = "rocket-league-normalizer@0.8.0";
 
 let initialized = false;
 
@@ -36,7 +45,7 @@ export function initializeParser() {
   if (initialized) return;
   const wasmUrl = new URL(
     "rl_replay_subtr_actor_bg.wasm",
-    import.meta.resolve("@rlrml/subtr-actor"),
+    SUBTR_ACTOR_MODULE_URL,
   );
   initSync({ module: readFileSync(fileURLToPath(wasmUrl)) });
   initialized = true;
@@ -204,7 +213,7 @@ function resolvePlayer(meta, requestedIdentity) {
   );
 }
 
-function safeReplayMetadata(info, meta, subject, playerCount, frameState, episodeTimeline, performanceSnapshot) {
+function safeReplayMetadata(info, meta, subject, playerCount, frameState, episodeTimeline, adaptiveSampling, mechanicsModel, performanceSnapshot) {
   return {
     replayInfo: info,
     matchGuid: scalarText(headerValue(meta, "MatchGUID")) || null,
@@ -215,6 +224,8 @@ function safeReplayMetadata(info, meta, subject, playerCount, frameState, episod
     evidenceEngine: {
       frameState: frameStateSummary(frameState),
       episodeTimeline: episodeTimelineSummary(episodeTimeline),
+      adaptiveSampling: adaptiveSamplingSummary(adaptiveSampling),
+      mechanicsModel: mechanicsModelSummary(mechanicsModel),
     },
     performanceSnapshot,
   };
@@ -259,6 +270,20 @@ export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
   const frameState = normalizeFrameState(ndarray, normalizedMeta.meta, 10);
   const statsTimeline = plain(get_stats_timeline(data));
   const episodeTimeline = normalizeEpisodeTimeline(statsTimeline, player.id || player.name);
+  const detailNdarray = plain(get_ndarray_with_info(
+    data,
+    ["CurrentTime", "SecondsRemaining", "BallRigidBody"],
+    ["PlayerBoost", "PlayerBallDistance", "PlayerRigidBody"],
+    DETAIL_SAMPLE_RATE_HZ,
+  ));
+  const detailFrameState = normalizeFrameState(detailNdarray, normalizedMeta.meta, DETAIL_SAMPLE_RATE_HZ);
+  const adaptiveSampling = buildAdaptiveWindows(detailFrameState, episodeTimeline);
+  const mechanicsModel = buildMechanicsModel({
+    normalized: { subjectPlayerId: player.id || player.name },
+    frameState,
+    episodeTimeline,
+    adaptiveSampling,
+  });
   const matchGuid = scalarText(headerValue(normalizedMeta.meta, "MatchGUID")) || null;
   let performanceSnapshot;
   try {
@@ -302,6 +327,8 @@ export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
       players.length,
       frameState,
       episodeTimeline,
+      adaptiveSampling,
+      mechanicsModel,
       performanceSnapshot,
     ),
     derivedMetrics: performanceSnapshot.metrics.map((metric) => ({
@@ -315,7 +342,16 @@ export function buildReplayEvidence(bytes, requestedIdentity, rank = "") {
     ],
   };
 
-  return { normalized, frameState, episodeTimeline };
+  const decisionContext = buildDecisionContexts({ normalized, frameState, episodeTimeline, adaptiveSampling, mechanicsModel });
+  normalized.metadata = {
+    ...normalized.metadata,
+    evidenceEngine: {
+      ...normalized.metadata.evidenceEngine,
+      decisionContext: decisionContextSummary(decisionContext),
+    },
+  };
+
+  return { normalized, frameState, episodeTimeline, adaptiveSampling, mechanicsModel, decisionContext };
 }
 
 export function inspectReplay(bytes, requestedIdentity, rank = "") {

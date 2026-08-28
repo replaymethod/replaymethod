@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { subsystemEnabled } from "../../lib/subsystem-controls.mjs";
+import { CustomerFooter, CustomerHeader } from "../components/CustomerChrome";
 import ReplayContribution from "./ReplayContribution";
 
 export const metadata: Metadata = {
@@ -18,7 +18,29 @@ export default async function RocketLeagueBetaPage() {
   } catch { /* Local and static previews stay fail-closed. */ }
 
   return <main className="rl-beta-page">
-    <nav className="rl-beta-nav shell"><Link className="brand" href="/" aria-label="Replay Method home"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><Link href="/">Back to start</Link></nav>
-    <div className="rl-beta-shell shell"><ReplayContribution intakeOpen={intakeOpen} /><aside className="rl-beta-trust"><span>WHAT HAPPENS AFTER UPLOAD</span><b>Your file becomes evidence only after it is checked.</b><p>The secure receipt is immediate. Parsing, player attribution and reviewer labels are separate states; none is presented as finished before it really is.</p><ul><li>Original PC .replay only</li><li>Private storage with explicit consent</li><li>Stable, revocable reviewer identities</li><li>Two blind qualified reviews before a detector can pass</li><li>Public coaching and billing remain off</li></ul></aside></div>
+    <CustomerHeader />
+    <section className="rl-beta-intro rm-shell">
+      <div>
+        <span>PRIVATE ENGINE CALIBRATION</span>
+        <h1>Help teach the engine what a good decision looks like.</h1>
+      </div>
+      <p>Send one original Rocket League PC replay. It becomes private calibration evidence—not an instant personal analysis.</p>
+    </section>
+    <div className="rl-beta-shell rm-shell">
+      <ReplayContribution intakeOpen={intakeOpen} />
+      <aside className="rl-beta-trust">
+        <span>AFTER UPLOAD</span>
+        <b>Evidence first. Claims later.</b>
+        <p>Every replay moves through separate checks for file quality, player identity and human agreement before it can improve a detector.</p>
+        <ul>
+          <li>Original PC .replay only</li>
+          <li>Private storage with explicit consent</li>
+          <li>Stable, revocable reviewer identities</li>
+          <li>Two blind reviews before a detector can pass</li>
+          <li>Never presented as finished coaching</li>
+        </ul>
+      </aside>
+    </div>
+    <CustomerFooter />
   </main>;
 }

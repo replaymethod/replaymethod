@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CustomerFooter, CustomerHeader } from "../components/CustomerChrome";
 
 export const metadata: Metadata = {
   title: "Find your Rocket League replay file | Replay Method",
@@ -11,19 +12,15 @@ const replayPath = String.raw`%USERPROFILE%\Documents\My Games\Rocket League\TAG
 
 export default function ReplayUploadPage() {
   return <main className="replay-upload-page">
-    <nav className="tool-nav shell"><Link className="brand" href="/"><span className="logo" aria-hidden="true" /><span>replay<span>method</span></span></Link><Link href="/#ten-replay-start">Back to upload</Link></nav>
+    <CustomerHeader current="product" right={<Link className="rm-header-cta" href="/analyze">Analyze <span aria-hidden="true">↗</span></Link>} />
     <section className="replay-upload-hero shell">
-      <div className="replay-upload-copy">
-        <span className="kicker">ROCKET LEAGUE · WINDOWS PC</span>
-        <h1>Find the file.<br /><em>Keep your upload moving.</em></h1>
-        <p>You need the original match file ending in <strong>.replay</strong>—not a video, screenshot or tracker link. The automated beta currently accepts PC replay files only.</p>
-        <div className="replay-requirements" aria-label="Replay requirements"><span><b>.replay</b> original format</span><span><b>16 MB</b> maximum</span><span><b>Private</b> analysis link</span></div>
-      </div>
-      <aside className="replay-upload-route" aria-label="Replay upload path"><span>YOUR ROUTE</span><ol><li className="active"><i>01</i><b>Find ten files</b></li><li><i>02</i><b>Upload &amp; resume</b></li><li><i>03</i><b>Verify 10/10</b></li><li><i>04</i><b>Cross-match report</b></li></ol></aside>
+      <div className="replay-upload-copy"><span className="kicker">Rocket League · Windows PC</span><h1>Your replay files are already on your PC.</h1></div>
+      <aside className="replay-upload-intro"><p>Open one folder, choose ten recent ranked matches and return to the upload. Keep every file in its original <strong>.replay</strong> format.</p><div><a href="#find-replays">Show me where</a><Link href="/analyze">Back to upload</Link></div><small>No install · No conversion · Private processing</small></aside>
     </section>
 
-    <section className="replay-find shell" aria-labelledby="replay-find-title">
-      <header><span>3 QUICK STEPS</span><h2 id="replay-find-title">Open the replay folder.</h2><p>No install, account or file conversion required.</p></header>
+    <section className="replay-find shell" id="find-replays" aria-labelledby="replay-find-title">
+      <nav className="replay-sandbox-tabs" aria-label="Find replay steps"><span className="active">01 · Open</span><span>02 · Choose</span><span>03 · Upload</span><small>Original PC files</small></nav>
+      <header><span>The fastest route</span><h2 id="replay-find-title">Open the folder. Pick ten. Done.</h2><p>The path below takes you straight to Rocket League&apos;s saved PC replays.</p></header>
       <div className="replay-find-grid">
         <article><i>01</i><div><span>OPEN RUN</span><h3>Press Windows + R</h3><p>This opens the Windows Run box. Close Rocket League first if you are moving or copying replay files.</p></div></article>
         <article><i>02</i><div><span>PASTE THE FOLDER</span><h3>Use the replay location</h3><code>{replayPath}</code><p>Paste the path into Run, then press Enter. The <strong>Demos</strong> folder contains saved replay files.</p></div></article>
@@ -33,12 +30,11 @@ export default function ReplayUploadPage() {
     </section>
 
     <section className="replay-next shell">
-      <div><span>READY WHEN YOU ARE</span><h2>Return with ten representative matches.</h2><p>Use the same player and ranked playlist. Invalid, duplicate or mismatched files are excluded and replaced without consuming a valid slot.</p></div>
-      <Link href="/analyze">Start the 10-replay upload <span>→</span></Link>
+      <div><span>READY WHEN YOU ARE</span><h2>Got the files? Let&apos;s find your pattern.</h2><p>Use the same player and ranked playlist. Invalid, duplicate or mismatched files are explained and never consume a valid slot.</p></div>
+      <Link href="/analyze">Return to the upload <span>→</span></Link>
     </section>
 
-    <section className="replay-review-separate shell"><div><span>DIFFERENT JOB</span><h2>Want to review the gameplay yourself?</h2><p>Finding the file gets evidence into Replay Method. The separate review checklist teaches you how to inspect spacing, challenges, boost paths and recoveries.</p></div><Link href="/guides/rocket-league-replay-review-checklist">Open the gameplay review checklist →</Link></section>
     <div className="replay-source shell"><p>Folder guidance checked against <a href="https://www.epicgames.com/help/c-202300000001619/c-0/a202300000009655?lang=en-US" target="_blank" rel="noreferrer">Epic Games Rocket League Support</a>.</p></div>
-    <footer className="tool-footer shell"><p>Replay Method · Ten matches. Recurrence first. One plan.</p><div><Link href="/guides">Free guides</Link><Link href="/privacy">Privacy</Link><a href="mailto:contact@replaymethod.xyz">Contact</a></div></footer>
+    <CustomerFooter />
   </main>;
 }

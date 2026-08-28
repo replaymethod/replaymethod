@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve, sep } from "node:path";
 import { buildReplayEvidence, inspectReplayRoster } from "../services/rl-engine/parser.mjs";
+import { containsSensitiveIdentifier } from "../services/rl-engine/review-privacy.mjs";
 
 const WINDOW_BEFORE_SECONDS = 4;
 const WINDOW_AFTER_SECONDS = 4;
@@ -72,26 +73,49 @@ function momentForCandidate(candidate, evidence) {
 const args = process.argv.slice(2);
 const outputIndex = args.indexOf("--output");
 const queueIndex = args.indexOf("--queue");
+const metadataIndex = args.indexOf("--metadata");
+const splitIndex = args.indexOf("--split");
 const output = outputIndex >= 0 ? args[outputIndex + 1] : "docs/RL_REVIEW_MOMENTS.json";
 const queuePath = queueIndex >= 0 ? args[queueIndex + 1] : "docs/RL_REVIEW_QUEUE.json";
-const optionIndexes = [outputIndex, queueIndex]
+const metadataPath = metadataIndex >= 0 ? args[metadataIndex + 1] : null;
+const split = splitIndex >= 0 ? args[splitIndex + 1] : null;
+const optionIndexes = [outputIndex, queueIndex, metadataIndex, splitIndex]
   .filter((index) => index >= 0)
   .flatMap((index) => [index, index + 1]);
 const targets = args.filter((_, index) => !optionIndexes.includes(index));
 
 if (!targets.length) {
-  console.error("Usage: node scripts/build-rl-review-moments.mjs <replay-directory> [...] [--queue queue.json] [--output moments.json]");
+  console.error("Usage: node scripts/build-rl-review-moments.mjs <replay-directory> [...] [--queue queue.json] [--metadata manifest.json --split calibration_dev] [--output moments.json]");
   process.exitCode = 1;
 } else {
   const queue = JSON.parse(readFileSync(resolve(queuePath), "utf8"));
+  if (split && (!metadataPath || split !== "calibration_dev" || queue.sourceCorpusAssignment !== split || queue.holdoutIncluded !== false)) {
+    throw new Error("Split-safe moment generation requires a calibration_dev queue, holdoutIncluded=false and its private manifest.");
+  }
   const candidatesByReplay = Map.groupBy(queue.candidates ?? [], (candidate) => candidate.replayFingerprint);
   const uniqueFiles = new Map();
-  for (const target of targets) {
-    for (const file of replayFiles(resolve(target))) {
+  const resolvedTargets = targets.map((target) => resolve(target));
+  const insideTarget = (file) => resolvedTargets.some((target) => {
+    if (file === target) return true;
+    const child = relative(target, file);
+    return child && child !== ".." && !child.startsWith(`..${sep}`) && !child.startsWith(sep);
+  });
+  const manifest = metadataPath ? JSON.parse(readFileSync(resolve(metadataPath), "utf8")) : null;
+  const manifestRows = Array.isArray(manifest?.approved) ? manifest.approved : Array.isArray(manifest?.replays) ? manifest.replays : [];
+  const selectedManifestFiles = split ? manifestRows.filter((row) => (
+    (row.split ?? row.assignment) === split
+    && candidatesByReplay.has(String(row.sha256 ?? "").slice(0, 16))
+  )).map((row) => ({ file: resolve(String(row.storagePath ?? "")), expectedHash: String(row.sha256 ?? "").toLowerCase() })) : null;
+  if (selectedManifestFiles && (selectedManifestFiles.length !== candidatesByReplay.size
+    || selectedManifestFiles.some((row) => !row.expectedHash || !insideTarget(row.file)))) {
+    throw new Error("Every queued replay must resolve to one hash-identified calibration_dev manifest path inside the explicit target.");
+  }
+  const selectedFiles = selectedManifestFiles ?? resolvedTargets.flatMap((target) => replayFiles(target).map((file) => ({ file, expectedHash: null })));
+  for (const { file, expectedHash } of selectedFiles) {
       const bytes = readFileSync(file);
       const hash = createHash("sha256").update(bytes).digest("hex");
+      if (expectedHash && hash !== expectedHash) throw new Error(`Manifest SHA-256 mismatch for ${file}.`);
       uniqueFiles.set(hash.slice(0, 16), { file, bytes: new Uint8Array(bytes) });
-    }
   }
 
   const moments = {};
@@ -108,9 +132,12 @@ if (!targets.length) {
       if (player.name) sensitiveValues.add(player.name);
       if (player.id) sensitiveValues.add(player.id);
     }
-    const subject = roster.players[0];
+    const rosterIndexes = new Set(candidates.map((candidate) => candidate.subjectRosterIndex).filter(Number.isInteger));
+    if (rosterIndexes.size > 1) throw new Error(`Replay ${fingerprint} has inconsistent subject roster indexes.`);
+    const subjectIndex = rosterIndexes.size === 1 ? [...rosterIndexes][0] : 0;
+    const subject = roster.players[subjectIndex];
     if (!subject) throw new Error(`Replay ${fingerprint} has no attributable player.`);
-    const evidence = buildReplayEvidence(replay.bytes, subject.name, "");
+    const evidence = buildReplayEvidence(replay.bytes, subject.id || subject.name, "");
     for (const candidate of candidates) {
       const moment = momentForCandidate(candidate, evidence);
       if (moment) moments[candidate.id] = moment;
@@ -130,9 +157,10 @@ if (!targets.length) {
     moments,
   };
 
+  if (containsSensitiveIdentifier(artifact, sensitiveValues)) {
+    throw new Error("Privacy check failed: a source player identifier remained in the artifact.");
+  }
   const json = `${JSON.stringify(artifact)}\n`;
-  const leakedValue = [...sensitiveValues].find((value) => value.length >= 3 && json.toLowerCase().includes(value.toLowerCase()));
-  if (leakedValue) throw new Error("Privacy check failed: a source player identifier remained in the artifact.");
   const destination = resolve(output);
   mkdirSync(dirname(destination), { recursive: true });
   writeFileSync(destination, json);
