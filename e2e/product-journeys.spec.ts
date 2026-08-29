@@ -68,7 +68,7 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".rm-home-hero h1")).toHaveText(/Stop losing for.*the same reason/i);
     await expect(page.locator(".reveal-promises")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: /Ten matches.*One clear focus/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /See the pattern.*Open the proof/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Open the moment.*See the decision/i })).toBeVisible();
     await expect(page.locator(".rm-home-trust h2")).toHaveText("The answer stays attached to the evidence.");
     await expect(page.locator('main.marcel-home input[type="file"][multiple]')).toHaveCount(1);
     await expect(page.getByRole("button", { name: /League of Legends|VALORANT/i })).toHaveCount(0);
@@ -397,44 +397,33 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".reveal-legend")).toHaveCount(0);
   });
 
-  test("the three-state replay engine stays minimal, navigable and collision-free", async ({ page }) => {
-    await page.goto("/?demoReview=1&demoAutoplay=off", { waitUntil: "load" });
+  test("the sample report connects five replay problems to one immediate focus", async ({ page }) => {
+    await page.goto("/", { waitUntil: "load" });
     await page.locator("#product").scrollIntoViewIfNeeded();
-    await expect(page.getByText("Illustrative example", { exact: true })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Before", exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator(".rm-engine-object")).toHaveCount(4);
-    await expect(page.locator(".rm-engine-ball")).toHaveCount(1);
+    await expect(page.getByText("Sample analysis", { exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Boost", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tab", { name: /^Decision\b/ })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".rm-sample-evidence li")).toHaveCount(10);
+    await expect(page.locator('.rm-sample-evidence li[data-match="true"]')).toHaveCount(4);
+    await expect(page.locator("#product-example-panel")).toContainText("Protect the net first.");
+    await expect(page.locator("#product-example-panel")).toContainText("You turn away before the net is protected.");
     await expect(page.getByText("YOU", { exact: true })).toHaveCount(0);
-    await expect(page.locator(".reveal-car, .reveal-ball, .reveal-restart")).toHaveCount(0);
+    await expect(page.locator(".reveal-car, .reveal-ball, .reveal-restart, .rm-engine-object, .rm-engine-ball, .rm-product-replay-card")).toHaveCount(0);
 
-    const assertSeparated = async () => {
-      const boxes = await page.locator(".rm-engine-object, .rm-engine-ball").evaluateAll(elements => elements.map(element => {
-        const box = element.getBoundingClientRect();
-        return { x: box.x, y: box.y, width: box.width, height: box.height };
-      }));
-      for (let first = 0; first < boxes.length; first += 1) {
-        for (let second = first + 1; second < boxes.length; second += 1) {
-          const a = boxes[first]!;
-          const b = boxes[second]!;
-          const overlapX = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
-          const overlapY = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
-          expect(overlapX > 0 && overlapY > 0, `objects ${first} and ${second} overlapped`).toBe(false);
-        }
-      }
-    };
+    await page.getByRole("button", { name: "Rewind to setup", exact: true }).click();
+    await expect(page.getByRole("tab", { name: /^Setup\b/ })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#product-example-panel")).toContainText("Corner boost opens while pressure builds.");
+    await page.getByRole("tab", { name: /^Outcome\b/ }).click();
+    await expect(page.locator("#product-example-panel")).toContainText("The next touch reaches an open layer.");
 
-    await assertSeparated();
-    await page.getByRole("tab", { name: "Replay", exact: true }).click();
-    await expect(page.locator("#loop-stage-panel")).toContainText("Repeated in 6 of 10 matches");
-    await page.waitForTimeout(850);
-    await assertSeparated();
-    await page.getByRole("tab", { name: "Replay", exact: true }).press("ArrowRight");
-    await expect(page.getByRole("tab", { name: "Better", exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#loop-stage-panel")).toContainText("Hold the second layer.");
-    await page.waitForTimeout(850);
-    await assertSeparated();
+    await page.getByRole("tab", { name: "Double commit", exact: true }).click();
+    await expect(page.locator("#product-example-panel")).toContainText("Hold the second layer.");
+    await expect(page.locator('.rm-sample-evidence li[data-match="true"]')).toHaveCount(3);
+    await page.getByRole("tab", { name: "Double commit", exact: true }).press("ArrowRight");
+    await expect(page.getByRole("tab", { name: "Last player", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#product-example-panel")).toContainText("Delay the play.");
 
-    const demo = page.locator(".rm-engine-demo");
+    const demo = page.locator(".rm-product-demo");
     await demo.evaluate((element) => {
       const swipe = (type: string, clientX: number) => {
         const event = new Event(type, { bubbles: true });
@@ -444,23 +433,22 @@ test.describe("first-time visitor funnel", () => {
       swipe("touchstart", 120);
       swipe("touchend", 320);
     });
-    await expect(page.getByRole("tab", { name: "Replay", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tab", { name: "Double commit", exact: true })).toHaveAttribute("aria-selected", "true");
   });
 
-  test("the public demo finishes once and then offers replay", async ({ page }) => {
+  test("the sample report is understandable immediately without autoplay", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     await page.locator("#product").scrollIntoViewIfNeeded();
-    await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeVisible();
-    await page.waitForTimeout(9_000);
-    await expect(page.getByRole("button", { name: "Replay", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Pause", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "You leave the net for boost.", exact: true })).toBeVisible();
+    await expect(page.locator(".rm-sample-evidence strong")).toContainText("Protect the net first.");
+    await expect(page.getByRole("button", { name: /Pause|Play demo|Replay/ })).toHaveCount(0);
   });
 
   test("reduced motion keeps the product loop legible without animated state", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/", { waitUntil: "load" });
     await expectLandingFunnel(page);
-    await expect(page.getByRole("button", { name: "Play demo", exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /^Decision\b/ })).toHaveAttribute("aria-selected", "true");
     await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze my replays/ }).click();
     await expect(page).toHaveURL(/\/#ten-replay-start$/);
   });

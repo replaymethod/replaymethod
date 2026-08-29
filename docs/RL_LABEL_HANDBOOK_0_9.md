@@ -1,14 +1,14 @@
 # Rocket League 0.9 blind-label handbook
 
 Status: private expert-calibration material for
-`rocket-league-expert-labels.v10-all-60-context-0.8`. It does not authorize
+`rocket-league-expert-labels.v11-all-60-context-0.9`. It does not authorize
 public coaching, threshold changes, challenge/frozen access or release.
 
 This file extends the complete 25-detector 0.8 handbook at
 `docs/RL_LABEL_HANDBOOK_0_8.md`, whose required SHA-256 is
-`9b09bc3f4c53fc2c3704f007781bc3f2df6032b220bb6318d106ef0facd401b4`.
-The review-plan hash of this file therefore binds the unchanged 0.8 rules plus
-the 35 additions below. Stop if that source hash differs.
+`c303cfd4eaaa6431e9538532c91c036ff933a7d94b57fa70fe42d2732d8f8806`.
+The review plan binds the ordered combination of the unchanged 0.8 rules and
+the 35 additions below. Stop if the 0.8 source hash differs.
 
 ## Universal rule
 

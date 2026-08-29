@@ -19,8 +19,8 @@ test("publishes the v16 Replay Method balanced-soft anchor mark", async () => {
   for (const value of [favicon, component, source]) {
     assert.match(value, /M18 10H36/);
     assert.match(value, /M28 19\.5H46/);
-    assert.match(value, /M32\.8 28\.7/);
-    assert.match(value, /M44\.8 28\.7/);
+    assert.match(value, /M32\.55 28\.5C33\.45 28\.5/);
+    assert.match(value, /M44\.55 28\.5C45\.45 28\.5/);
     assert.match(value, /mask/);
   }
   assert.match(source, /#091729/i);
@@ -60,4 +60,6 @@ test("publishes complete favicon, manifest, profile and social-preview surfaces"
   assert.match(manifest, /mark-v16-192\.png/);
   assert.match(manifest, /mark-v16-512\.png/);
   assert.match(generator, /public", "social/);
+  assert.match(generator, /const scale = 4/);
+  assert.match(generator, /sharp\.kernel\.lanczos3/);
 });

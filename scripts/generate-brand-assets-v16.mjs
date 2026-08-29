@@ -15,16 +15,29 @@ const og = path.join(brandDir, "og-replay-method-v16.svg");
 await mkdir(brandDir, { recursive: true });
 await mkdir(socialDir, { recursive: true });
 
+async function renderPng(source, output, width, height = width) {
+  const scale = 4;
+  const oversampled = await sharp(source)
+    .resize(width * scale, height * scale, { fit: "fill", kernel: sharp.kernel.lanczos3 })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+
+  await sharp(oversampled)
+    .resize(width, height, { fit: "fill", kernel: sharp.kernel.lanczos3 })
+    .png({ compressionLevel: 9 })
+    .toFile(output);
+}
+
 for (const size of [16, 32, 48, 64, 1024]) {
-  await sharp(mark).resize(size, size).png({ compressionLevel: 9 }).toFile(path.join(brandDir, `replay-method-mark-v16-${size}.png`));
+  await renderPng(mark, path.join(brandDir, `replay-method-mark-v16-${size}.png`), size);
 }
 
 for (const size of [180, 192, 512]) {
   const name = size === 180 ? "replay-method-apple-touch-v16-180.png" : `replay-method-mark-v16-${size}.png`;
-  await sharp(appIcon).resize(size, size).png({ compressionLevel: 9 }).toFile(path.join(brandDir, name));
+  await renderPng(appIcon, path.join(brandDir, name), size);
 }
 
-await sharp(og).resize(1200, 630).png({ compressionLevel: 9 }).toFile(path.join(brandDir, "og-replay-method-v16-1200x630.png"));
+await renderPng(og, path.join(brandDir, "og-replay-method-v16-1200x630.png"), 1200, 630);
 
 const social = [
   ["bluesky-400.png", 400],
@@ -41,8 +54,8 @@ const social = [
 ];
 
 for (const [name, size] of social) {
-  await sharp(socialIcon).resize(size, size).png({ compressionLevel: 9 }).toFile(path.join(socialDir, name));
+  await renderPng(socialIcon, path.join(socialDir, name), size);
 }
 
-await sharp(socialIcon).resize(2048, 2048).png({ compressionLevel: 9 }).toFile(path.join(socialDir, "universal-2048.png"));
-await sharp(inverseMark).resize(2048, 2048).png({ compressionLevel: 9 }).toFile(path.join(socialDir, "symbol-white-transparent-2048.png"));
+await renderPng(socialIcon, path.join(socialDir, "universal-2048.png"), 2048);
+await renderPng(inverseMark, path.join(socialDir, "symbol-white-transparent-2048.png"), 2048);
