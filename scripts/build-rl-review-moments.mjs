@@ -7,7 +7,8 @@ import { containsSensitiveIdentifier } from "../services/rl-engine/review-privac
 
 const WINDOW_BEFORE_SECONDS = 4;
 const WINDOW_AFTER_SECONDS = 4;
-const OUTPUT_SAMPLE_RATE_HZ = 5;
+const DETAIL_BEFORE_SECONDS = 1;
+const DETAIL_AFTER_SECONDS = 2;
 
 function replayFiles(target) {
   if (!existsSync(target)) return [];
@@ -28,11 +29,25 @@ function compactVector(vector) {
   return [round(vector?.x), round(vector?.y), round(vector?.z)];
 }
 
+function compactFrame(frame, center) {
+  return {
+    t: round(frame.timeSeconds - center, 3),
+    r: round(frame.secondsRemaining, 1),
+    b: compactVector(frame.ball.position),
+    p: frame.players.map((player) => [
+      ...compactVector(player.position),
+      round(player.boost, 1),
+      round(player.linearVelocity?.x),
+      round(player.linearVelocity?.y),
+      ...compactVector(player.rotation),
+    ]),
+  };
+}
+
 function momentForCandidate(candidate, evidence) {
   const center = candidate.timestampSeconds;
   if (!Number.isFinite(center)) return null;
   const sourceRate = evidence.frameState.sampleRateHz || 10;
-  const stride = Math.max(1, Math.round(sourceRate / OUTPUT_SAMPLE_RATE_HZ));
   const sourceFrames = evidence.frameState.frames.filter((frame) => (
     frame.timeSeconds >= center - WINDOW_BEFORE_SECONDS
     && frame.timeSeconds <= center + WINDOW_AFTER_SECONDS
@@ -46,17 +61,12 @@ function momentForCandidate(candidate, evidence) {
     subject: player.id.toLowerCase() === subjectId,
   }));
 
-  const frames = sourceFrames.filter((_, index) => index % stride === 0).map((frame) => ({
-    t: round(frame.timeSeconds - center, 2),
-    r: round(frame.secondsRemaining, 1),
-    b: compactVector(frame.ball.position),
-    p: frame.players.map((player) => [
-      ...compactVector(player.position),
-      round(player.boost, 1),
-      round(player.linearVelocity?.x),
-      round(player.linearVelocity?.y),
-    ]),
-  }));
+  const frames = sourceFrames.map((frame) => compactFrame(frame, center));
+  const detailSourceFrames = (evidence.adaptiveSampling?.detailFrames ?? []).filter((frame) => (
+    frame.timeSeconds >= center - DETAIL_BEFORE_SECONDS
+    && frame.timeSeconds <= center + DETAIL_AFTER_SECONDS
+  ));
+  const detailFrames = detailSourceFrames.map((frame) => compactFrame(frame, center));
 
   return {
     candidateKey: candidate.id,
@@ -64,9 +74,11 @@ function momentForCandidate(candidate, evidence) {
     detectorId: candidate.detectorId,
     centerTimeSeconds: round(center, 3),
     durationSeconds: round(frames.at(-1).t - frames[0].t, 2),
-    sampleRateHz: OUTPUT_SAMPLE_RATE_HZ,
+    sampleRateHz: sourceRate,
+    detailSampleRateHz: detailFrames.length ? evidence.adaptiveSampling?.detailSampleRateHz ?? null : null,
     roster,
     frames,
+    detailFrames,
   };
 }
 
@@ -145,10 +157,19 @@ if (!targets.length) {
   }
 
   const artifact = {
-    schemaVersion: "rocket-league-review-moments.v2",
+    schemaVersion: "rocket-league-review-moments.v3",
     sourceQueueVersion: queue.schemaVersion ?? null,
     generatedAt: new Date().toISOString(),
     privacy: "Player names and platform identifiers removed; coordinates rounded; owner-only review use.",
+    presentationTelemetry: {
+      ballPosition: true,
+      carPosition: true,
+      carVelocity: true,
+      carRotation: true,
+      boost: true,
+      contextRateHz: 10,
+      adaptiveDetailRateHz: 30,
+    },
     windowSeconds: { before: WINDOW_BEFORE_SECONDS, after: WINDOW_AFTER_SECONDS },
     replayCount: new Set(Object.values(moments).map((moment) => moment.replayFingerprint)).size,
     candidateCount: Object.keys(moments).length,

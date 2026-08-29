@@ -5,7 +5,7 @@ import "./premium-pass.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://replaymethod.xyz"),
-  title: "Replay Method — Find the decision keeping you stuck",
+  title: "Replay Method — Stop losing for the same reason",
   description: "Upload ten ranked Rocket League PC replays from the same player and playlist. Get one evidence-backed cross-match focus, or an honest abstention.",
   applicationName: "Replay Method",
   alternates: { canonical: "/" },
@@ -13,13 +13,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Replay Method",
-    title: "Replay Method — Find the decision keeping you stuck",
+    title: "Replay Method — Stop losing for the same reason",
     description: "Upload ten ranked Rocket League replays. See what keeps happening and get one focus for your next session.",
-    images: [{ url: "/brand/og-replay-method-v16-1200x630.png", width: 1200, height: 630, alt: "Replay Method — Find the decision keeping you stuck." }]
+    images: [{ url: "/brand/og-replay-method-v16-1200x630.png", width: 1200, height: 630, alt: "Replay Method — Stop losing for the same reason." }]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Replay Method — Find the decision keeping you stuck",
+    title: "Replay Method — Stop losing for the same reason",
     description: "Upload ten ranked Rocket League replays. See what keeps happening and get one focus for your next session.",
     images: ["/brand/og-replay-method-v16-1200x630.png"]
   },

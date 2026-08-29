@@ -31,11 +31,11 @@ test("renders production social metadata and the fail-closed product-first path"
   );
   const html = await response.text();
   assert.match(html, socialImageMeta);
-  assert.match(html, /Find the decision keeping you stuck/i);
+  assert.match(html, /Replay Method — Stop losing for the same reason/i);
   assert.match(html, /type="file"[^>]*multiple/i);
   assert.match(html, /Drop 10 original \.replay files/i);
   assert.match(html, /Stop losing for.*the same reason/i);
-  assert.match(html, /No clear pattern means no invented answer/i);
+  assert.match(html, /No signal, no guess/i);
   assert.doesNotMatch(html, /Your private report is ready|10 matches compared/i);
   assert.doesNotMatch(html, /Choose my game|Contribute one replay/i);
   assert.match(html, /Analyze my replays/i);

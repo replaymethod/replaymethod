@@ -44,27 +44,28 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
-test("the replay example keeps every object distinct in all three states", async ({ page }, testInfo) => {
+test("the five-sample report stays bounded and navigable", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-chromium", "One deterministic geometry pass is sufficient.");
-  await page.goto("/?demoReview=1&demoAutoplay=off#product", { waitUntil: "domcontentloaded" });
-  for (const stage of ["Before", "Replay", "Better"]) {
-    await page.getByRole("tab", { name: stage, exact: true }).click();
-    const overlaps = await page.locator(".rm-engine-field").evaluate(field => {
-      const elements = [...field.querySelectorAll(".rm-engine-object,.rm-engine-ball")];
-      const boxes = elements.map(element => ({ className: element.className, rect: element.getBoundingClientRect() }));
-      const collisions: string[] = [];
-      for (let first = 0; first < boxes.length; first += 1) {
-        for (let second = first + 1; second < boxes.length; second += 1) {
-          const a = boxes[first].rect;
-          const b = boxes[second].rect;
-          if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
-            collisions.push(`${boxes[first].className} / ${boxes[second].className}`);
-          }
-        }
-      }
-      return collisions;
+  await page.goto("/#product", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("tab", { name: "Boost", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".rm-sample-evidence li")).toHaveCount(10);
+  await expect(page.locator(".rm-product-replay-card")).toHaveCount(0);
+
+  for (const example of ["Boost", "Double commit", "Last player", "Clear", "Rotation cut"]) {
+    await page.getByRole("tab", { name: example, exact: true }).click();
+    await expect(page.getByRole("tab", { name: example, exact: true })).toHaveAttribute("aria-selected", "true");
+    const geometry = await page.locator(".rm-product-demo").evaluate(demo => {
+      const boundary = demo.getBoundingClientRect();
+      const targets = [".rm-sample-media", ".rm-sample-frame", ".rm-product-demo-output", ".rm-sample-evidence"]
+        .map(selector => demo.querySelector<HTMLElement>(selector)?.getBoundingClientRect())
+        .filter((rect): rect is DOMRect => Boolean(rect));
+      return {
+        bounded: targets.every(rect => rect.left >= boundary.left - 8 && rect.right <= boundary.right + 8 && rect.top >= boundary.top - 8 && rect.bottom <= boundary.bottom + 8),
+        targetCount: targets.length,
+      };
     });
-    expect(overlaps, `${stage} contains overlapping replay objects`).toEqual([]);
+    expect(geometry.bounded, `${example} contains an out-of-bounds report surface`).toBe(true);
+    expect(geometry.targetCount).toBe(4);
   }
 });
 
@@ -215,9 +216,7 @@ test.describe("sitewide 30-point product-quality gate", () => {
         };
       });
 
-      const expectedNotFoundState = route === "/definitely-not-a-page"
-        || route.includes("11111111111111111111111111111111")
-        || route.includes("44444444444444444444444444444444");
+      const expectedNotFoundState = route === "/definitely-not-a-page" || route.startsWith("/report/");
       const relevantBrowserErrors = expectedNotFoundState
         ? browserErrors.filter(error => !error.includes("404 (Not Found)"))
         : browserErrors;

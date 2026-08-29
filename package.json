@@ -29,6 +29,7 @@
     "rl-engine:opportunity-review-queue": "node scripts/build-rl-opportunity-review-queue.mjs",
     "rl-engine:opportunity-review-merge": "node scripts/merge-rl-opportunity-review-queues.mjs",
     "rl-engine:review-select": "node scripts/select-rl-review-queue.mjs",
+    "rl-engine:review-work-session": "node scripts/build-rl-review-work-session.mjs",
     "rl-engine:review-moments": "node scripts/build-rl-review-moments.mjs",
     "rl-engine:review-plan": "node scripts/build-rl-independent-review-plan.mjs",
     "rl-engine:review-packets": "node scripts/export-rl-blind-reviewer-packets.mjs",

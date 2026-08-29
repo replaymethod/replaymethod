@@ -36,8 +36,14 @@ export function validateBlindReviewAssets(packet, moments) {
   if (!rows.length || rows.length !== packet.candidateCount || new Set(ids).size !== rows.length) {
     throw new Error("Review packet candidate coverage is incomplete or duplicated.");
   }
-  if (moments?.schemaVersion !== "rocket-league-review-moments.v2") {
+  if (!["rocket-league-review-moments.v2", "rocket-league-review-moments.v3"].includes(moments?.schemaVersion)) {
     throw new Error("Review session requires a versioned anonymized moment artifact.");
+  }
+  if (String(packet.labelSetVersion ?? "").includes("v11-all-60")
+    && (moments.schemaVersion !== "rocket-league-review-moments.v3"
+      || moments.presentationTelemetry?.carRotation !== true
+      || Number(moments.presentationTelemetry?.contextRateHz) < 10)) {
+    throw new Error("The all-60 review requires v3 moments with car rotation and at least 10 Hz context playback.");
   }
   const missing = ids.filter((id) => !moments.moments?.[id]);
   if (missing.length) throw new Error(`Review moments are missing ${missing.length} assigned candidates.`);
@@ -108,5 +114,15 @@ export function reviewAt(packet, moments, index) {
   const rows = reviews(packet);
   if (!Number.isInteger(index) || index < 0 || index >= rows.length) throw new Error("Review index is out of range.");
   const review = rows[index];
-  return { index, review, moment: moments.moments[review.momentKey] };
+  return {
+    index,
+    review: {
+      candidateId: review.candidateId,
+      reviewQuestion: review.reviewQuestion,
+      mode: review.mode,
+      rankCohort: review.rankCohort,
+      label: review.label,
+    },
+    moment: moments.moments[review.momentKey],
+  };
 }

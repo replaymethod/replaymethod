@@ -6,16 +6,16 @@
   <defs>
     <mask id="rewind-cutout" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
       <rect width="64" height="64" fill="#fff"/>
-      <path fill="#000" d="M32.8 28.7Q34 28.5 34 30.1V42.9Q34 44.5 32.8 44.3Q32.3 44.2 31.9 43.8L27.5 37.9Q26 36.5 27.5 35.1L31.9 29.2Q32.3 28.8 32.8 28.7ZM44.8 28.7Q46 28.5 46 30.1V42.9Q46 44.5 44.8 44.3Q44.3 44.2 43.9 43.8L39.5 37.9Q38 36.5 39.5 35.1L43.9 29.2Q44.3 28.8 44.8 28.7Z"/>
+      <path fill="#000" d="M32.55 28.5C33.45 28.5 34 29.05 34 29.95V43.05C34 43.95 33.45 44.5 32.55 44.5C32.15 44.5 31.8 44.31 31.55 43.98L26.72 37.72C26.1 36.92 26.1 36.08 26.72 35.28L31.55 29.02C31.8 28.69 32.15 28.5 32.55 28.5ZM44.55 28.5C45.45 28.5 46 29.05 46 29.95V43.05C46 43.95 45.45 44.5 44.55 44.5C44.15 44.5 43.8 44.31 43.55 43.98L38.72 37.72C38.1 36.92 38.1 36.08 38.72 35.28L43.55 29.02C43.8 28.69 44.15 28.5 44.55 28.5Z"/>
     </mask>
   </defs>
   <g transform="translate(72 62)" fill="#fff" mask="url(#rewind-cutout)">
-    <path fill-rule="evenodd" d="M18 10H36Q44 10 44 18V36Q44 44 36 44H18Q10 44 10 36V18Q10 10 18 10ZM18 14.5H36Q39.5 14.5 39.5 18V36Q39.5 39.5 36 39.5H18Q14.5 39.5 14.5 36V18Q14.5 14.5 18 14.5Z"/>
-    <path d="M28 19.5H46Q54 19.5 54 27.5V45.5Q54 53.5 46 53.5H28Q20 53.5 20 45.5V27.5Q20 19.5 28 19.5Z"/>
+    <path fill-rule="evenodd" d="M18 10H36C40.42 10 44 13.58 44 18V36C44 40.42 40.42 44 36 44H18C13.58 44 10 40.42 10 36V18C10 13.58 13.58 10 18 10ZM18 14.5H36C37.93 14.5 39.5 16.07 39.5 18V36C39.5 37.93 37.93 39.5 36 39.5H18C16.07 39.5 14.5 37.93 14.5 36V18C14.5 16.07 16.07 14.5 18 14.5Z"/>
+    <path d="M28 19.5H46C50.42 19.5 54 23.08 54 27.5V45.5C54 49.92 50.42 53.5 46 53.5H28C23.58 53.5 20 49.92 20 45.5V27.5C20 23.08 23.58 19.5 28 19.5Z"/>
   </g>
   <text x="158" y="104" fill="#091729" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="25" font-weight="700" letter-spacing="-0.5">Replay Method</text>
-  <text x="72" y="286" fill="#091729" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="72" font-weight="500" letter-spacing="-4">Find the decision</text>
-  <text x="72" y="366" fill="#091729" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="72" font-weight="500" letter-spacing="-4">keeping you stuck.</text>
+  <text x="72" y="286" fill="#091729" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="72" font-weight="500" letter-spacing="-4">Stop losing for</text>
+  <text x="72" y="366" fill="#091729" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="72" font-weight="500" letter-spacing="-4">the same reason.</text>
   <text x="76" y="434" fill="#52606D" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="25">Ten replays. One evidence-backed focus.</text>
   <path d="M76 526H306" stroke="#091729" stroke-width="3" stroke-linecap="round"/>
   <circle cx="306" cy="526" r="8" fill="#091729"/>

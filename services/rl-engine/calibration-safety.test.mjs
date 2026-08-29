@@ -17,4 +17,7 @@ test("review-moment generation resolves only queued calibration_dev manifest fil
   assert.match(momentScript, /queue\.holdoutIncluded !== false/);
   assert.match(momentScript, /selectedManifestFiles\.length !== candidatesByReplay\.size/);
   assert.match(momentScript, /Manifest SHA-256 mismatch/);
+  assert.match(momentScript, /rocket-league-review-moments\.v3/);
+  assert.match(momentScript, /compactVector\(player\.rotation\)/);
+  assert.match(momentScript, /adaptiveSampling\?\.detailFrames/);
 });

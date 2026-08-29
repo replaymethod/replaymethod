@@ -62,8 +62,9 @@ test("puts the product action before explanatory browsing", async () => {
   assert.match(batchFlow, /Analyze your replays/);
   assert.match(batchFlow, /Drop 10 original \.replay files/);
   assert.match(batchFlow, /Open full upload page/);
-  assert.match(landing, /See the pattern\.<br \/>Open the proof\./);
-  assert.match(landing, /No clear pattern means no invented answer\./);
+  assert.match(landing, /Ten matches\.<br \/>One clear focus\./);
+  assert.match(landing, /No signal, no guess\./);
+  assert.match(landing, /If the pattern is not clear enough, Replay Method says so\./);
   assert.doesNotMatch(landing, /Free first analysis · No card required · Replays stay private|One free analysis · no card · private report|Replay Method · Experimental early access/);
   assert.ok(landing.indexOf("<HowItWorks") < landing.indexOf("<ProductMoment"));
   assert.match(contribution, /replay && <section className="rl-intake-context"/);

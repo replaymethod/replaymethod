@@ -10,27 +10,36 @@ import {
   reviewProgress,
   validateBlindReviewAssets,
 } from "../services/rl-engine/blind-review-session.mjs";
+import { combineLabelManuals } from "../services/rl-engine/label-manual.mjs";
 
 function argument(name, fallback = null) {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] ?? fallback : fallback;
 }
 
+function argumentsFor(name) {
+  return process.argv.flatMap((value, index) => value === name ? [process.argv[index + 1]] : []).filter(Boolean);
+}
+
 const packetPath = argument("--packet");
 const momentsPath = argument("--moments");
-const handbookPath = argument("--handbook");
+const handbookPaths = argumentsFor("--handbook");
 const outputPath = argument("--output");
 const port = Number(argument("--port", "5177"));
-if (!packetPath || !momentsPath || !handbookPath || !outputPath || !Number.isInteger(port) || port < 1024 || port > 65535) {
-  console.error("Usage: node scripts/start-rl-blind-review.mjs --packet reviewer.json --moments moments.json --handbook handbook.md --output completed.json [--port 5177]");
+if (!packetPath || !momentsPath || !handbookPaths.length || !outputPath || !Number.isInteger(port) || port < 1024 || port > 65535) {
+  console.error("Usage: node scripts/start-rl-blind-review.mjs --packet reviewer.json --moments moments.json --handbook handbook-base.md [--handbook handbook-extension.md ...] --output completed.json [--port 5177]");
   process.exit(1);
 }
 
 const sourcePacket = JSON.parse(readFileSync(resolve(packetPath), "utf8"));
 const moments = JSON.parse(readFileSync(resolve(momentsPath), "utf8"));
-const handbook = readFileSync(resolve(handbookPath), "utf8");
+const labelManual = combineLabelManuals(handbookPaths.map((path) => readFileSync(resolve(path), "utf8")));
+const handbook = labelManual.handbook;
 const destination = resolve(outputPath);
 validateBlindReviewAssets(sourcePacket, moments);
+if (sourcePacket.labelManualFingerprint !== labelManual.fingerprint) {
+  throw new Error(`Label manual fingerprint does not match the reviewer packet: expected ${sourcePacket.labelManualFingerprint}, received ${labelManual.fingerprint}.`);
+}
 
 function immutableFingerprint(packet) {
   const immutable = {
@@ -96,7 +105,7 @@ const html = `<!doctype html>
 html{color-scheme:dark}body{margin:0;background:#101417;color:#edf3f6;font:15px system-ui,sans-serif}main{max-width:1180px;margin:auto;padding:20px}.bar,.grid,.labels{display:grid;gap:12px}.bar{grid-template-columns:1fr auto auto;align-items:center}.grid{grid-template-columns:minmax(0,2fr) minmax(300px,1fr);margin-top:16px}.card{background:#192126;border:1px solid #34434b;border-radius:10px;padding:14px}canvas{width:100%;aspect-ratio:82/102;background:#174b2e;border-radius:8px}.labels{grid-template-columns:1fr 1fr}label{display:grid;gap:5px}select,input,textarea,button{font:inherit;padding:9px;background:#10171b;color:#fff;border:1px solid #4b5c65;border-radius:6px}textarea{min-height:90px;resize:vertical}button{cursor:pointer;background:#285b75}.secondary{background:#263137}.danger{background:#713333}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.muted{color:#aebbc2}.error{color:#ffadad}.ok{color:#9ee6b2}pre{white-space:pre-wrap;max-height:320px;overflow:auto}.question{font-size:19px;line-height:1.35}.meta{font-variant-numeric:tabular-nums}@media(max-width:800px){.grid{grid-template-columns:1fr}.bar{grid-template-columns:1fr}.labels{grid-template-columns:1fr}}
 </style></head><body><main>
 <div class="bar"><div><h1>Blind replay review</h1><div id="progress" class="muted"></div></div><div class="row"><button id="prev" class="secondary">Previous</button><input id="index" type="number" min="1" style="width:90px"><button id="next" class="secondary">Next</button></div></div>
-<div class="grid"><section class="card"><canvas id="field" width="820" height="1020"></canvas><div class="row"><button id="play">Play</button><input id="frame" type="range" min="0" value="0" style="flex:1"><span id="time" class="meta"></span></div><p class="muted">Top-down anonymized reconstruction. Verify the timestamp and context; do not infer model status.</p></section>
+<div class="grid"><section class="card"><canvas id="field" width="820" height="1020"></canvas><div class="row"><button id="play">Play</button><button id="viewMode" class="secondary">Detail</button><input id="frame" type="range" min="0" value="0" style="flex:1"><span id="time" class="meta"></span></div><p class="muted">Top-down anonymized reconstruction. Context shows the whole window; Detail uses retained 30 Hz decision frames when available.</p></section>
 <section class="card"><div id="meta" class="muted meta"></div><p id="question" class="question"></p><div class="labels">
 <label>Gameplay truth<select id="truth"><option value="">Choose</option><option>present</option><option>absent</option><option>uncertain</option></select></label>
 <label>Timestamp correct<select id="timestamp"><option value="">Choose</option><option value="true">yes</option><option value="false">no</option></select></label>
@@ -107,14 +116,16 @@ html{color-scheme:dark}body{margin:0;background:#101417;color:#edf3f6;font:15px 
 <section class="card" style="margin-top:16px"><details><summary>Label handbook</summary><pre id="handbook"></pre></details></section>
 <section class="card" style="margin-top:16px"><h2>Finalize submission</h2><div class="labels"><label>Reviewer ID<input id="reviewerId"></label><label>Qualification<input id="qualification" placeholder="Rank and review experience"></label></div><button id="finalize" class="danger" style="margin-top:12px">Finalize only when all decisions are complete</button></section>
 </main><script>
-let session,current,index=0,playing=false,timer=null;const $=id=>document.getElementById(id);const bool=v=>v===''?null:v==='true';
+let session,current,index=0,playing=false,detail=false,timer=null;const $=id=>document.getElementById(id);const bool=v=>v===''?null:v==='true';
 async function api(path,options){const r=await fetch(path,options);const value=await r.json();if(!r.ok)throw new Error(value.error||'Request failed');return value}
-function draw(){if(!current)return;const c=$('field'),x=c.getContext('2d'),frames=current.moment.frames||[],f=frames[+$('frame').value]||frames[0];x.clearRect(0,0,c.width,c.height);x.fillStyle='#174b2e';x.fillRect(0,0,c.width,c.height);x.strokeStyle='#d9eee0';x.lineWidth=3;x.strokeRect(1,1,c.width-2,c.height-2);x.beginPath();x.moveTo(0,c.height/2);x.lineTo(c.width,c.height/2);x.stroke();x.beginPath();x.arc(c.width/2,c.height/2,90,0,Math.PI*2);x.stroke();if(!f)return;const px=v=>(v+4096)/8192*c.width,py=v=>c.height-(v+5120)/10240*c.height;(f.p||[]).forEach((p,i)=>{const r=current.moment.roster[i]||{};x.fillStyle=r.subject?'#ffe66d':r.team===0?'#69b7ff':'#ff7272';x.beginPath();x.arc(px(p[0]),py(p[1]),r.subject?12:9,0,Math.PI*2);x.fill()});x.fillStyle='#fff';x.beginPath();x.arc(px(f.b[0]),py(f.b[1]),8,0,Math.PI*2);x.fill();$('time').textContent=(f.t>=0?'+':'')+f.t.toFixed(2)+' s'}
+function playbackFrames(){return detail&&current?.moment.detailFrames?.length?current.moment.detailFrames:(current?.moment.frames||[])}
+function yaw(p){const value=Number(p?.[8]||0);return Math.abs(value)>7?value*Math.PI/32768:value}
+function draw(){if(!current)return;const c=$('field'),x=c.getContext('2d'),frames=playbackFrames(),f=frames[+$('frame').value]||frames[0];x.clearRect(0,0,c.width,c.height);x.fillStyle='#174b2e';x.fillRect(0,0,c.width,c.height);x.strokeStyle='#d9eee0';x.lineWidth=3;x.strokeRect(1,1,c.width-2,c.height-2);x.beginPath();x.moveTo(0,c.height/2);x.lineTo(c.width,c.height/2);x.stroke();x.beginPath();x.arc(c.width/2,c.height/2,90,0,Math.PI*2);x.stroke();if(!f)return;const px=v=>(v+4096)/8192*c.width,py=v=>c.height-(v+5120)/10240*c.height;(f.p||[]).forEach((p,i)=>{const r=current.moment.roster[i]||{},cx=px(p[0]),cy=py(p[1]);x.save();x.translate(cx,cy);x.rotate(-yaw(p));x.fillStyle=r.subject?'#ffe66d':r.team===0?'#69b7ff':'#ff7272';x.fillRect(r.subject?-14:-11,r.subject?-8:-6,r.subject?28:22,r.subject?16:12);x.strokeStyle='#101417';x.lineWidth=2;x.beginPath();x.moveTo(2,0);x.lineTo(r.subject?18:15,0);x.stroke();x.restore()});x.fillStyle='#fff';x.beginPath();x.arc(px(f.b[0]),py(f.b[1]),8,0,Math.PI*2);x.fill();$('time').textContent=(f.t>=0?'+':'')+f.t.toFixed(3)+' s'}
 function loadLabel(l){$('truth').value=l.gameplayTruth||'';$('timestamp').value=l.timestampVerified===null?'':String(l.timestampVerified);$('context').value=l.contextCorrect===null?'':String(l.contextCorrect);$('relevance').value=l.coachingRelevance===null?'':String(l.coachingRelevance);$('ambiguous').value=l.ambiguous===null?'':String(l.ambiguous);$('notes').value=l.notes||''}
-async function load(i){index=Math.max(0,Math.min(session.total-1,i));current=await api('/api/review?index='+index);$('index').value=index+1;$('index').max=session.total;$('question').textContent=current.review.reviewQuestion;$('meta').textContent=(index+1)+' / '+session.total+' · '+current.review.detectorId+'@'+current.review.detectorVersion+' · '+current.review.mode+' · '+current.review.rankCohort;$('frame').max=Math.max(0,current.moment.frames.length-1);$('frame').value=0;loadLabel(current.review.label);draw()}
+async function load(i){index=Math.max(0,Math.min(session.total-1,i));current=await api('/api/review?index='+index);detail=false;$('viewMode').textContent='Detail';$('viewMode').disabled=!current.moment.detailFrames?.length;$('index').value=index+1;$('index').max=session.total;$('question').textContent=current.review.reviewQuestion;$('meta').textContent=(index+1)+' / '+session.total+' · '+current.review.mode+' · '+current.review.rankCohort;$('frame').max=Math.max(0,current.moment.frames.length-1);$('frame').value=0;loadLabel(current.review.label);draw()}
 async function refresh(){session=await api('/api/session');$('progress').textContent=session.progress.complete+' complete · '+session.progress.remaining+' remaining · '+session.reviewerSlot;$('reviewerId').value=session.reviewer.reviewerId||'';$('qualification').value=session.reviewer.qualification||'';$('handbook').textContent=session.handbook}
 async function save(){try{$('status').className='';$('status').textContent='Saving…';const label={gameplayTruth:$('truth').value,timestampVerified:bool($('timestamp').value),contextCorrect:bool($('context').value),coachingRelevance:bool($('relevance').value),ambiguous:bool($('ambiguous').value),notes:$('notes').value};await api('/api/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({candidateId:current.review.candidateId,label})});$('status').className='ok';$('status').textContent='Saved';await refresh();await load(index+1)}catch(e){$('status').className='error';$('status').textContent=e.message}}
-$('prev').onclick=()=>load(index-1);$('next').onclick=()=>load(index+1);$('index').onchange=()=>load(+$('index').value-1);$('frame').oninput=draw;$('save').onclick=save;$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'Pause':'Play';clearInterval(timer);if(playing)timer=setInterval(()=>{let n=+$('frame').value+1;if(n>+$('frame').max)n=0;$('frame').value=n;draw()},200)};$('finalize').onclick=async()=>{try{const value=await api('/api/finalize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reviewerId:$('reviewerId').value,qualification:$('qualification').value})});alert('Finalized at '+value.submittedAt);await refresh()}catch(e){alert(e.message)}};
+$('prev').onclick=()=>load(index-1);$('next').onclick=()=>load(index+1);$('index').onchange=()=>load(+$('index').value-1);$('frame').oninput=draw;$('save').onclick=save;$('viewMode').onclick=()=>{detail=!detail;$('viewMode').textContent=detail?'Context':'Detail';const frames=playbackFrames();$('frame').max=Math.max(0,frames.length-1);$('frame').value=0;playing=false;$('play').textContent='Play';clearInterval(timer);draw()};$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'Pause':'Play';clearInterval(timer);if(playing)timer=setInterval(()=>{let n=+$('frame').value+1;if(n>+$('frame').max)n=0;$('frame').value=n;draw()},detail?33:100)};$('finalize').onclick=async()=>{try{const value=await api('/api/finalize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reviewerId:$('reviewerId').value,qualification:$('qualification').value})});alert('Finalized at '+value.submittedAt);await refresh()}catch(e){alert(e.message)}};
 (async()=>{await refresh();await load(0)})().catch(e=>document.body.textContent=e.message);
 </script></body></html>`;
 
