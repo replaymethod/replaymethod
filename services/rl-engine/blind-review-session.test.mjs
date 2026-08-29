@@ -66,6 +66,16 @@ test("saves a complete decision and finalizes only complete packets", () => {
 
 test("retrieves only an assigned anonymized moment", () => {
   const { packet, moments } = fixture();
-  assert.equal(reviewAt(packet, moments, 0).review.detectorId, "detector");
+  const presented = reviewAt(packet, moments, 0);
+  assert.equal(presented.review.candidateId, "replay:detector@0.1.0:opportunity");
+  assert.equal(presented.review.detectorId, undefined);
+  assert.equal(presented.review.detectorVersion, undefined);
+  assert.equal(presented.review.replayFingerprint, undefined);
   assert.throws(() => reviewAt(packet, moments, 1), /out of range/);
+});
+
+test("all-60 review rejects low-rate moments without rotation", () => {
+  const { packet, moments } = fixture();
+  packet.labelSetVersion = "rocket-league-expert-labels.v11-all-60-context-0.9";
+  assert.throws(() => validateBlindReviewAssets(packet, moments), /requires v3 moments/);
 });

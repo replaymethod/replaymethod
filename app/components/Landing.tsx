@@ -24,78 +24,110 @@ function FutureGame({ game }: { game: "league" | "valorant" }) {
   </main>;
 }
 
-const loopStages = [
-  { key: "before", label: "Before", eyebrow: "The moment", title: "Double commit", body: "Two players choose the same layer." },
-  { key: "replay", label: "Replay", eyebrow: "The pattern", title: "Repeated in 6 of 10 matches", body: "The same decision appears across comparable moments." },
-  { key: "better", label: "Better", eyebrow: "Your next rule", title: "Hold the second layer.", body: "Protect the next touch instead of following the same ball." },
+type SampleMoment = "setup" | "decision" | "outcome";
+
+const sampleReports = [
+  {
+    key: "boost",
+    nav: "Boost",
+    timestamp: "03:42.18",
+    title: "You leave the net for boost.",
+    summary: "Pressure is still live when you turn away from the defensive layer.",
+    evidence: "4 similar moments in this sample",
+    rule: "Protect the net first.",
+    matches: [1, 3, 6, 8],
+    clip: null as string | null,
+    moments: {
+      setup: { label: "Setup", time: "−2.0s", copy: "Corner boost opens while pressure builds." },
+      decision: { label: "Decision", time: "03:42.18", copy: "You turn away before the net is protected." },
+      outcome: { label: "Outcome", time: "+1.4s", copy: "The next touch reaches an open layer." },
+    },
+  },
+  {
+    key: "double",
+    nav: "Double commit",
+    timestamp: "01:17.64",
+    title: "You follow the same ball.",
+    summary: "Both players attack one touch and leave the next layer empty.",
+    evidence: "3 similar moments in this sample",
+    rule: "Hold the second layer.",
+    matches: [2, 5, 9],
+    clip: null as string | null,
+    moments: {
+      setup: { label: "Setup", time: "−1.8s", copy: "Your teammate is already moving into the challenge." },
+      decision: { label: "Decision", time: "01:17.64", copy: "You accelerate into the same touch." },
+      outcome: { label: "Outcome", time: "+1.1s", copy: "The loose ball has no second player behind it." },
+    },
+  },
+  {
+    key: "last",
+    nav: "Last player",
+    timestamp: "04:06.31",
+    title: "You dive as the last player.",
+    summary: "The challenge removes the only layer still protecting the counter.",
+    evidence: "5 similar moments in this sample",
+    rule: "Delay the play.",
+    matches: [0, 2, 4, 7, 9],
+    clip: null as string | null,
+    moments: {
+      setup: { label: "Setup", time: "−2.2s", copy: "Both teammates are recovering behind the play." },
+      decision: { label: "Decision", time: "04:06.31", copy: "You commit before support has returned." },
+      outcome: { label: "Outcome", time: "+1.6s", copy: "One touch sends the counter past the last defender." },
+    },
+  },
+  {
+    key: "clear",
+    nav: "Clear",
+    timestamp: "02:28.90",
+    title: "Your clear becomes their pass.",
+    summary: "A central touch gives pressure straight back instead of ending it.",
+    evidence: "4 similar moments in this sample",
+    rule: "Clear away from pressure.",
+    matches: [1, 4, 5, 8],
+    clip: null as string | null,
+    moments: {
+      setup: { label: "Setup", time: "−1.5s", copy: "You reach the ball with space toward the side wall." },
+      decision: { label: "Decision", time: "02:28.90", copy: "The clear is played back through the middle." },
+      outcome: { label: "Outcome", time: "+1.2s", copy: "The opponent receives another attack immediately." },
+    },
+  },
+  {
+    key: "rotation",
+    nav: "Rotation cut",
+    timestamp: "03:09.47",
+    title: "You cut into your teammate's play.",
+    summary: "The rotation compresses into one space and removes the useful player behind it.",
+    evidence: "3 similar moments in this sample",
+    rule: "Rotate behind the play.",
+    matches: [0, 6, 9],
+    clip: null as string | null,
+    moments: {
+      setup: { label: "Setup", time: "−2.0s", copy: "Your teammate has the closer, cleaner line to the ball." },
+      decision: { label: "Decision", time: "03:09.47", copy: "You turn across the rotation and enter the same lane." },
+      outcome: { label: "Outcome", time: "+1.3s", copy: "No player remains ready for the next touch." },
+    },
+  },
 ] as const;
 
-const LOOP_STAGE_DURATIONS_MS = [2200, 2400, 2600] as const;
-
 function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
-  const [activeStage, setActiveStage] = useState(0);
-  const [playback, setPlayback] = useState<"idle" | "playing" | "paused" | "complete">("idle");
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const [autoplayDisabled, setAutoplayDisabled] = useState(false);
+  const [activeExample, setActiveExample] = useState(0);
+  const [activeMoment, setActiveMoment] = useState<SampleMoment>("decision");
   const touchStart = useRef<number | null>(null);
-  const demoRef = useRef<HTMLDivElement>(null);
-  const hasAutoplayed = useRef(false);
-  const stage = loopStages[activeStage];
+  const example = sampleReports[activeExample];
+  const moment = example.moments[activeMoment];
 
-  useEffect(() => {
-    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const applyPreference = () => setReducedMotion(preference.matches);
-    applyPreference();
-    preference.addEventListener("change", applyPreference);
-    return () => preference.removeEventListener("change", applyPreference);
-  }, []);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      const query = new URLSearchParams(window.location.search);
-      const localReview = ["localhost", "127.0.0.1"].includes(window.location.hostname) && query.get("demoReview") === "1";
-      setAutoplayDisabled(localReview && query.get("demoAutoplay") === "off");
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    const target = demoRef.current;
-    const query = new URLSearchParams(window.location.search);
-    const localAutoplayOff = ["localhost", "127.0.0.1"].includes(window.location.hostname) && query.get("demoReview") === "1" && query.get("demoAutoplay") === "off";
-    if (!target || reducedMotion || autoplayDisabled || localAutoplayOff || hasAutoplayed.current) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting || hasAutoplayed.current) return;
-      hasAutoplayed.current = true;
-      setActiveStage(0);
-      setPlayback("playing");
-      observer.disconnect();
-    }, { threshold: 0.35 });
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [autoplayDisabled, reducedMotion]);
-
-  useEffect(() => {
-    if (playback !== "playing") return;
-    const timer = window.setTimeout(() => {
-      if (activeStage === loopStages.length - 1) setPlayback("complete");
-      else setActiveStage(current => current + 1);
-    }, LOOP_STAGE_DURATIONS_MS[activeStage]);
-    return () => window.clearTimeout(timer);
-  }, [activeStage, playback]);
-
-  function chooseStage(index: number, manual = true) {
-    setActiveStage((index + loopStages.length) % loopStages.length);
-    if (manual) setPlayback("paused");
+  function chooseExample(index: number) {
+    setActiveExample((index + sampleReports.length) % sampleReports.length);
+    setActiveMoment("decision");
   }
 
-  function handleStageKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    const keys: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: loopStages.length - 1 };
+  function handleExampleKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const keys: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: sampleReports.length - 1 };
     if (!(event.key in keys)) return;
     event.preventDefault();
-    const next = (keys[event.key] + loopStages.length) % loopStages.length;
-    chooseStage(next);
-    document.getElementById(`loop-stage-${next}`)?.focus();
+    const next = (keys[event.key] + sampleReports.length) % sampleReports.length;
+    chooseExample(next);
+    document.getElementById(`product-example-${next}`)?.focus();
   }
 
   function beginSwipe(event: TouchEvent<HTMLElement>) {
@@ -107,36 +139,55 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
     const distance = (event.changedTouches[0]?.clientX ?? touchStart.current) - touchStart.current;
     touchStart.current = null;
     if (Math.abs(distance) < 45) return;
-    chooseStage(activeStage + (distance < 0 ? 1 : -1));
-  }
-
-  function play() {
-    if (playback === "complete") setActiveStage(0);
-    setPlayback("playing");
+    chooseExample(activeExample + (distance < 0 ? 1 : -1));
   }
 
   return <section className="rm-engine-section" id="product">
     <div className="reveal-shell">
-      <header className="rm-engine-intro"><span className="reveal-kicker">Product proof</span><h2>See the pattern.<br />Open the proof.</h2><p>Every finding links back to the replay moments behind it. No clear pattern means no invented answer.</p></header>
-      <div ref={demoRef} className="rm-engine-demo" data-playback={playback} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
-        <header className="rm-engine-bar"><span><i />Illustrative example</span><small>Comparable 2v2 moments</small></header>
-        <div className="rm-engine-stage">
-          <div className={`rm-engine-field stage-${stage.key}`} role="img" aria-label={`Illustrative replay engine view showing the ${stage.label.toLowerCase()} state of a repeated double commit.`}>
-            <span className="rm-engine-pitch" aria-hidden="true"><i className="rm-engine-midline" /><i className="rm-engine-circle" /><i className="rm-engine-goal rm-engine-goal-left" /><i className="rm-engine-goal rm-engine-goal-right" /></span>
-            <i className="rm-engine-object rm-engine-subject" aria-hidden="true" />
-            <i className="rm-engine-object rm-engine-mate" aria-hidden="true" />
-            <i className="rm-engine-object rm-engine-opponent-one" aria-hidden="true" />
-            <i className="rm-engine-object rm-engine-opponent-two" aria-hidden="true" />
-            <i className="rm-engine-ball" aria-hidden="true" />
-            <span className="rm-engine-state" aria-hidden="true">{stage.label}</span>
+      <header className="rm-engine-intro"><span className="reveal-kicker">Interactive sample report</span><h2>Open the moment.<br />See the decision.</h2><p>Choose a familiar mistake. The replay moment, supporting sample and one next-queue rule stay in the same view.</p></header>
+      <div className="rm-product-demo" data-example={example.key} data-moment={activeMoment} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
+        <header className="rm-product-demo-bar">
+          <span><i />Sample analysis</span>
+          <small><b>Input</b> 10 replays <i aria-hidden="true">→</i> <b>Output</b> one supported focus</small>
+        </header>
+
+        <nav className="rm-product-demo-nav" aria-label="Common replay pattern examples">
+          <button className="rm-product-demo-arrow" type="button" aria-label="Previous example" onClick={() => chooseExample(activeExample - 1)}>←</button>
+          <div role="tablist" aria-label="Replay pattern examples">
+            {sampleReports.map((item, index) => <button id={`product-example-${index}`} type="button" role="tab" aria-label={item.nav} aria-selected={activeExample === index} aria-controls="product-example-panel" tabIndex={activeExample === index ? 0 : -1} onClick={() => chooseExample(index)} onKeyDown={event => handleExampleKey(event, index)} key={item.key}><span>{String(index + 1).padStart(2, "0")}</span>{item.nav}</button>)}
           </div>
-          <div className="rm-engine-output" id="loop-stage-panel" role="tabpanel" aria-live={playback === "playing" ? "off" : "polite"} aria-labelledby={`loop-stage-${activeStage}`}>
-            <div className="rm-engine-output-head"><span>{stage.eyebrow}</span><div aria-label="Example playback control">{playback === "playing" ? <button type="button" onClick={() => setPlayback("paused")}>Pause</button> : playback === "complete" ? <button type="button" onClick={play}>Replay</button> : <button type="button" onClick={play}>Play demo</button>}</div></div>
-            <div key={stage.key} className="rm-engine-copy"><h3>{stage.title}</h3><p>{stage.body}</p></div>
-            <div className="rm-engine-tabs" role="tablist" aria-label="Replay comparison states">{loopStages.map((item,index)=><button id={`loop-stage-${index}`} type="button" role="tab" aria-label={item.label} aria-selected={activeStage===index} aria-controls="loop-stage-panel" tabIndex={activeStage===index?0:-1} onClick={()=>chooseStage(index)} onKeyDown={event=>handleStageKey(event,index)} key={item.key}><span>{String(index+1).padStart(2,"0")}</span>{item.label}</button>)}</div>
-          </div>
+          <button className="rm-product-demo-arrow" type="button" aria-label="Next example" onClick={() => chooseExample(activeExample + 1)}>→</button>
+        </nav>
+
+        <div className="rm-product-demo-stage">
+          <figure className="rm-sample-media" aria-labelledby="sample-moment-title">
+            <div className="rm-sample-frame">
+              {example.clip ? <video src={example.clip} muted playsInline preload="metadata" /> : <div className="rm-sample-media-adapter" aria-hidden="true"><i /><i /><i /><span><ReplayMark /></span></div>}
+              <span className="rm-sample-frame-label">Original replay · sample view</span>
+              <span className="rm-sample-frame-time">{moment.time}</span>
+              <div className="rm-sample-freeze"><span>{moment.label}</span><i /></div>
+            </div>
+            <figcaption>
+              <button type="button" onClick={() => setActiveMoment("setup")} aria-label="Rewind to setup">↶ <span>Rewind 2 sec</span></button>
+              <div role="tablist" aria-label="Replay moment states">
+                {(Object.keys(example.moments) as SampleMoment[]).map(key => <button type="button" role="tab" aria-selected={activeMoment === key} onClick={() => setActiveMoment(key)} key={key}><span>{example.moments[key].label}</span><small>{example.moments[key].time}</small></button>)}
+              </div>
+            </figcaption>
+          </figure>
+
+          <aside className="rm-product-demo-output" id="product-example-panel" role="tabpanel" aria-live="polite" aria-labelledby={`product-example-${activeExample}`}>
+            <span>Sample pattern {String(activeExample + 1).padStart(2, "0")} / {String(sampleReports.length).padStart(2, "0")}</span>
+            <div key={example.key} className="rm-product-demo-copy"><h3 id="sample-moment-title">{example.title}</h3><p>{example.summary}</p></div>
+            <div className="rm-sample-moment-copy" key={`${example.key}-${activeMoment}`}><small>{moment.label} · {moment.time}</small><p>{moment.copy}</p></div>
+            <div className="rm-sample-evidence">
+              <div><span>10 replays</span><ol aria-label={example.evidence}>{Array.from({ length: 10 }, (_, index) => <li data-match={(example.matches as readonly number[]).includes(index)} key={index}><span>{index + 1}</span></li>)}</ol></div>
+              <i aria-hidden="true">→</i><strong><small>One focus</small>{example.rule}</strong>
+            </div>
+            <a href="#ten-replay-start" onClick={() => trackProductEvent("analysis_start", "rocket-league", `sample_report_${example.key}`)}>Analyze my replays <i aria-hidden="true">↗</i></a>
+          </aside>
         </div>
-        <footer className="rm-engine-foot"><span>One moment shows the method.</span><span>{earlyAccessOpen ? "Ten matches reveal what repeats." : "Public output opens only when the evidence holds."}</span></footer>
+
+        <footer className="rm-product-demo-foot"><span>Browse with the tabs, arrows or a horizontal swipe.</span><span>{earlyAccessOpen ? "Illustrative · real reports stay attached to their replay moments." : "Illustrative · public output opens only when the evidence holds."}</span></footer>
       </div>
     </div>
   </section>;

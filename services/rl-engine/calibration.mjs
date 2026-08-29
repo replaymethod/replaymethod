@@ -1102,6 +1102,130 @@ export function mergeOpportunityReviewQueues(queues, {
   };
 }
 
+/**
+ * Creates a bounded first-pass work session from a larger private opportunity
+ * queue. Model status is used only for hidden stratification and remains
+ * redacted from exported reviewer packets.
+ */
+export function buildReviewWorkSession(reviewQueue, reviewMoments, {
+  perDetector = 8,
+  rareFiringThreshold = 12,
+  labelSetVersion = "rocket-league-expert-labels.v11-all-60-context-0.9",
+} = {}) {
+  if (!Number.isInteger(perDetector) || perDetector < 6) {
+    throw new Error("Review work sessions require at least six candidates per detector.");
+  }
+  if (!Number.isInteger(rareFiringThreshold) || rareFiringThreshold < 1) {
+    throw new Error("rareFiringThreshold must be a positive integer.");
+  }
+  if (reviewQueue?.schemaVersion !== OPPORTUNITY_REVIEW_QUEUE_VERSION
+    || reviewQueue?.sourceCorpusAssignment !== "calibration_dev"
+    || reviewQueue?.holdoutIncluded !== false
+    || reviewQueue?.blindReview !== true) {
+    throw new Error("Review work sessions require a blind calibration_dev opportunity queue with no holdout data.");
+  }
+  const sourceCandidates = reviewQueue.candidates ?? [];
+  const sourceIds = sourceCandidates.map((candidate) => candidate.id);
+  if (!sourceIds.length || new Set(sourceIds).size !== sourceIds.length) {
+    throw new Error("Review work sessions require unique source candidates.");
+  }
+  if (!["rocket-league-review-moments.v2", "rocket-league-review-moments.v3"].includes(reviewMoments?.schemaVersion)
+    || sourceCandidates.some((candidate) => !reviewMoments.moments?.[candidate.id])) {
+    throw new Error("Review work sessions require a materialized moment for every source candidate.");
+  }
+
+  const statusOrder = ["firing", "non_firing", "abstained"];
+  const selected = [];
+  const rareDetectors = [];
+  const detectorGroups = [...Map.groupBy(sourceCandidates, (candidate) => candidate.detectorId).entries()]
+    .sort(([left], [right]) => left.localeCompare(right));
+
+  for (const [detectorId, detectorCandidates] of detectorGroups) {
+    const byStatus = Map.groupBy(detectorCandidates, (candidate) => candidate.opportunityStatus);
+    const chosen = [];
+    const chosenIds = new Set();
+    const add = (rows) => {
+      for (const row of rows) {
+        if (chosenIds.has(row.id)) continue;
+        chosenIds.add(row.id);
+        chosen.push(row);
+      }
+    };
+    const sample = (status, count) => balancedOpportunitySample(
+      (byStatus.get(status) ?? []).filter((candidate) => !chosenIds.has(candidate.id)),
+      Math.max(0, count),
+      1,
+    );
+    const firing = byStatus.get("firing") ?? [];
+    if (firing.length > 0 && firing.length <= rareFiringThreshold) {
+      rareDetectors.push({ detectorId, availableFirings: firing.length });
+      add(firing);
+      if (firing.length <= perDetector) {
+        const remaining = perDetector - firing.length;
+        add(sample("non_firing", Math.ceil(remaining / 2)));
+        add(sample("abstained", Math.floor(remaining / 2)));
+      } else {
+        add(sample("non_firing", 2));
+        add(sample("abstained", 2));
+      }
+    } else {
+      const base = Math.floor(perDetector / statusOrder.length);
+      const remainder = perDetector % statusOrder.length;
+      statusOrder.forEach((status, index) => add(sample(status, base + (index < remainder ? 1 : 0))));
+    }
+
+    let fillIndex = 0;
+    while (chosen.length < perDetector) {
+      const before = chosen.length;
+      add(sample(statusOrder[fillIndex % statusOrder.length], 1));
+      fillIndex += 1;
+      if (fillIndex >= statusOrder.length && chosen.length === before) {
+        const fallback = detectorCandidates.find((candidate) => !chosenIds.has(candidate.id));
+        if (!fallback) break;
+        add([fallback]);
+        fillIndex = 0;
+      }
+    }
+    if (chosen.length < perDetector) {
+      throw new Error(`${detectorId} has only ${chosen.length} usable review candidates; ${perDetector} are required.`);
+    }
+    selected.push(...chosen);
+  }
+
+  const detectorStatusCounts = Object.fromEntries([...Map.groupBy(selected, (candidate) => candidate.detectorId).entries()]
+    .map(([detectorId, rows]) => [detectorId, Object.fromEntries([...Map.groupBy(rows, (candidate) => candidate.opportunityStatus).entries()]
+      .map(([status, statusRows]) => [status, statusRows.length]))]));
+  const candidates = selected.map((candidate) => structuredClone(candidate));
+  const moments = Object.fromEntries(candidates.map((candidate) => [candidate.id, reviewMoments.moments[candidate.id]]));
+  return {
+    queue: {
+      ...reviewQueue,
+      generatedAt: new Date().toISOString(),
+      labelSetVersion: String(labelSetVersion),
+      sourceQueueLabelSetVersion: reviewQueue.labelSetVersion,
+      selection: {
+        strategy: "Deterministic first-pass review: eight balanced firing/non-firing/abstained candidates per detector, while retaining every rare firing plus control examples.",
+        requestedPerDetector: perDetector,
+        rareFiringThreshold,
+        selectedCandidates: candidates.length,
+        detectorCount: detectorGroups.length,
+        rareDetectors,
+        detectorStatusCounts,
+      },
+      candidates,
+    },
+    moments: {
+      ...reviewMoments,
+      generatedAt: new Date().toISOString(),
+      replayCount: new Set(candidates.map((candidate) => candidate.replayFingerprint)).size,
+      candidateCount: candidates.length,
+      missingCandidateCount: 0,
+      missingReplays: [],
+      moments,
+    },
+  };
+}
+
 export function opportunityMetricsFromLabels(reviewQueue, detectorId) {
   const reviewed = (reviewQueue?.candidates ?? []).filter((candidate) => (
     candidate.detectorId === detectorId

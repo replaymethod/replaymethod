@@ -14,6 +14,7 @@ import {
   buildAdjudicationQueue,
   buildIndependentReviewPlan,
   buildBlindReviewerPackets,
+  buildReviewWorkSession,
   mergeBlindReviewerSubmissions,
   finalizeBlindReviewAdjudication,
   detectorReviewQuestion,
@@ -408,6 +409,55 @@ test("opportunity queue fails closed when a protected split is present", () => {
   assert.throws(() => buildOpportunityReviewQueue({ reproducibilityFingerprint: "x", replays: [{ corpusAssignment: "frozen_blind_holdout" }] }), /only explicit calibration_dev/);
   assert.throws(() => buildOpportunityReviewQueue({ reproducibilityFingerprint: "x", replays: [{ corpusAssignment: null }] }), /only explicit calibration_dev/);
   assert.throws(() => buildOpportunityReviewQueue({ reproducibilityFingerprint: "x", replays: [{ corpusAssignment: "calibration_dev", evidenceSource: "synthetic_fixture", attributionState: "verified", replayFingerprint: "a" }] }), /real_replay/);
+});
+
+test("review work session bounds the first pass while retaining rare firings", () => {
+  const rows = (detectorId, status, count) => Array.from({ length: count }, (_, index) => ({
+    id: `${detectorId}:${status}:${index}`,
+    detectorId,
+    detectorVersion: "0.9.0",
+    opportunityStatus: status,
+    opportunityContextKey: `context-${index % 2}`,
+    replayFingerprint: `${detectorId}-replay-${index}`,
+    cohortKey: `${index % 2 ? "2v2" : "3v3"}:diamond-champion`,
+    mode: index % 2 ? "2v2" : "3v3",
+    rankCohort: "diamond-champion",
+    reviewQuestion: "Is the behavior present?",
+    timestampSeconds: index,
+  }));
+  const candidates = [
+    ...rows("common", "firing", 20), ...rows("common", "non_firing", 20), ...rows("common", "abstained", 20),
+    ...rows("rare", "firing", 5), ...rows("rare", "non_firing", 20), ...rows("rare", "abstained", 20),
+  ];
+  const queue = {
+    schemaVersion: "rocket-league-opportunity-review-queue.v1",
+    sourceReportFingerprint: "source",
+    labelSetVersion: "old-label-set",
+    sourceCorpusAssignment: "calibration_dev",
+    holdoutIncluded: false,
+    blindReview: true,
+    candidates,
+  };
+  const moments = {
+    schemaVersion: "rocket-league-review-moments.v2",
+    candidateCount: candidates.length,
+    moments: Object.fromEntries(candidates.map((candidate) => [candidate.id, { frames: [] }])),
+  };
+  const workSession = buildReviewWorkSession(queue, moments, { perDetector: 8, rareFiringThreshold: 12 });
+  const common = workSession.queue.candidates.filter((candidate) => candidate.detectorId === "common");
+  const rare = workSession.queue.candidates.filter((candidate) => candidate.detectorId === "rare");
+
+  assert.equal(common.length, 8);
+  assert.deepEqual(Object.fromEntries([...Map.groupBy(common, (candidate) => candidate.opportunityStatus)].map(([status, statusRows]) => [status, statusRows.length])), {
+    firing: 3, non_firing: 3, abstained: 2,
+  });
+  assert.equal(rare.length, 8);
+  assert.equal(rare.filter((candidate) => candidate.opportunityStatus === "firing").length, 5);
+  assert.equal(workSession.moments.candidateCount, 16);
+  assert.equal(workSession.moments.replayCount, new Set(workSession.queue.candidates.map((candidate) => candidate.replayFingerprint)).size);
+  assert.equal(Object.keys(workSession.moments.moments).length, 16);
+  assert.equal(workSession.queue.holdoutIncluded, false);
+  assert.equal(workSession.queue.labelSetVersion, "rocket-league-expert-labels.v11-all-60-context-0.9");
 });
 
 test("checked-in review queue is unique, private and ready for expert labeling", async () => {
