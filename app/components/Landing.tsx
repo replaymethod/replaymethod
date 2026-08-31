@@ -133,7 +133,7 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
       <div className="rm-product-demo rm-simple-demo" data-example={example.key} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
         <header className="rm-product-demo-bar">
           <span><i />Interactive product demo</span>
-          <small>Example report · no upload needed</small>
+          <small>Example report — no upload needed</small>
         </header>
 
         <nav className="rm-product-demo-nav" aria-label="Common replay pattern examples">
@@ -159,7 +159,7 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
             <h4>{example.rule}</h4>
             <p>{example.practice}</p>
             <a href="#ten-replay-start" onClick={() => trackProductEvent("analysis_start", "rocket-league", `sample_report_${example.key}`)}>Analyze my replays free <i aria-hidden="true">→</i></a>
-            <small>Private report · no card</small>
+            <small>Your report stays private. No card needed.</small>
           </aside>
         </div>
 
@@ -186,7 +186,7 @@ function GoodToKnow() {
   return <section className="rm-home-trust" id="why" aria-labelledby="why-title">
     <div className="reveal-shell">
       <header>
-        <span className="reveal-kicker">Good to know:</span>
+        <span className="reveal-kicker">Why Replay Method</span>
         <h2 id="why-title">We identify what keeps going wrong across your replays —<br />you get a structured improvement plan designed to help you climb the ranks.</h2>
       </header>
       <div className="rm-home-trust-list">

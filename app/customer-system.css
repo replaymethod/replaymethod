@@ -542,7 +542,7 @@ body{background:var(--rm-paper);color:var(--rm-ink);font-family:var(--rm-font-sa
 .rm-home-how{padding:106px 0 118px;border-top:1px solid var(--rm-line);border-bottom:1px solid var(--rm-line);background:var(--rm-fog)}
 .rm-home-how header{display:grid;grid-template-columns:.62fr 1.38fr;gap:7vw;align-items:start;margin-bottom:72px}
 .rm-home-how h2{max-width:760px;margin:0;color:var(--rm-ink);font-size:clamp(42px,5vw,64px);font-weight:350;line-height:1;letter-spacing:-.06em}
-.rm-home-how ol{display:grid;grid-template-columns:repeat(4,1fr);margin:0;padding:0;border-top:1px solid #cfd3d1;border-bottom:1px solid #cfd3d1;list-style:none}
+.rm-home-how ol{display:grid;grid-template-columns:repeat(3,1fr);margin:0;padding:0;border-top:1px solid #cfd3d1;border-bottom:1px solid #cfd3d1;list-style:none}
 .rm-home-how li{display:grid;min-height:250px;grid-template-rows:auto 1fr;padding:27px 32px 30px 0;border-right:1px solid #cfd3d1}
 .rm-home-how li:not(:first-child){padding-left:32px}.rm-home-how li:last-child{border-right:0}
 .rm-home-how li>small,.rm-home-trust-list>article>span{color:#858d90;font-size:10px;font-weight:650}
@@ -559,7 +559,7 @@ body{background:var(--rm-paper);color:var(--rm-ink);font-family:var(--rm-font-sa
 .rm-home-trust h2{max-width:520px;margin:25px 0 24px;font-size:clamp(42px,4.8vw,62px);font-weight:350;line-height:.99;letter-spacing:-.06em}
 .rm-home-trust header>p{max-width:430px;margin:0;color:var(--rm-muted);font-size:14px;line-height:1.6}
 .rm-home-trust-list{border-top:1px solid var(--rm-line)}
-.rm-home-trust-list article{display:grid;min-height:164px;grid-template-columns:40px 1fr auto;align-items:center;gap:18px;border-bottom:1px solid var(--rm-line)}
+.rm-home-trust-list article{display:grid;min-height:184px;grid-template-columns:40px minmax(0,1fr);align-items:start;gap:18px;padding:36px 0;border-bottom:1px solid var(--rm-line)}
 .rm-home-trust-list article>div>small{display:block;margin-bottom:11px;color:#8a9295;font-size:9px}.rm-home-trust-list article>b{align-self:start;margin-top:32px;padding:7px 10px;border:1px solid var(--rm-line);border-radius:999px;color:#6f797d;font-size:8px;font-weight:650}
 .rm-home-trust-list h3{margin:0 0 9px;font-size:23px;font-weight:420;line-height:1.08}.rm-home-trust-list p{max-width:540px;margin:0;color:var(--rm-muted);font-size:12px;line-height:1.58}
 

@@ -303,13 +303,13 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
     <form onSubmit={submit} aria-busy={busy}>
       <header>
         <div><small>Free replay analysis</small><strong>{reportReady ? "Your private report is ready" : hasStarted ? "Finish adding your replays" : "Upload your 10 replays"}</strong></div>
-        <p>One player · One ranked mode · Private</p>
+        <p>A private report for one player in one ranked mode.</p>
       </header>
       {selectionRemaining > 0 && <label className={`reveal-home-drop ${queuedCount ? "has-files" : ""} ${dragActive ? "drag-active" : ""}`} onDragEnter={event => { event.preventDefault(); setDragActive(true); }} onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; setDragActive(true); }} onDragLeave={event => { if (event.currentTarget === event.target) setDragActive(false); }} onDrop={dropFiles}>
         <input ref={inputRef} type="file" multiple accept=".replay,application/octet-stream" onChange={event => chooseFiles(event.target.files)} disabled={busy} />
         <i aria-hidden="true">↑</i>
         <b>{selectionRemaining === 10 ? "Drop 10 Rocket League .replay files" : `Add ${selectionRemaining} more replay${selectionRemaining === 1 ? "" : "s"}`}</b>
-        <small>From your PC replay folder · choose all 10 at once</small>
+        <small>Choose all 10 from your PC replay folder.</small>
       </label>}
       {hasStarted && <>
         <div className="reveal-home-progress-copy" aria-live="polite"><span>{queuedCount + validCount} of 10 added</span><small>{validCount} verified</small></div>

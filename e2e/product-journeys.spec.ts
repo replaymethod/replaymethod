@@ -76,6 +76,33 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".reveal-faq details")).toHaveCount(0);
   });
 
+  test("the three-step and Why Replay Method rows stay geometrically aligned", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/", { waitUntil: "load" });
+    const desktop = await page.evaluate(() => ({
+      howWidths: [...document.querySelectorAll<HTMLElement>(".rm-home-how li")].map(item => Math.round(item.getBoundingClientRect().width)),
+      trustOffsets: [...document.querySelectorAll<HTMLElement>(".rm-home-trust-list article")].map(item => {
+        const row = item.getBoundingClientRect();
+        const copy = item.querySelector<HTMLElement>("div")?.getBoundingClientRect();
+        return Math.round((copy?.top || 0) - row.top);
+      }),
+    }));
+    expect(new Set(desktop.howWidths).size).toBe(1);
+    expect(new Set(desktop.trustOffsets).size).toBe(1);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobile = await page.evaluate(() => ({
+      heights: [...document.querySelectorAll<HTMLElement>(".rm-home-trust-list article")].map(item => Math.round(item.getBoundingClientRect().height)),
+      offsets: [...document.querySelectorAll<HTMLElement>(".rm-home-trust-list article")].map(item => {
+        const row = item.getBoundingClientRect();
+        const copy = item.querySelector<HTMLElement>("div")?.getBoundingClientRect();
+        return Math.round((copy?.top || 0) - row.top);
+      }),
+    }));
+    expect(new Set(mobile.heights).size).toBe(1);
+    expect(new Set(mobile.offsets).size).toBe(1);
+  });
+
   test("the home hero leads directly to the inline ten-replay intake", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze 10 replays for free/ }).click();

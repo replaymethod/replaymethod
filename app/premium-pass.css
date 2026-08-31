@@ -247,7 +247,7 @@ body {
 .rm-home-trust-list article:last-child { border-right: 0; }
 .rm-home-trust-list article > span { position: absolute; top: 32px; left: 30px; }
 .rm-home-trust-list article > b { position: absolute; top: 25px; right: 30px; margin: 0; font-size: 9px; }
-.rm-home-trust-list article > div { margin-top: auto; }
+.rm-home-trust-list article > div { margin-top: 54px; }
 .rm-home-trust-list article > div > small { margin-bottom: 13px; font-size: 9px; }
 .rm-home-trust-list h3 { margin-bottom: 11px; font-size: 25px; line-height: 1.1 !important; }
 .rm-home-trust-list p { max-width: 280px; font-size: 13px; line-height: 1.58; }
@@ -426,7 +426,7 @@ body {
 
   .rm-home-hero { padding: 70px 0 62px; }
   .rm-home-hero > .reveal-kicker { margin-bottom: 24px; }
-  .rm-home-hero h1 { font-size: clamp(48px, 13vw, 58px); letter-spacing: -.058em !important; line-height: .98 !important; }
+  .rm-home-hero h1 { font-size: clamp(48px, 13vw, 58px); letter-spacing: -.048em !important; line-height: .98 !important; }
   .rm-home-hero > p { margin-top: 26px; font-size: 16px; line-height: 1.58; }
   .rm-home-hero-actions { display: grid; gap: 10px; margin-top: 28px; }
   .rm-home-hero-actions a { justify-content: center; }
@@ -568,6 +568,13 @@ body {
   overflow: clip;
 }
 
+/* Keep the editorial display type compact without forcing uneven collisions. */
+.reveal-home :is(h1, h2, h3, h4) {
+  font-kerning: normal;
+  font-feature-settings: "kern" 1;
+  letter-spacing: -.038em !important;
+}
+
 .reveal-home .reveal-kicker {
   color: #56636a;
   font-size: 11px;
@@ -588,7 +595,7 @@ body {
   max-width: 900px;
   font-size: clamp(62px, 7.4vw, 96px);
   font-weight: 520 !important;
-  letter-spacing: -.068em !important;
+  letter-spacing: -.052em !important;
   line-height: .96 !important;
 }
 
@@ -2407,6 +2414,12 @@ body {
   display: block;
 }
 
+.rm-home-trust .reveal-kicker {
+  color: var(--rm-ink);
+  font-size: 12px;
+  font-weight: 720;
+}
+
 .rm-home-trust h2 {
   max-width: 1040px;
 }
@@ -2416,7 +2429,7 @@ body {
 }
 
 .rm-home-trust-list article {
-  min-height: 268px;
+  min-height: 184px;
 }
 
 .rm-home-trust-list article > b {
@@ -3094,6 +3107,12 @@ body {
   .batch-intake-page .batch-sandbox-tabs {
     min-height: 54px;
     padding-inline: 14px;
+  }
+}
+
+@media (max-width: 700px) {
+  .rm-home-trust-list article {
+    min-height: 224px;
   }
 }
 

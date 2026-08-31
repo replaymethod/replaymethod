@@ -72,7 +72,7 @@ test("product demo clears the simplified 30-point technical gate", async ({ page
 
   add("01 one product surface", initial.oneDemo);
   add("02 customer problem heading", initial.heading === "Pick a mistake. See the report.");
-  add("03 demo needs no upload", initial.headerSummary === "Example report · no upload needed");
+  add("03 demo needs no upload", initial.headerSummary === "Example report — no upload needed");
   add("04 five examples", initial.exampleCount === 5);
   add("05 one selected example", initial.selectedExampleCount === 1);
   add("06 ten replay signal marks", initial.dotCount === 10);
