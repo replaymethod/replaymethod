@@ -544,6 +544,23 @@ test.describe("first-time visitor funnel", () => {
     await expect(page).toHaveURL(/\/report\/ready-batch\?token=ready-token$/);
   });
 
+  test("a completed batch never replaces the homepage upload funnel", async ({ page }) => {
+    const saved = {
+      batchId: "ready-batch",
+      batchToken: "ready-token",
+      reportUrl: "/report/ready-batch?token=ready-token",
+      validCount: 10,
+      targetCount: 10,
+      status: "ready",
+    };
+    await page.addInitScript((value) => localStorage.setItem("replaymethod-ten-replay-batch", JSON.stringify(value)), saved);
+    await page.goto("/", { waitUntil: "load" });
+    await expect(page.getByText("Upload your 10 replays", { exact: true })).toBeVisible();
+    await expect(page.getByText("Your private report is ready", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Your ten-match report is ready.", { exact: true })).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("replaymethod-ten-replay-batch"))).toBeNull();
+  });
+
   test("legacy game URLs collapse into the Rocket League product", async ({ page }) => {
     await page.goto("/rocket-league");
     await expect(page).toHaveURL(/\/$/);

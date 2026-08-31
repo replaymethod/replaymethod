@@ -75,6 +75,11 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
       .then((access: { ownerQa?: boolean }) => setOwnerQa(access.ownerQa === true)).catch(() => {});
     const saved = storedSession();
     if (!saved) return;
+    if (variant === "hero" && saved.status === "ready") {
+      localStorage.removeItem("replaymethod-ten-replay-batch");
+      localStorage.removeItem("replaymethod-ten-replay-upload");
+      return;
+    }
     fetch("/api/replay-batches", {
       method: "POST", headers: { "Content-Type": "application/json", "X-Batch-Access": saved.batchToken },
       body: JSON.stringify({ resumeBatchId: saved.batchId }),
@@ -82,6 +87,11 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
       if (!response.ok) return;
       const resumed = await response.json() as BatchSession;
       const merged = { ...saved, ...resumed, reportUrl: saved.reportUrl };
+      if (variant === "hero" && merged.status === "ready") {
+        localStorage.removeItem("replaymethod-ten-replay-batch");
+        localStorage.removeItem("replaymethod-ten-replay-upload");
+        return;
+      }
       setSession(merged); setValidCount(Number(merged.validCount || 0));
       localStorage.setItem("replaymethod-ten-replay-batch", JSON.stringify(merged));
       setMessage(merged.status === "ready" ? "Your ten-match report is ready." : `Saved batch resumed at ${merged.validCount}/10.`);
