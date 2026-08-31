@@ -24,101 +24,86 @@ function FutureGame({ game }: { game: "league" | "valorant" }) {
   </main>;
 }
 
-type SampleMoment = "setup" | "decision" | "outcome";
-
 const sampleReports = [
   {
     key: "boost",
-    nav: "Boost",
+    nav: "Boost before ball",
+    aria: "Boost mistake: leave the net for boost",
     timestamp: "03:42.18",
-    title: "You leave the net for boost.",
-    summary: "Pressure is still live when you turn away from the defensive layer.",
-    evidence: "4 similar moments in this sample",
-    rule: "Protect the net first.",
+    title: "You leave net for boost.",
+    summary: "They are still attacking when you turn away.",
+    rule: "Hold net. Boost after.",
+    practice: "Stay goal-side until your team has the ball clear.",
     matches: [1, 3, 6, 8],
-    clip: null as string | null,
     moments: {
-      setup: { label: "Setup", time: "−2.0s", copy: "Corner boost opens while pressure builds." },
-      decision: { label: "Decision", time: "03:42.18", copy: "You turn away before the net is protected." },
-      outcome: { label: "Outcome", time: "+1.4s", copy: "The next touch reaches an open layer." },
+      decision: { label: "Decision", time: "03:42.18", copy: "You turn for corner boost before a teammate has net covered." },
     },
   },
   {
     key: "double",
     nav: "Double commit",
+    aria: "Double commit mistake: both teammates go for the same ball",
     timestamp: "01:17.64",
-    title: "You follow the same ball.",
-    summary: "Both players attack one touch and leave the next layer empty.",
-    evidence: "3 similar moments in this sample",
-    rule: "Hold the second layer.",
+    title: "You double commit.",
+    summary: "You and your teammate go for the same ball.",
+    rule: "Let them go. Stay behind.",
+    practice: "If your teammate challenges, cover the loose ball.",
     matches: [2, 5, 9],
-    clip: null as string | null,
     moments: {
-      setup: { label: "Setup", time: "−1.8s", copy: "Your teammate is already moving into the challenge." },
-      decision: { label: "Decision", time: "01:17.64", copy: "You accelerate into the same touch." },
-      outcome: { label: "Outcome", time: "+1.1s", copy: "The loose ball has no second player behind it." },
+      decision: { label: "Decision", time: "01:17.64", copy: "Your teammate is already up, but you jump for the same ball." },
     },
   },
   {
     key: "last",
-    nav: "Last player",
+    nav: "Chase",
+    aria: "Last man mistake: dive into a challenge too early",
     timestamp: "04:06.31",
-    title: "You dive as the last player.",
-    summary: "The challenge removes the only layer still protecting the counter.",
-    evidence: "5 similar moments in this sample",
-    rule: "Delay the play.",
+    title: "You dive as last man.",
+    summary: "If you miss, nobody is behind you.",
+    rule: "Fake challenge. Buy time.",
+    practice: "Shadow until a teammate gets back.",
     matches: [0, 2, 4, 7, 9],
-    clip: null as string | null,
     moments: {
-      setup: { label: "Setup", time: "−2.2s", copy: "Both teammates are recovering behind the play." },
-      decision: { label: "Decision", time: "04:06.31", copy: "You commit before support has returned." },
-      outcome: { label: "Outcome", time: "+1.6s", copy: "One touch sends the counter past the last defender." },
+      decision: { label: "Decision", time: "04:06.31", copy: "You full commit while both teammates are still recovering." },
     },
   },
   {
     key: "clear",
-    nav: "Clear",
+    nav: "Shitty clears",
+    aria: "Clear mistake: hit the ball back through the middle",
     timestamp: "02:28.90",
-    title: "Your clear becomes their pass.",
-    summary: "A central touch gives pressure straight back instead of ending it.",
-    evidence: "4 similar moments in this sample",
-    rule: "Clear away from pressure.",
+    title: "You clear straight to them.",
+    summary: "Your touch through mid gives them another attack.",
+    rule: "Clear wide, not mid.",
+    practice: "Use the side wall when the middle is covered.",
     matches: [1, 4, 5, 8],
-    clip: null as string | null,
     moments: {
-      setup: { label: "Setup", time: "−1.5s", copy: "You reach the ball with space toward the side wall." },
-      decision: { label: "Decision", time: "02:28.90", copy: "The clear is played back through the middle." },
-      outcome: { label: "Outcome", time: "+1.2s", copy: "The opponent receives another attack immediately." },
+      decision: { label: "Decision", time: "02:28.90", copy: "You have space wide but clear the ball back through mid." },
     },
   },
   {
     key: "rotation",
-    nav: "Rotation cut",
+    nav: "Cutting",
+    aria: "Rotation mistake: cut in front of a teammate",
     timestamp: "03:09.47",
-    title: "You cut into your teammate's play.",
-    summary: "The rotation compresses into one space and removes the useful player behind it.",
-    evidence: "3 similar moments in this sample",
-    rule: "Rotate behind the play.",
+    title: "You cut your teammate.",
+    summary: "You both end up in the same lane.",
+    rule: "Leave. Rotate behind them.",
+    practice: "If they have the better angle, rotate back post.",
     matches: [0, 6, 9],
-    clip: null as string | null,
     moments: {
-      setup: { label: "Setup", time: "−2.0s", copy: "Your teammate has the closer, cleaner line to the ball." },
-      decision: { label: "Decision", time: "03:09.47", copy: "You turn across the rotation and enter the same lane." },
-      outcome: { label: "Outcome", time: "+1.3s", copy: "No player remains ready for the next touch." },
+      decision: { label: "Decision", time: "03:09.47", copy: "Your teammate has the better angle, but you cut in front." },
     },
   },
 ] as const;
 
 function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
   const [activeExample, setActiveExample] = useState(0);
-  const [activeMoment, setActiveMoment] = useState<SampleMoment>("decision");
   const touchStart = useRef<number | null>(null);
   const example = sampleReports[activeExample];
-  const moment = example.moments[activeMoment];
 
   function chooseExample(index: number) {
     setActiveExample((index + sampleReports.length) % sampleReports.length);
-    setActiveMoment("decision");
   }
 
   function handleExampleKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -144,50 +129,41 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
 
   return <section className="rm-engine-section" id="product">
     <div className="reveal-shell">
-      <header className="rm-engine-intro"><span className="reveal-kicker">Interactive sample report</span><h2>Open the moment.<br />See the decision.</h2><p>Choose a familiar mistake. The replay moment, supporting sample and one next-queue rule stay in the same view.</p></header>
-      <div className="rm-product-demo" data-example={example.key} data-moment={activeMoment} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
+      <header className="rm-engine-intro"><span className="reveal-kicker">Try the product demo</span><h2>Pick a mistake.<br />See the report.</h2><p>Tap a common Rocket League mistake below. The demo shows what Replay Method would point out and what to do next.</p></header>
+      <div className="rm-product-demo rm-simple-demo" data-example={example.key} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
         <header className="rm-product-demo-bar">
-          <span><i />Sample analysis</span>
-          <small><b>Input</b> 10 replays <i aria-hidden="true">→</i> <b>Output</b> one supported focus</small>
+          <span><i />Interactive product demo</span>
+          <small>Example report · no upload needed</small>
         </header>
 
         <nav className="rm-product-demo-nav" aria-label="Common replay pattern examples">
-          <button className="rm-product-demo-arrow" type="button" aria-label="Previous example" onClick={() => chooseExample(activeExample - 1)}>←</button>
           <div role="tablist" aria-label="Replay pattern examples">
-            {sampleReports.map((item, index) => <button id={`product-example-${index}`} type="button" role="tab" aria-label={item.nav} aria-selected={activeExample === index} aria-controls="product-example-panel" tabIndex={activeExample === index ? 0 : -1} onClick={() => chooseExample(index)} onKeyDown={event => handleExampleKey(event, index)} key={item.key}><span>{String(index + 1).padStart(2, "0")}</span>{item.nav}</button>)}
+            {sampleReports.map((item, index) => <button id={`product-example-${index}`} type="button" role="tab" aria-label={item.aria} aria-selected={activeExample === index} aria-controls="product-example-panel" tabIndex={activeExample === index ? 0 : -1} onClick={() => chooseExample(index)} onKeyDown={event => handleExampleKey(event, index)} key={item.key}><strong>{item.nav}</strong></button>)}
           </div>
-          <button className="rm-product-demo-arrow" type="button" aria-label="Next example" onClick={() => chooseExample(activeExample + 1)}>→</button>
         </nav>
 
-        <div className="rm-product-demo-stage">
-          <figure className="rm-sample-media" aria-labelledby="sample-moment-title">
-            <div className="rm-sample-frame">
-              {example.clip ? <video src={example.clip} muted playsInline preload="metadata" /> : <div className="rm-sample-media-adapter" aria-hidden="true"><i /><i /><i /><span><ReplayMark /></span></div>}
-              <span className="rm-sample-frame-label">Original replay · sample view</span>
-              <span className="rm-sample-frame-time">{moment.time}</span>
-              <div className="rm-sample-freeze"><span>{moment.label}</span><i /></div>
-            </div>
-            <figcaption>
-              <button type="button" onClick={() => setActiveMoment("setup")} aria-label="Rewind to setup">↶ <span>Rewind 2 sec</span></button>
-              <div role="tablist" aria-label="Replay moment states">
-                {(Object.keys(example.moments) as SampleMoment[]).map(key => <button type="button" role="tab" aria-selected={activeMoment === key} onClick={() => setActiveMoment(key)} key={key}><span>{example.moments[key].label}</span><small>{example.moments[key].time}</small></button>)}
-              </div>
-            </figcaption>
-          </figure>
+        <div className="rm-simple-demo-grid" id="product-example-panel" role="tabpanel" aria-live="polite" aria-labelledby={`product-example-${activeExample}`}>
+          <section className="rm-simple-demo-finding">
+            <div className="rm-simple-demo-signal"><span>Example result</span><b>Seen in {example.matches.length} of 10</b></div>
+            <h3>{example.title}</h3>
+            <p>{example.summary}</p>
+            <ol aria-label="Ten analyzed sample replays">{Array.from({ length: 10 }, (_, index) => <li data-match={(example.matches as readonly number[]).includes(index)} key={index}><span>{index + 1}</span></li>)}</ol>
+            <article>
+              <div><b>Replay {String((example.matches as readonly number[])[0] + 1).padStart(2, "0")}</b><span>{example.timestamp}</span></div>
+              <p>{example.moments.decision.copy}</p>
+            </article>
+          </section>
 
-          <aside className="rm-product-demo-output" id="product-example-panel" role="tabpanel" aria-live="polite" aria-labelledby={`product-example-${activeExample}`}>
-            <span>Sample pattern {String(activeExample + 1).padStart(2, "0")} / {String(sampleReports.length).padStart(2, "0")}</span>
-            <div key={example.key} className="rm-product-demo-copy"><h3 id="sample-moment-title">{example.title}</h3><p>{example.summary}</p></div>
-            <div className="rm-sample-moment-copy" key={`${example.key}-${activeMoment}`}><small>{moment.label} · {moment.time}</small><p>{moment.copy}</p></div>
-            <div className="rm-sample-evidence">
-              <div><span>10 replays</span><ol aria-label={example.evidence}>{Array.from({ length: 10 }, (_, index) => <li data-match={(example.matches as readonly number[]).includes(index)} key={index}><span>{index + 1}</span></li>)}</ol></div>
-              <i aria-hidden="true">→</i><strong><small>One focus</small>{example.rule}</strong>
-            </div>
-            <a href="#ten-replay-start" onClick={() => trackProductEvent("analysis_start", "rocket-league", `sample_report_${example.key}`)}>Analyze my replays <i aria-hidden="true">↗</i></a>
+          <aside className="rm-simple-demo-action">
+            <span>What to do next</span>
+            <h4>{example.rule}</h4>
+            <p>{example.practice}</p>
+            <a href="#ten-replay-start" onClick={() => trackProductEvent("analysis_start", "rocket-league", `sample_report_${example.key}`)}>Analyze my replays free <i aria-hidden="true">→</i></a>
+            <small>Private report · no card</small>
           </aside>
         </div>
 
-        <footer className="rm-product-demo-foot"><span>Browse with the tabs, arrows or a horizontal swipe.</span><span>{earlyAccessOpen ? "Illustrative · real reports stay attached to their replay moments." : "Illustrative · public output opens only when the evidence holds."}</span></footer>
+        <footer className="rm-product-demo-foot"><span>{earlyAccessOpen ? "Example report — your real report opens the exact replay moments." : "Example report — your real report only includes patterns supported by your own replay files."}</span></footer>
       </div>
     </div>
   </section>;
@@ -196,28 +172,27 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
 function HowItWorks() {
   return <section className="rm-home-how" id="method" aria-labelledby="how-title">
     <div className="reveal-shell">
-      <header><span className="reveal-kicker">How it works</span><h2 id="how-title">Ten matches.<br />One clear focus.</h2><p>The complexity stays in the engine.</p></header>
+      <header><span className="reveal-kicker">How it works</span><h2 id="how-title">Upload your replays.<br />Get your improvement program.</h2><p>Three simple steps.</p></header>
       <ol>
-        <li><small>01</small><div><h3>Find what repeats.</h3><p>Ten comparable matches reveal the pattern.</p></div></li>
-        <li><small>02</small><div><h3>Open the proof.</h3><p>Every finding links back to the replay moments behind it.</p></div></li>
-        <li><small>03</small><div><h3>Know what to change.</h3><p>One clear adjustment for your next queue.</p></div></li>
+        <li><small>01</small><div><h3>Upload 10 replays.</h3><p>Use the same player and ranked mode in every file.</p></div></li>
+        <li><small>02</small><div><h3>We compare your games.</h3><p>Replay Method performs longitudinal cross-match analysis to identify recurring mechanical execution errors and game-sense decision patterns.</p></div></li>
+        <li><small>03</small><div><h3>Open your personal report.</h3><p>See your repeated mistakes, the exact replay moments and your structured improvement program.</p></div></li>
       </ol>
     </div>
   </section>;
 }
 
-function WhyTrustIt({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
+function GoodToKnow() {
   return <section className="rm-home-trust" id="why" aria-labelledby="why-title">
     <div className="reveal-shell">
       <header>
-        <span className="reveal-kicker">Built for trust</span>
-        <h2 id="why-title">The answer stays attached to the evidence.</h2>
-        <p>{earlyAccessOpen ? "See the pattern, inspect the moments and carry one supported rule into your next queue." : "Early access opens only when real replay evidence can support the result."}</p>
+        <span className="reveal-kicker">Good to know:</span>
+        <h2 id="why-title">We identify what keeps going wrong across your replays —<br />you get a structured improvement plan designed to help you climb the ranks.</h2>
       </header>
       <div className="rm-home-trust-list">
-        <article><span>01</span><div><small>Original replay files</small><h3>Real match context.</h3><p>Decisions are compared inside the moments where they happened.</p></div><b>Context</b></article>
-        <article><span>02</span><div><small>Visible evidence</small><h3>Proof you can open.</h3><p>The exact replay moments remain connected to every supported finding.</p></div><b>Evidence</b></article>
-        <article><span>03</span><div><small>Honest abstention</small><h3>No signal, no guess.</h3><p>If the pattern is not clear enough, Replay Method says so.</p></div><b>Trust</b></article>
+        <article><span>01</span><div><h3>What keeps going wrong?</h3><p>Usually, it&apos;s a combination of ingrained habits that creates tunnel vision and makes you overlook the fundamentals.</p></div></article>
+        <article><span>02</span><div><h3>How do I fix them?</h3><p>Get a structured improvement program for every repeated mistake we find—including what to change, what to practice and how to apply each fix in your next games.</p></div></article>
+        <article><span>03</span><div><h3>How do I know it&apos;s not bs?</h3><p>Open the exact matches and timestamps, then compare them with the analysis yourself.</p></div></article>
       </div>
     </div>
   </section>;
@@ -240,29 +215,27 @@ export default function Landing({ game = "general", engineOpen = false, earlyAcc
     <CustomerHeader current="product" />
 
     <section className="rm-home-hero reveal-shell" aria-labelledby="home-title">
-      <span className="reveal-kicker">Replay intelligence for Rocket League</span>
-      <h1 id="home-title">Stop losing for<br />the same reason.</h1>
-      <p>Drop 10 ranked replays. Find the decision that keeps repeating.</p>
+      <span className="reveal-kicker">Rocket League replay analysis</span>
+      <h1 id="home-title">Turn repeated mistakes into<br />focused improvement.</h1>
+      <p>Upload 10 ranked replays. See what keeps going wrong and what to do differently next game.</p>
       <div className="rm-home-hero-actions">
-        <a href="#ten-replay-start" onClick={() => trackProductEvent("analysis_start","rocket-league","home_hero")}>Analyze my replays <span aria-hidden="true">↓</span></a>
-        <a href="#product">See an example</a>
+        <a href="#ten-replay-start" onClick={() => trackProductEvent("analysis_start","rocket-league","home_hero")}>Analyze 10 replays for free <span aria-hidden="true">↓</span></a>
+        <a href="#product">View the stripped-down product demo</a>
       </div>
-      <small>Private report · No card · Original PC replays</small>
+      <small>Free first analysis, report stays private.</small>
     </section>
 
     <section className="rm-home-activation reveal-shell" aria-label="Start a free ten-replay analysis">
       <BatchAnalyzeFlow engineOpen={engineOpen} variant="hero" />
     </section>
 
-    <HowItWorks />
     <ProductMoment earlyAccessOpen={earlyAccessOpen} />
-    <WhyTrustIt earlyAccessOpen={earlyAccessOpen} />
+    <HowItWorks />
+    <GoodToKnow />
 
     <section className="rm-home-final reveal-shell" id="pricing" aria-labelledby="final-title">
-      <span className="reveal-kicker">Your improvement loop</span>
-      <div className="rm-home-final-copy"><h2 id="final-title">Ready to see<br />what repeats?</h2><p>Start with the last ten ranked matches from one playlist.</p></div>
-      <div className="rm-home-final-action"><a href="#ten-replay-start" onClick={() => trackProductEvent("analysis_start","rocket-league","home_final")}>Analyze my replays <span aria-hidden="true">↑</span></a><small>Private · No card · Original replays</small></div>
-      <div className="rm-home-premium-line"><span><small>Free</small><b>Find the pattern.</b></span><i aria-hidden="true">→</i><span><small>Premium · planned</small><b>Track the fix.</b></span></div>
+      <div className="rm-home-final-copy"><h2 id="final-title">Curious?</h2><p>Upload your 10 most recent replays from the same ranked mode and begin your climb.</p></div>
+      <div className="rm-home-final-action"><a href="#ten-replay-start" onClick={() => trackProductEvent("analysis_start","rocket-league","home_final")}>Analyze 10 replays for free <span aria-hidden="true">↑</span></a></div>
     </section>
 
     <CustomerFooter />

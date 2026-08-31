@@ -47,16 +47,16 @@ test.beforeEach(async ({ page }) => {
 test("the five-sample report stays bounded and navigable", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-chromium", "One deterministic geometry pass is sufficient.");
   await page.goto("/#product", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("tab", { name: "Boost", exact: true })).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".rm-sample-evidence li")).toHaveCount(10);
+  await expect(page.getByRole("tab", { name: "Boost mistake: leave the net for boost", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".rm-simple-demo-finding > ol li")).toHaveCount(10);
   await expect(page.locator(".rm-product-replay-card")).toHaveCount(0);
 
-  for (const example of ["Boost", "Double commit", "Last player", "Clear", "Rotation cut"]) {
+  for (const example of ["Boost mistake: leave the net for boost", "Double commit mistake: both teammates go for the same ball", "Last man mistake: dive into a challenge too early", "Clear mistake: hit the ball back through the middle", "Rotation mistake: cut in front of a teammate"]) {
     await page.getByRole("tab", { name: example, exact: true }).click();
     await expect(page.getByRole("tab", { name: example, exact: true })).toHaveAttribute("aria-selected", "true");
     const geometry = await page.locator(".rm-product-demo").evaluate(demo => {
       const boundary = demo.getBoundingClientRect();
-      const targets = [".rm-sample-media", ".rm-sample-frame", ".rm-product-demo-output", ".rm-sample-evidence"]
+      const targets = [".rm-simple-demo-grid", ".rm-simple-demo-finding", ".rm-simple-demo-finding article", ".rm-simple-demo-action"]
         .map(selector => demo.querySelector<HTMLElement>(selector)?.getBoundingClientRect())
         .filter((rect): rect is DOMRect => Boolean(rect));
       return {
@@ -196,7 +196,7 @@ test.describe("sitewide 30-point product-quality gate", () => {
           ["16 customer footer exists", Boolean(footer)],
           ["17 footer stays in viewport", Boolean(footer && withinViewport(footer))],
           ["18 footer has three equal information groups", equalFooterGroups],
-          ["19 footer labels are consistent", ["Product", "Method", "Company"].every(label => footerLabels.includes(label))],
+          ["19 footer labels are consistent", ["Product", "How it works", "Company"].every(label => footerLabels.includes(label))],
           ["20 links have destinations", visibleLinks.every(link => Boolean(link.getAttribute("href")))],
           ["21 links have names", visibleLinks.every(named)],
           ["22 controls have names", controls.every(named)],

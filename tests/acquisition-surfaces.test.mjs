@@ -39,7 +39,7 @@ test("keeps the public product Rocket League-only", async () => {
     source("../app/sitemap.ts"),
   ]);
   assert.match(batchFlow, /href="\/analyze"/);
-  assert.match(batchFlow, /Drop 10 original \.replay files/);
+  assert.match(batchFlow, /Drop 10 Rocket League \.replay files/);
   assert.match(landing, /Analyze my replays/);
   assert.match(batchFlow, /START MY PRIVATE ANALYSIS/);
   assert.match(batchFlow, /\{validCount\}\/10/);
@@ -57,16 +57,18 @@ test("puts the product action before explanatory browsing", async () => {
     source("../app/rocket-league-beta/ReplayContribution.tsx"),
   ]);
   assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
-  assert.match(landing, /Stop losing for<br \/>the same reason\./);
+  assert.match(landing, /Turn repeated mistakes into<br \/>focused improvement\./);
   assert.match(landing, /<BatchAnalyzeFlow engineOpen=\{engineOpen\} variant="hero" \/>/);
-  assert.match(batchFlow, /Analyze your replays/);
-  assert.match(batchFlow, /Drop 10 original \.replay files/);
-  assert.match(batchFlow, /Open full upload page/);
-  assert.match(landing, /Ten matches\.<br \/>One clear focus\./);
-  assert.match(landing, /No signal, no guess\./);
-  assert.match(landing, /If the pattern is not clear enough, Replay Method says so\./);
+  assert.match(batchFlow, /Upload your 10 replays/);
+  assert.match(batchFlow, /Drop 10 Rocket League \.replay files/);
+  assert.match(batchFlow, /Use the full upload page/);
+  assert.match(landing, /Upload your replays\.<br \/>Get your improvement program\./);
+  assert.match(landing, /longitudinal cross-match analysis/);
+  assert.match(landing, /How do I know it&apos;s not bs\?/);
+  assert.match(landing, /Example report — your real report only includes patterns supported by your own replay files\./);
   assert.doesNotMatch(landing, /Free first analysis · No card required · Replays stay private|One free analysis · no card · private report|Replay Method · Experimental early access/);
-  assert.ok(landing.indexOf("<HowItWorks") < landing.indexOf("<ProductMoment"));
+  assert.ok(landing.indexOf("<ProductMoment") < landing.indexOf("<HowItWorks"));
+  assert.ok(landing.indexOf("<HowItWorks") < landing.indexOf("<GoodToKnow"));
   assert.match(contribution, /replay && <section className="rl-intake-context"/);
   assert.match(contribution, /Choose the original PC file\. The next step appears instantly/);
 });

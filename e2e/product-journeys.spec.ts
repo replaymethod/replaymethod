@@ -47,7 +47,7 @@ test.beforeEach(async ({ page }) => {
 async function expectLandingFunnel(page: Page) {
   await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
   await expect(page.locator("main.marcel-home > section")).toHaveCount(6);
-  await expect(page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze my replays/ })).toHaveAttribute("href", "#ten-replay-start");
+  await expect(page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze 10 replays for free/ })).toHaveAttribute("href", "#ten-replay-start");
   await expect(page.locator('#ten-replay-start input[type="file"][multiple]')).toHaveCount(1);
 }
 
@@ -65,22 +65,22 @@ test.describe("first-time visitor funnel", () => {
 
   test("the landing page explains one cross-match problem and exposes one immediate replay action", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".rm-home-hero h1")).toHaveText(/Stop losing for.*the same reason/i);
+    await expect(page.locator(".rm-home-hero h1")).toHaveText(/Turn repeated mistakes into.*focused improvement/i);
     await expect(page.locator(".reveal-promises")).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: /Ten matches.*One clear focus/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Open the moment.*See the decision/i })).toBeVisible();
-    await expect(page.locator(".rm-home-trust h2")).toHaveText("The answer stays attached to the evidence.");
+    await expect(page.getByRole("heading", { name: /Upload your replays.*Get your improvement program/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Pick a mistake.*See the report/i })).toBeVisible();
+    await expect(page.locator(".rm-home-trust h2")).toHaveText(/We identify what keeps going wrong.*climb the ranks/i);
     await expect(page.locator('main.marcel-home input[type="file"][multiple]')).toHaveCount(1);
     await expect(page.getByRole("button", { name: /League of Legends|VALORANT/i })).toHaveCount(0);
-    await expect(page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze my replays/ })).toHaveAttribute("href", "#ten-replay-start");
+    await expect(page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze 10 replays for free/ })).toHaveAttribute("href", "#ten-replay-start");
     await expect(page.locator(".reveal-faq details")).toHaveCount(0);
   });
 
   test("the home hero leads directly to the inline ten-replay intake", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
-    await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze my replays/ }).click();
+    await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze 10 replays for free/ }).click();
     await expect(page).toHaveURL(/\/#ten-replay-start$/);
-    await expect(page.getByText("Drop 10 original .replay files", { exact: true })).toBeVisible();
+    await expect(page.getByText("Drop 10 Rocket League .replay files", { exact: true })).toBeVisible();
     await expect(page.locator('#ten-replay-start input[type="file"][multiple]')).toHaveCount(1);
   });
 
@@ -397,31 +397,27 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".reveal-legend")).toHaveCount(0);
   });
 
-  test("the sample report connects five replay problems to one immediate focus", async ({ page }) => {
+  test("the sample report connects five replay problems to one proof moment and one focus", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     await page.locator("#product").scrollIntoViewIfNeeded();
-    await expect(page.getByText("Sample analysis", { exact: true })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Boost", exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("tab", { name: /^Decision\b/ })).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator(".rm-sample-evidence li")).toHaveCount(10);
-    await expect(page.locator('.rm-sample-evidence li[data-match="true"]')).toHaveCount(4);
-    await expect(page.locator("#product-example-panel")).toContainText("Protect the net first.");
-    await expect(page.locator("#product-example-panel")).toContainText("You turn away before the net is protected.");
+    await expect(page.getByText("Interactive product demo", { exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Boost mistake: leave the net for boost", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".rm-report-demo-flow")).toHaveCount(0);
+    await expect(page.locator(".rm-simple-demo-finding > ol li")).toHaveCount(10);
+    await expect(page.locator('.rm-simple-demo-finding > ol li[data-match="true"]')).toHaveCount(4);
+    await expect(page.locator("#product-example-panel")).toContainText("Hold net. Boost after.");
+    await expect(page.locator("#product-example-panel")).toContainText("You turn for corner boost before a teammate has net covered.");
+    await expect(page.locator("#product-example-panel")).toContainText("Stay goal-side until your team has the ball clear.");
     await expect(page.getByText("YOU", { exact: true })).toHaveCount(0);
-    await expect(page.locator(".reveal-car, .reveal-ball, .reveal-restart, .rm-engine-object, .rm-engine-ball, .rm-product-replay-card")).toHaveCount(0);
+    await expect(page.locator(".reveal-car, .reveal-ball, .reveal-restart, .rm-engine-object, .rm-engine-ball, .rm-product-replay-card, .rm-sample-media-adapter")).toHaveCount(0);
+    await expect(page.locator(".rm-report-replay-list, .rm-report-moment, .rm-report-followup")).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Rewind to setup", exact: true }).click();
-    await expect(page.getByRole("tab", { name: /^Setup\b/ })).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#product-example-panel")).toContainText("Corner boost opens while pressure builds.");
-    await page.getByRole("tab", { name: /^Outcome\b/ }).click();
-    await expect(page.locator("#product-example-panel")).toContainText("The next touch reaches an open layer.");
-
-    await page.getByRole("tab", { name: "Double commit", exact: true }).click();
-    await expect(page.locator("#product-example-panel")).toContainText("Hold the second layer.");
-    await expect(page.locator('.rm-sample-evidence li[data-match="true"]')).toHaveCount(3);
-    await page.getByRole("tab", { name: "Double commit", exact: true }).press("ArrowRight");
-    await expect(page.getByRole("tab", { name: "Last player", exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#product-example-panel")).toContainText("Delay the play.");
+    await page.getByRole("tab", { name: "Double commit mistake: both teammates go for the same ball", exact: true }).click();
+    await expect(page.locator("#product-example-panel")).toContainText("Let them go. Stay behind.");
+    await expect(page.locator('.rm-simple-demo-finding > ol li[data-match="true"]')).toHaveCount(3);
+    await page.getByRole("tab", { name: "Double commit mistake: both teammates go for the same ball", exact: true }).press("ArrowRight");
+    await expect(page.getByRole("tab", { name: "Last man mistake: dive into a challenge too early", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#product-example-panel")).toContainText("Fake challenge. Buy time.");
 
     const demo = page.locator(".rm-product-demo");
     await demo.evaluate((element) => {
@@ -433,23 +429,25 @@ test.describe("first-time visitor funnel", () => {
       swipe("touchstart", 120);
       swipe("touchend", 320);
     });
-    await expect(page.getByRole("tab", { name: "Double commit", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tab", { name: "Double commit mistake: both teammates go for the same ball", exact: true })).toHaveAttribute("aria-selected", "true");
   });
 
   test("the sample report is understandable immediately without autoplay", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     await page.locator("#product").scrollIntoViewIfNeeded();
-    await expect(page.getByRole("heading", { name: "You leave the net for boost.", exact: true })).toBeVisible();
-    await expect(page.locator(".rm-sample-evidence strong")).toContainText("Protect the net first.");
-    await expect(page.getByRole("button", { name: /Pause|Play demo|Replay/ })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "You leave net for boost.", exact: true })).toBeVisible();
+    await expect(page.locator(".rm-simple-demo-action")).toContainText("Hold net. Boost after.");
+    await expect(page.locator(".rm-simple-demo-finding article")).toContainText("You turn for corner boost before a teammate has net covered.");
+    await expect(page.locator(".rm-simple-demo-action")).toContainText("Private report · no card");
+    await expect(page.getByRole("button", { name: /Pause demo|Play demo|Replay animation/ })).toHaveCount(0);
   });
 
   test("reduced motion keeps the product loop legible without animated state", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/", { waitUntil: "load" });
     await expectLandingFunnel(page);
-    await expect(page.getByRole("tab", { name: /^Decision\b/ })).toHaveAttribute("aria-selected", "true");
-    await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze my replays/ }).click();
+    await expect(page.locator(".rm-simple-demo-action h4")).toHaveText("Hold net. Boost after.");
+    await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze 10 replays for free/ }).click();
     await expect(page).toHaveURL(/\/#ten-replay-start$/);
   });
 
@@ -576,20 +574,21 @@ test.describe("truthful product boundaries", () => {
     await expect(page.getByText(/Console video analysis/i)).toHaveCount(0);
   });
 
-  test("landing explains evidence and abstention without an FAQ detour", async ({ page }) => {
+  test("landing explains the player problem, program and self-verification without an FAQ detour", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     await expectLandingFunnel(page);
-    await expect(page.getByText("Visible evidence", { exact: true })).toBeVisible();
-    await expect(page.getByText("No signal, no guess.", { exact: true })).toBeVisible();
-    await expect(page.getByText("The exact replay moments remain connected to every supported finding.", { exact: true })).toBeVisible();
+    await expect(page.getByText("What keeps going wrong?", { exact: true })).toBeVisible();
+    await expect(page.getByText("How do I fix them?", { exact: true })).toBeVisible();
+    await expect(page.getByText("How do I know it's not bs?", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Open the exact matches and timestamps/i)).toBeVisible();
   });
 
   test("the public start link reaches the same 10-replay intake on mobile and desktop", async ({ page }) => {
     await page.goto("/?utm_source=community&token=private", { waitUntil: "load" });
     await expectLandingFunnel(page);
-    await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze my replays/ }).click();
+    await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze 10 replays for free/ }).click();
     await expect(page).toHaveURL(/#ten-replay-start$/);
-    await page.getByRole("link", { name: /Open full upload page/ }).click();
+    await page.getByRole("link", { name: /Use the full upload page/ }).click();
     await expect(page).toHaveURL(/\/analyze$/);
     await expect(page.getByRole("heading", { name: /Find the decision that keeps repeating/i })).toBeVisible();
     expect(new URL(page.url()).searchParams.has("token")).toBe(false);
@@ -607,8 +606,8 @@ test.describe("truthful product boundaries", () => {
   test("the commercial landing does not distract with pricing or checkout", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#pricing")).toHaveCount(1);
-    await expect(page.getByText(/Premium · planned/i)).toHaveCount(1);
-    await expect(page.getByRole("heading", { name: /Ready to see.*what repeats/i })).toBeVisible();
+    await expect(page.getByText(/Premium · planned/i)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Curious?" })).toBeVisible();
     await expect(page.locator('[data-plan="monthly"]')).toHaveCount(0);
     await expect(page.getByRole("button", { name: /buy|subscribe|checkout/i })).toHaveCount(0);
   });

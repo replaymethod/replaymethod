@@ -292,14 +292,14 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
   if (variant === "hero") return <section ref={pageRef} className="reveal-home-intake" id="ten-replay-start" data-hydrated="false" tabIndex={-1} aria-label="Upload ten replays from the home page">
     <form onSubmit={submit} aria-busy={busy}>
       <header>
-        <div><small>Private analysis</small><strong>{reportReady ? "Your private report is ready" : hasStarted ? "Complete your replay set" : "Analyze your replays"}</strong></div>
-        <p>Same player · Same playlist · Private</p>
+        <div><small>Free replay analysis</small><strong>{reportReady ? "Your private report is ready" : hasStarted ? "Finish adding your replays" : "Upload your 10 replays"}</strong></div>
+        <p>One player · One ranked mode · Private</p>
       </header>
       {selectionRemaining > 0 && <label className={`reveal-home-drop ${queuedCount ? "has-files" : ""} ${dragActive ? "drag-active" : ""}`} onDragEnter={event => { event.preventDefault(); setDragActive(true); }} onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; setDragActive(true); }} onDragLeave={event => { if (event.currentTarget === event.target) setDragActive(false); }} onDrop={dropFiles}>
         <input ref={inputRef} type="file" multiple accept=".replay,application/octet-stream" onChange={event => chooseFiles(event.target.files)} disabled={busy} />
         <i aria-hidden="true">↑</i>
-        <b>{selectionRemaining === 10 ? "Drop 10 original .replay files" : `Add ${selectionRemaining} more replay${selectionRemaining === 1 ? "" : "s"}`}</b>
-        <small>Drop here or choose files · original PC replays</small>
+        <b>{selectionRemaining === 10 ? "Drop 10 Rocket League .replay files" : `Add ${selectionRemaining} more replay${selectionRemaining === 1 ? "" : "s"}`}</b>
+        <small>From your PC replay folder · choose all 10 at once</small>
       </label>}
       {hasStarted && <>
         <div className="reveal-home-progress-copy" aria-live="polite"><span>{queuedCount + validCount} of 10 added</span><small>{validCount} verified</small></div>
@@ -315,8 +315,8 @@ export default function BatchAnalyzeFlow({ engineOpen, initialFreeAnalysisUsed =
         {candidates.length > 0 && <section className="reveal-home-player" aria-labelledby="home-player-title"><span>PLAYER IDENTITY · LOCK ONCE</span><h3 id="home-player-title">Which player is you?</h3><p>Every accepted replay must contain this exact verified player.</p><div role="radiogroup" aria-label="Players found in replay 1">{candidates.map(player => <button type="button" role="radio" aria-checked={selectedPlayer === player} className={selectedPlayer === player ? "active" : ""} onClick={() => setSelectedPlayer(player)} key={player}>{player}</button>)}</div><button type="button" disabled={!selectedPlayer || !rank} onClick={lockPlayer}>Lock this player for all 10 →</button></section>}
         <button className="reveal-primary reveal-home-submit" formNoValidate={reportReady} disabled={busy || !readyToSubmit || candidates.length > 0}><span>{busy ? candidates.length ? "Waiting for player…" : `Verifying ${validCount}/10…` : reportReady ? "Open my private report →" : selectionRemaining ? `Add ${selectionRemaining} more replay${selectionRemaining === 1 ? "" : "s"}` : "Verify my 10 replays →"}</span></button>
       </>}
-      {!hasStarted && <p>Duplicates are blocked automatically. Files are verified before analysis.</p>}
-      <div className="reveal-home-help"><Link href="/replay-upload" target="_blank" rel="noreferrer">Where are my replay files?</Link><Link href="/analyze">Open full upload page</Link></div>
+      {!hasStarted && <p>We check every file before the analysis starts.</p>}
+      <div className="reveal-home-help"><Link href="/replay-upload" target="_blank" rel="noreferrer">Can&apos;t find your .replay files?</Link><Link href="/analyze">Use the full upload page</Link></div>
       {freeUsed && <FreeAnalysisUsed />}{ownerVerificationRequired && <OwnerVerificationRequired />}{message && <p className="reveal-home-message" role="alert">{message}</p>}
     </form>
   </section>;
