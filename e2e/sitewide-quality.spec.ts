@@ -44,14 +44,14 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
-test("the five-sample report stays bounded and navigable", async ({ page }, testInfo) => {
+test("the ten-sample report stays bounded and navigable", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-chromium", "One deterministic geometry pass is sufficient.");
   await page.goto("/#product", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("tab", { name: "Boost mistake: leave the net for boost", exact: true })).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".rm-simple-demo-finding > ol li")).toHaveCount(10);
+  await expect(page.getByRole("tab", { name: "Booming the Ball Away fault example", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('.rm-product-demo-nav [role="tab"]')).toHaveCount(10);
   await expect(page.locator(".rm-product-replay-card")).toHaveCount(0);
 
-  for (const example of ["Boost mistake: leave the net for boost", "Double commit mistake: both teammates go for the same ball", "Last man mistake: dive into a challenge too early", "Clear mistake: hit the ball back through the middle", "Rotation mistake: cut in front of a teammate"]) {
+  for (const example of ["Booming the Ball Away fault example", "Boost Over Ball fault example", "Ball-Side Rotation fault example", "Defensive Corner Dive fault example", "Low-Percentage Mechanics fault example", "Ignoring Back Post fault example", "Jumping for Everything fault example", "Cutting Your Teammate fault example", "Over-Flipping fault example", "Poor 50/50 Selection fault example"]) {
     await page.getByRole("tab", { name: example, exact: true }).click();
     await expect(page.getByRole("tab", { name: example, exact: true })).toHaveAttribute("aria-selected", "true");
     const geometry = await page.locator(".rm-product-demo").evaluate(demo => {
@@ -174,7 +174,8 @@ test.describe("sitewide 30-point product-quality gate", () => {
           : true;
         const bodyStyle = getComputedStyle(document.body);
         const mainStyle = getComputedStyle(document.querySelector("main")!);
-        const paper = mainStyle.backgroundColor === "rgb(253, 252, 252)"
+        const paper = mainStyle.backgroundColor === "rgb(248, 247, 244)"
+          || mainStyle.backgroundColor === "rgb(253, 252, 252)"
           || mainStyle.backgroundColor === "rgb(255, 255, 255)"
           || mainStyle.backgroundColor === "rgba(0, 0, 0, 0)";
         const checks: Array<[string, boolean]> = [

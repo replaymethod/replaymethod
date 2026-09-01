@@ -29,8 +29,8 @@ export function CustomerHeader({ compact = false, current, right }: CustomerHead
 export function CustomerFooter() {
   return <footer className="rm-footer">
     <div className="rm-shell rm-footer-grid">
-      <div className="rm-footer-brand"><span className="rm-footer-wordmark"><span className="rm-wordmark-glyph" aria-hidden="true"><ReplayMark /></span><b>Replay Method</b></span><p>Turn repeated mistakes into focused improvement.</p></div>
-      <nav aria-label="Product links"><span>Product</span><Link href="/analyze">Analyze 10 replays</Link><Link href="/replay-upload">Find .replay files</Link><Link href="/guides/rocket-league-replay-review-checklist">How to review a replay</Link></nav>
+      <div className="rm-footer-brand"><span className="rm-footer-wordmark"><span className="rm-wordmark-glyph" aria-hidden="true"><ReplayMark /></span><b>Replay Method</b></span></div>
+      <nav aria-label="Product links"><span>Product</span><Link href="/analyze">Analyze 10 .replay files</Link><Link href="/replay-upload">Find .replay files</Link><Link href="/guides/rocket-league-replay-review-checklist">How to review a replay</Link></nav>
       <nav aria-label="Method links"><span>How it works</span><Link href="/#method">Three simple steps</Link><Link href="/#why">Why Replay Method</Link><Link href="/reports">My reports</Link></nav>
       <nav aria-label="Company links"><span>Company</span><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a></nav>
       <small>Independent product. Not affiliated with Epic Games or Psyonix.</small>

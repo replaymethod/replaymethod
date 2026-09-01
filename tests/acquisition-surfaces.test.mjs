@@ -40,7 +40,7 @@ test("keeps the public product Rocket League-only", async () => {
   ]);
   assert.match(batchFlow, /href="\/analyze"/);
   assert.match(batchFlow, /Drop 10 Rocket League \.replay files/);
-  assert.match(landing, /Analyze my replays/);
+  assert.match(landing, /See the full pattern in your free analysis/);
   assert.match(batchFlow, /START MY PRIVATE ANALYSIS/);
   assert.match(batchFlow, /\{validCount\}\/10/);
   assert.match(batchFlow, /same player.*same ranked.*playlist/is);
@@ -57,15 +57,17 @@ test("puts the product action before explanatory browsing", async () => {
     source("../app/rocket-league-beta/ReplayContribution.tsx"),
   ]);
   assert.doesNotMatch(landing, /CHOOSE YOUR GAME|Choose my game|Contribute one replay/);
-  assert.match(landing, /Turn repeated mistakes into<br \/>focused improvement\./);
+  assert.match(landing, /From endless grinding —<br \/>get a clear path toward your next target rank\./);
   assert.match(landing, /<BatchAnalyzeFlow engineOpen=\{engineOpen\} variant="hero" \/>/);
-  assert.match(batchFlow, /Upload your 10 replays/);
+  assert.match(batchFlow, /Upload your 10 PC \.replay files/);
   assert.match(batchFlow, /Drop 10 Rocket League \.replay files/);
   assert.match(batchFlow, /Use the full upload page/);
-  assert.match(landing, /Upload your replays\.<br \/>Get your improvement program\./);
-  assert.match(landing, /longitudinal cross-match analysis/);
+  assert.match(landing, /By filtering out unnecessary hours of frustrating tilt, Replay Method delivers focused, easy-to-apply practice and a crystal clear breakdown of exactly what you need to change in your game\./);
+  assert.match(landing, /Upload your latest ranked set\./);
+  assert.match(landing, /Pinpoint exactly what to improve\./);
+  assert.match(landing, /Memorize the changes\./);
   assert.match(landing, /How do I know it&apos;s not bs\?/);
-  assert.match(landing, /Example report — your real report only includes patterns supported by your own replay files\./);
+  assert.match(landing, /Example report — your real report only includes patterns supported by your own \.replay files\./);
   assert.doesNotMatch(landing, /Free first analysis · No card required · Replays stay private|One free analysis · no card · private report|Replay Method · Experimental early access/);
   assert.ok(landing.indexOf("<ProductMoment") < landing.indexOf("<HowItWorks"));
   assert.ok(landing.indexOf("<HowItWorks") < landing.indexOf("<GoodToKnow"));
