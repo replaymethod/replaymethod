@@ -654,7 +654,6 @@ export default function ReportClient({
   return (
     <main className="report-page">
       <CustomerHeader
-        compact
         right={
           <>
             <Link href="/reports">My reports</Link>

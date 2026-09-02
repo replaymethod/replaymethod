@@ -26,7 +26,7 @@ export default async function AccessPage({ params, searchParams }: { params: Pro
   const unavailable = state === "expired" || state === "invalid" || !available;
 
   return <main className={`access-page${unavailable ? " access-page-unavailable" : ""}`}>
-    <CustomerHeader compact right={<Link className="rm-header-cta" href="/reports">My reports</Link>} />
+    <CustomerHeader right={<Link className="rm-header-cta" href="/reports">My reports</Link>} />
     <section className="access-card rm-shell">
       <div className="access-copy">
         <span className="access-kicker">PRIVATE REPORT OWNERSHIP</span>

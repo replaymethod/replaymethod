@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./customer-system.css";
 import "./premium-pass.css";
+import "./customer-theme.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://replaymethod.xyz"),

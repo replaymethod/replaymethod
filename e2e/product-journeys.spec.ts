@@ -12,8 +12,25 @@ const publicRoutes = [
   "/privacy",
   "/terms",
   "/beta-terms",
+  "/rocket-league-beta",
   "/reports",
   "/billing/success",
+];
+
+const themedCustomerRoutes = [
+  "/",
+  "/analyze",
+  "/replay-upload",
+  "/reports",
+  "/report/33333333333333333333333333333333",
+  "/guides/rocket-league-replay-review-checklist",
+  "/privacy",
+  "/terms",
+  "/beta-terms",
+  "/billing/success",
+  "/rocket-league-beta",
+  "/access/not-a-valid-token",
+  "/this-page-does-not-exist",
 ];
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -80,19 +97,53 @@ test.describe("first-time visitor funnel", () => {
   test("the three-step and Why Replay Method rows stay geometrically aligned", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/", { waitUntil: "load" });
-    const desktop = await page.evaluate(() => ({
+    await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
+    const readGeometry = () => page.evaluate(() => ({
       howWidths: [...document.querySelectorAll<HTMLElement>(".rm-home-how li")].map(item => Math.round(item.getBoundingClientRect().width)),
+      howHeights: [...document.querySelectorAll<HTMLElement>(".rm-home-how li")].map(item => Math.round(item.getBoundingClientRect().height)),
+      titleOffsets: [...document.querySelectorAll<HTMLElement>(".rm-home-how li")].map(item => {
+        const card = item.getBoundingClientRect();
+        const title = item.querySelector<HTMLElement>("h3")!.getBoundingClientRect();
+        return Math.round(title.top - card.top);
+      }),
+      bodyOffsets: [...document.querySelectorAll<HTMLElement>(".rm-home-how li")].map(item => {
+        const card = item.getBoundingClientRect();
+        const body = item.querySelector<HTMLElement>("p")!.getBoundingClientRect();
+        return Math.round(body.top - card.top);
+      }),
       trustOffsets: [...document.querySelectorAll<HTMLElement>(".rm-home-trust-list article")].map(item => {
         const row = item.getBoundingClientRect();
         const copy = item.querySelector<HTMLElement>("div")?.getBoundingClientRect();
         return Math.round((copy?.top || 0) - row.top);
       }),
     }));
-    expect(new Set(desktop.howWidths).size).toBe(1);
+
+    const expectMethodAlignment = (geometry: Awaited<ReturnType<typeof readGeometry>>) => {
+      expect(new Set(geometry.howWidths).size).toBe(1);
+      expect(new Set(geometry.titleOffsets).size).toBe(1);
+    };
+
+    const expectFreeMethodComposition = (geometry: Awaited<ReturnType<typeof readGeometry>>) => {
+      expect(new Set(geometry.howWidths).size).toBe(1);
+      expect(new Set(geometry.titleOffsets).size).toBe(1);
+    };
+
+    const desktop = await readGeometry();
+    expectFreeMethodComposition(desktop);
+    expect(new Set(desktop.howHeights).size).toBe(1);
     expect(new Set(desktop.trustOffsets).size).toBe(1);
 
+    await page.getByRole("tab", { name: "Planned Premium" }).click();
+    await expect(page.locator(".rm-home-how li h3").first()).toHaveText("Upload up to 35 ranked replays every week.");
+    const desktopPremium = await readGeometry();
+    expectMethodAlignment(desktopPremium);
+    expect(new Set(desktopPremium.howHeights).size).toBe(1);
+    expect(desktopPremium.howHeights).toEqual(desktop.howHeights);
+
     await page.setViewportSize({ width: 390, height: 844 });
-    const mobile = await page.evaluate(() => ({
+    const mobile = await readGeometry();
+    expectMethodAlignment(mobile);
+    const mobileTrust = await page.evaluate(() => ({
       heights: [...document.querySelectorAll<HTMLElement>(".rm-home-trust-list article")].map(item => Math.round(item.getBoundingClientRect().height)),
       offsets: [...document.querySelectorAll<HTMLElement>(".rm-home-trust-list article")].map(item => {
         const row = item.getBoundingClientRect();
@@ -100,8 +151,166 @@ test.describe("first-time visitor funnel", () => {
         return Math.round((copy?.top || 0) - row.top);
       }),
     }));
-    expect(new Set(mobile.heights).size).toBe(1);
-    expect(new Set(mobile.offsets).size).toBe(1);
+    expect(new Set(mobileTrust.heights).size).toBe(1);
+    expect(new Set(mobileTrust.offsets).size).toBe(1);
+
+    await page.getByRole("tab", { name: "Free method" }).click();
+    await expect(page.locator(".rm-home-how li h3").first()).toHaveText("Upload one set of 10 ranked replays.");
+    expectFreeMethodComposition(await readGeometry());
+    await expect(page.locator(".rm-home-how-label")).toHaveCount(0);
+  });
+
+  test("the floating navigation and product intro stay composed at every target width", async ({ page }) => {
+    await page.goto("/", { waitUntil: "load" });
+    await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
+    const directoryButton = page.locator(".rm-nav-directory > button");
+    await expect(page.locator(".rm-main-nav-links")).toHaveCount(0);
+    await expect(directoryButton).toHaveText(/Start/);
+
+    await directoryButton.click();
+    const startItem = page.locator('.rm-nav-directory-panel a[href="/#start"]');
+    await expect(startItem).toHaveAttribute("aria-current", "page");
+    await expect(startItem).toHaveCSS("background-color", "rgba(255, 255, 255, 0.9)");
+    expect(await startItem.evaluate(element => getComputedStyle(element, "::after").content)).toBe("none");
+    await page.locator('.rm-nav-directory-panel a[href="/#product"]').click();
+    await expect(page).toHaveURL(/#product$/);
+    await expect(directoryButton).toHaveText(/Product demo/);
+
+    await directoryButton.click();
+    await expect(page.locator('.rm-nav-directory-panel a[href="/#product"]')).toHaveAttribute("aria-current", "page");
+    await page.locator('.rm-nav-directory-panel a[href="/#method"]').click();
+    await expect(page).toHaveURL(/#method$/);
+    await expect(directoryButton).toHaveText(/How it works/);
+
+    await directoryButton.click();
+    await expect(page.locator('.rm-nav-directory-panel a[href="/#method"]')).toHaveAttribute("aria-current", "page");
+    await page.locator('.rm-nav-directory-panel a[href="/#product"]').click();
+    await expect(page).toHaveURL(/#product$/);
+    await expect(directoryButton).toHaveText(/Product demo/);
+
+    await page.evaluate(() => {
+      document.documentElement.style.scrollBehavior = "auto";
+      window.scrollTo(0, 0);
+    });
+    await expect(directoryButton).toHaveText(/Start/);
+    await page.evaluate(() => document.querySelector("#why")?.scrollIntoView());
+    await expect(directoryButton).toHaveText(/Why Replay Method/);
+
+    await page.goto("/#product", { waitUntil: "load" });
+    await expect(directoryButton).toHaveText(/Product demo/);
+
+    for (const width of [1440, 1280, 1180, 1024, 768, 685, 390, 375, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+
+      await expect(directoryButton).toBeVisible();
+      await expect(page.locator(".rm-wordmark > span:last-child")).toBeVisible({ visible: width > 520 });
+
+      await directoryButton.click();
+      const panel = page.locator(".rm-nav-directory-panel");
+      await expect(panel).toBeVisible();
+      const layout = await page.evaluate(() => {
+        const heading = document.querySelector<HTMLElement>(".rm-engine-intro h2")!.getBoundingClientRect();
+        const paragraph = document.querySelector<HTMLElement>(".rm-engine-intro p")!.getBoundingClientRect();
+        const directory = document.querySelector<HTMLElement>(".rm-nav-directory-panel")!.getBoundingClientRect();
+        return {
+          headingBottom: heading.bottom,
+          headingLeft: heading.left,
+          paragraphTop: paragraph.top,
+          paragraphLeft: paragraph.left,
+          paragraphWidth: paragraph.width,
+          directoryLeft: directory.left,
+          directoryRight: directory.right,
+          viewport: document.documentElement.clientWidth,
+        };
+      });
+      expect(layout.paragraphTop).toBeGreaterThan(layout.headingBottom);
+      expect(Math.abs(layout.paragraphLeft - layout.headingLeft)).toBeLessThanOrEqual(1);
+      expect(layout.paragraphWidth).toBeLessThanOrEqual(721);
+      expect(layout.directoryLeft).toBeGreaterThanOrEqual(0);
+      expect(layout.directoryRight).toBeLessThanOrEqual(layout.viewport + 1);
+      await expectNoHorizontalOverflow(page);
+
+      await directoryButton.click();
+      await expect(panel).toHaveCount(0);
+    }
+  });
+
+  for (const route of themedCustomerRoutes) {
+    test(`${route} inherits the homepage visual system`, async ({ page }) => {
+      await page.goto(route, { waitUntil: "load" });
+
+      const main = page.locator("main");
+      const header = page.locator(".rm-header");
+      const heading = main.locator("h1").first();
+      await expect(main).toBeVisible();
+      await expect(header).toBeVisible();
+      await expect(page.locator(".rm-nav-directory > button")).toBeVisible();
+      await expect(heading).toBeVisible();
+      await expect(main).toHaveCSS("background-color", "rgb(248, 247, 244)");
+
+      const contract = await page.evaluate(() => {
+        const root = document.querySelector<HTMLElement>("main")!;
+        const title = root.querySelector<HTMLElement>("h1")!.getBoundingClientRect();
+        const siteHeader = root.querySelector<HTMLElement>(":scope > .rm-header")!;
+        const headerSurface = siteHeader.querySelector<HTMLElement>(".rm-header-inner")!;
+        const headerLinks = [...document.querySelectorAll<HTMLElement>(".rm-header a")];
+        return {
+          fontFamily: getComputedStyle(root).fontFamily,
+          titleLeft: title.left,
+          titleRight: title.right,
+          viewport: document.documentElement.clientWidth,
+          pageWidth: document.documentElement.scrollWidth,
+          headerPosition: getComputedStyle(siteHeader).position,
+          headerShadow: getComputedStyle(headerSurface).boxShadow,
+          cleanHeaderSurfaces: headerLinks.every(link => getComputedStyle(link).backgroundImage === "none"),
+        };
+      });
+
+      expect(contract.fontFamily).toContain("Helvetica Neue");
+      expect(contract.titleLeft).toBeGreaterThanOrEqual(0);
+      expect(contract.titleRight).toBeLessThanOrEqual(contract.viewport + 1);
+      expect(contract.pageWidth).toBeLessThanOrEqual(contract.viewport + 1);
+      expect(contract.cleanHeaderSurfaces).toBe(true);
+      expect(contract.headerPosition).toBe(contract.viewport <= 700 ? "fixed" : "sticky");
+      expect(contract.headerShadow).toContain("12px");
+      expect(contract.headerShadow).not.toContain("18px");
+      expect(contract.headerShadow).not.toContain("34px");
+
+      await page.evaluate(() => window.scrollTo(0, Math.min(900, document.documentElement.scrollHeight)));
+      await expect.poll(() => page.locator(".rm-header").evaluate(element => Math.round(element.getBoundingClientRect().top))).toBe(0);
+      await expect(header).toBeVisible();
+
+      await expect(page.locator(".rm-main-nav-links")).toHaveCount(0);
+    });
+  }
+
+  test("customer journeys use the homepage composition without changing their copy", async ({ page }) => {
+    const pages = [
+      { route: "/analyze", heading: "Find the decision that keeps repeating.", module: ".batch-intake", desktopColumns: 2 },
+      { route: "/replay-upload", heading: "Your replay files are already on your PC.", module: ".replay-find", grid: ".replay-find-grid", desktopColumns: 3 },
+      { route: "/reports", heading: "Your reports.", module: ".reports-empty", desktopColumns: 1 },
+      { route: "/guides/rocket-league-replay-review-checklist", heading: "Stop watching the goal. Find the decision that caused it.", module: ".guide-scorecard", desktopColumns: 4 },
+      { route: "/privacy", heading: "Your data should never be another hidden system.", module: ".legal-grid", desktopColumns: 2 },
+      { route: "/terms", heading: "No card. No hidden purchase.", module: ".legal-grid", desktopColumns: 2 },
+      { route: "/beta-terms", heading: "One real match. No fake promise.", module: ".legal-grid", desktopColumns: 2 },
+      { route: "/rocket-league-beta", heading: "Help teach the engine what a good decision looks like.", module: ".rl-beta-shell", desktopColumns: 2 },
+    ];
+
+    for (const current of pages) {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(current.route, { waitUntil: "load" });
+      await expect(page.locator("main h1").first()).toHaveText(current.heading);
+      await expect(page.locator(current.module)).toHaveCSS("background-color", "rgb(7, 25, 43)");
+
+      const desktopGrid = current.grid || current.module;
+      const desktopColumns = await page.locator(desktopGrid).evaluate(element => getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length);
+      expect(desktopColumns, `${current.route} desktop columns`).toBe(current.desktopColumns);
+
+      await page.setViewportSize({ width: 390, height: 844 });
+      const mobileColumns = await page.locator(desktopGrid).evaluate(element => getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length);
+      expect(mobileColumns, `${current.route} mobile columns`).toBe(1);
+      await expectNoHorizontalOverflow(page);
+    }
   });
 
   test("the method funnel copy stays exact and the footer uses three symmetric columns", async ({ page }) => {
@@ -116,22 +325,73 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".rm-home-how-intro p").nth(1)).toHaveText("Planned Premium extends this method by letting you upload up to 35 ranked .replay files each week. You'll receive a complete analysis paired with tailored coaching that is easy to follow and apply in your games throughout the next week.");
     await expect(page.locator(".rm-home-trust .reveal-kicker")).toHaveText("Why Replay Method?");
     await expect(page.locator(".rm-home-hero-category")).toHaveText("Rocket League replay analysis for PC");
-    await expect(page.locator(".rm-home-hero > small")).toHaveText("Free first analysis · Original PC .replay files required · Console replay uploads are not supported.");
-    await expect(page.locator(".reveal-home-intake .rm-section-prompt")).toHaveText("Ready to find what repeats?");
+    await expect(page.locator(".rm-home-hero > p")).toHaveText("Replay Method is designed to work across up to 35 ranked RL .replay files each week—uncovering the habits, decisions and game-sense patterns keeping you hardstuck. Instead of hours of frustrating tilt and guesswork, you get a crystal-clear breakdown grounded in your own matches, tailored coaching and targeted drills that show you exactly what to change, help each adjustment stick and make it easier to apply in your next games.");
+    await expect(page.locator(".rm-home-hero-assurance")).toHaveText("Free first analysis. No card required. PC .replay files only.");
+    await expect(page.locator(".rm-home-hero-assurance strong")).toHaveText("Free first analysis.");
+    await expect(page.locator(".reveal-home-intake .rm-section-prompt")).toHaveCount(0);
+    await expect(page.locator(".reveal-home-intake-head strong")).toHaveText("Analyze your first 10 ranked replays for free.");
+    await expect(page.locator(".reveal-home-drop > b")).toHaveText("Choose your 10 ranked .replay files");
+    await expect(page.locator(".reveal-home-upload-guidance")).toHaveText("Before you upload, play one fresh set of 10 ranked games in your preferred game mode. Save every .replay file and upload the complete set. That gives Replay Method the most honest picture of your game—and the most useful analysis. No card required.");
     await expect(page.locator(".rm-engine-intro .rm-section-prompt")).toHaveCount(0);
     await expect(page.locator(".rm-engine-intro > p")).toHaveText("Heads up! This interactive demo is intentionally stripped down. Beyond it, the method can scale to support up to 35 .replay files per week, pairing a complete breakdown with tailored coaching and targeted drills that help you memorize each change and bring it into your games.");
     const freeTab = page.getByRole("tab", { name: "Free method" });
     const premiumTab = page.getByRole("tab", { name: "Planned Premium" });
     await expect(freeTab).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator(".rm-home-how li").nth(0)).toContainText("Upload your latest ranked set.");
-    await expect(page.locator(".rm-home-how li").nth(1)).toContainText("Pinpoint exactly what to improve.");
-    await expect(page.locator(".rm-home-how li").nth(2)).toContainText("Memorize the changes.");
+    await expect(page.locator(".rm-home-how li h3").nth(0)).toHaveText("Upload one set of 10 ranked replays.");
+    await expect(page.locator(".rm-home-how li h3").nth(1)).toHaveText("Find what keeps you hardstuck.");
+    await expect(page.locator(".rm-home-how li h3").nth(2)).toHaveText("Start with the change that matters most.");
+    await expect(page.locator(".rm-home-how li p").nth(0)).toHaveText("Start your climb by uploading 10 ranked .replay files from the same player and game mode. Don’t cherry-pick the games where you played at your best, mechanically or game-sense-wise. Better yet, play 10 fresh ranked games in your preferred mode before uploading, so the Replay Engine gets a true picture of how you normally play and a stronger foundation for your climb.");
+    await expect(page.locator(".rm-home-how li p").nth(1)).toHaveText("Replay Method works through all 10 of your replays to identify the habits, decisions, game-sense patterns and mechanics that repeatedly hold you back. When you’ve spent hours playing a certain way, those patterns can be hard to notice on your own — and even harder to break. Instead of leaving you to spot every mistake yourself, including the small, easy-to-miss patterns that can quietly cost you games, the Replay Engine does the heavy lifting. It turns what it finds into a crystal-clear plan: what needs to change, why it matters, where you should focus first, and which drills or game-sense adjustments will help you apply those changes in your next games.");
+    await expect(page.locator(".rm-home-how li p").nth(2)).toHaveText("Your improvement plan turns the patterns found across your 10 replays into a focused set of changes to work on first. Use the recommended drills and simple game-sense cues to practice each change, then take them into your next ranked sessions until they start to become part of how you play. Instead of trying to fix everything at once, you always know what to focus on next as you continue your climb.");
+    await expect(page.locator(".rm-home-how-premium-note")).toHaveText("Want to keep the method going? Premium extends the same cycle across a larger set of replays each week, with tailored coaching that develops alongside your game.");
+
+    const darkPalette = await page.evaluate(() => {
+      const lightSurfaceSelectors = [
+        ".rm-header-cta",
+        ".rm-home-hero-actions > a:first-child",
+        ".rm-simple-demo-action > a",
+      ];
+      const darkSurfaceSelectors = [
+        ".rm-home-how .rm-section-prompt-inverse",
+        ".rm-home-how-switch button[aria-selected='true']",
+        ".rm-home-final-action > a",
+      ];
+      const lightSurfaceStyles = lightSurfaceSelectors.map(selector => getComputedStyle(document.querySelector<HTMLElement>(selector)!));
+      const darkSurfaceStyles = darkSurfaceSelectors.map(selector => getComputedStyle(document.querySelector<HTMLElement>(selector)!));
+      const styles = [...lightSurfaceStyles, ...darkSurfaceStyles];
+      const arrowStyles = [
+        ".rm-home-hero-actions > a:first-child > span",
+        ".rm-home-final-action > a > span",
+        ".rm-simple-demo-action > a > i",
+      ].map(selector => getComputedStyle(document.querySelector<HTMLElement>(selector)!));
+      return {
+        lightSurfaceBackgrounds: lightSurfaceStyles.map(style => style.backgroundColor),
+        darkSurfaceBackgrounds: darkSurfaceStyles.map(style => style.backgroundColor),
+        colors: styles.map(style => style.color),
+        radii: styles.map(style => style.borderRadius),
+        arrowBackgrounds: arrowStyles.map(style => style.backgroundColor),
+        arrowColors: arrowStyles.map(style => style.color),
+      };
+    });
+    expect(new Set(darkPalette.lightSurfaceBackgrounds).size).toBe(1);
+    expect(new Set(darkPalette.darkSurfaceBackgrounds).size).toBe(1);
+    expect(darkPalette.lightSurfaceBackgrounds[0]).toBe("rgb(7, 25, 43)");
+    expect(darkPalette.darkSurfaceBackgrounds[0]).toBe("rgb(18, 42, 62)");
+    expect(new Set(darkPalette.colors).size).toBe(1);
+    expect(new Set(darkPalette.radii).size).toBe(1);
+    expect(new Set(darkPalette.arrowBackgrounds).size).toBe(1);
+    expect(new Set(darkPalette.arrowColors).size).toBe(1);
 
     await premiumTab.click();
     await expect(premiumTab).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator(".rm-home-how li").nth(0)).toContainText("Upload a representative week.");
-    await expect(page.locator(".rm-home-how li").nth(1)).toContainText("See exactly what needs to change.");
-    await expect(page.locator(".rm-home-how li").nth(2)).toContainText("Apply the plan throughout the week.");
+    await expect(premiumTab).toHaveCSS("background-color", darkPalette.darkSurfaceBackgrounds[0]);
+    await expect(premiumTab).toHaveCSS("color", darkPalette.colors[0]);
+    await expect(page.locator(".rm-home-how li h3").nth(0)).toHaveText("Upload up to 35 ranked replays every week.");
+    await expect(page.locator(".rm-home-how li h3").nth(1)).toHaveText("Let Replay Method connect the patterns.");
+    await expect(page.locator(".rm-home-how li h3").nth(2)).toHaveText("Get weekly coaching tailored to how your game improves.");
+    await expect(page.locator(".rm-home-how li p").nth(0)).toHaveText("Upload up to 35 ranked .replay files from the same player and game mode each week. That can be as simple as five ranked games a day, giving Replay Method a much broader view of how you actually play throughout the week. With more matches to work from, it becomes easier to separate one-off mistakes from the habits, decisions and game-sense patterns that consistently shape your games.");
+    await expect(page.locator(".rm-home-how li p").nth(1)).toHaveText("With a larger set to work from, Replay Method can build a more complete picture of what repeatedly holds you back across your mechanics, decisions and game sense. By connecting patterns across your matches, the Replay Engine can prioritize what deserves your attention first and turn the findings into a complete breakdown paired with tailored coaching — including what to change, why it matters, what to practice and how to approach it in your games.");
+    await expect(page.locator(".rm-home-how li p").nth(2)).toHaveText("Your coaching gives you a clear focus for the week ahead, with targeted drills, simple game-sense cues and practical changes you can take straight into ranked. Instead of trying to remember a long list of problems or deciding what to work on yourself, you can focus on the changes that matter most and apply them one at a time. Play your games, put the coaching into practice, then bring your next set back to Replay Method and keep the cycle moving as your game develops.");
     await expect(page.locator(".rm-home-how li")).toHaveCount(3);
     await expectNoHorizontalOverflow(page);
 
@@ -214,8 +474,9 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
     await page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze 10 \.replay files for free/ }).click();
     await expect(page).toHaveURL(/\/#ten-replay-start$/);
-    await expect(page.getByText("Drop 10 Rocket League .replay files", { exact: true })).toBeVisible();
-    await expect(page.getByText("PC .replay files only. One player, one ranked mode.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Choose your 10 ranked .replay files", { exact: true })).toBeVisible();
+    await expect(page.locator("#ten-replay-start .reveal-home-intake-steps")).toHaveCount(0);
+    await expect(page.locator("#ten-replay-start .reveal-home-intake-head p")).toHaveCount(0);
     await expect(page.locator('#ten-replay-start input[type="file"][multiple]')).toHaveCount(1);
     await expect(page.getByText("We check every file before the analysis starts.", { exact: true })).toHaveCount(0);
     await expect.poll(() => page.locator(".rm-home-activation").evaluate(element => {
@@ -224,12 +485,41 @@ test.describe("first-time visitor funnel", () => {
     })).toBeLessThanOrEqual(1);
     const helpLinks = page.locator(".rm-home-activation .reveal-home-help a");
     await expect(helpLinks).toHaveCount(2);
+    await expect(page.locator(".rm-home-activation .reveal-home-help")).toHaveCSS("border-top-style", "none");
     await expect(helpLinks.first()).toHaveCSS("border-top-style", "solid");
     await expect(helpLinks.first()).toHaveCSS("text-decoration-line", "none");
     await helpLinks.first().hover();
     await expect.poll(() => helpLinks.first().evaluate(element => getComputedStyle(element).transform)).not.toBe("none");
     await helpLinks.last().focus();
     await expect(helpLinks.last()).toBeFocused();
+  });
+
+  test("the homepage intake reveals only the next useful step after file selection", async ({ page }) => {
+    await page.goto("/", { waitUntil: "load" });
+    await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
+    const input = page.locator('#ten-replay-start input[type="file"]');
+
+    await input.setInputFiles({ name: "screenshot.png", mimeType: "image/png", buffer: Buffer.from("not-a-replay") });
+    await expect(page.locator("#ten-replay-start")).toHaveAttribute("data-state", "needs-file");
+    await expect(page.getByText("Choose an original .replay file to continue.", { exact: true })).toBeVisible();
+    await expect(page.locator("#ten-replay-start .reveal-home-fields")).toHaveCount(0);
+    await expect(page.locator("#ten-replay-start .reveal-home-files article.excluded")).toHaveCount(1);
+
+    await input.setInputFiles({ name: "ranked-01.replay", mimeType: "application/octet-stream", buffer: Buffer.from("synthetic-replay") });
+    await expect(page.locator("#ten-replay-start")).toHaveAttribute("data-state", "active");
+    await expect(page.getByText("Complete your 10-match set.", { exact: true })).toBeVisible();
+    const contextHeading = page.getByRole("heading", { name: "Where should we send what the Replay Engine finds?" });
+    await expect(contextHeading).toBeVisible();
+    await expect(contextHeading).toHaveCSS("font-family", /Helvetica Neue/);
+    await expect(page.locator("#ten-replay-start .reveal-home-context-intro")).toHaveCSS("animation-name", "rm-intake-section-enter");
+    await expect(page.locator("#ten-replay-start .reveal-home-fields")).toBeVisible();
+    await expect(page.getByLabel("Current playlist rank").locator("option", { hasText: "Supersonic Legend" })).toHaveCount(0);
+
+    for (const width of [1440, 768, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expectNoHorizontalOverflow(page);
+      await expect(page.locator("#ten-replay-start .reveal-home-submit")).toBeVisible();
+    }
   });
 
   test("the final Curious CTA centers the same upload surface", async ({ page }) => {
@@ -726,7 +1016,7 @@ test.describe("first-time visitor funnel", () => {
     };
     await page.addInitScript((value) => localStorage.setItem("replaymethod-ten-replay-batch", JSON.stringify(value)), saved);
     await page.goto("/", { waitUntil: "load" });
-    await expect(page.getByText("Upload your 10 PC .replay files", { exact: true })).toBeVisible();
+    await expect(page.getByText("Analyze your first 10 ranked replays for free.", { exact: true })).toBeVisible();
     await expect(page.getByText("Your private report is ready", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Your ten-match report is ready.", { exact: true })).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => localStorage.getItem("replaymethod-ten-replay-batch"))).toBeNull();
@@ -842,7 +1132,19 @@ test.describe("required responsive matrix", () => {
   for (const viewport of viewports) {
     test(`${viewport.width}x${viewport.height} keeps critical journeys inside the viewport`, async ({ page }) => {
       await page.setViewportSize(viewport);
-      for (const route of ["/", "/rocket-league", "/analyze", "/climb-check"]) {
+      for (const route of [
+        "/",
+        "/analyze",
+        "/replay-upload",
+        "/reports",
+        "/guides/rocket-league-replay-review-checklist",
+        "/privacy",
+        "/terms",
+        "/beta-terms",
+        "/rocket-league-beta",
+        "/billing/success",
+        "/this-page-does-not-exist",
+      ]) {
         await page.goto(route, { waitUntil: "load" });
         await expectNoHorizontalOverflow(page);
         const clipped = await page.evaluate(() => {

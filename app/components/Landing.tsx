@@ -337,35 +337,29 @@ function HowItWorks() {
   const [method, setMethod] = useState<"free" | "premium">("free");
   const steps = method === "free" ? [
     {
-      label: "Free · 10 PC .replay files",
-      title: "Upload your latest ranked set.",
-      body: "Start your climb by uploading your 10 latest ranked PC .replay files from the same player and preferred game mode.",
+      title: "Upload one set of 10 ranked replays.",
+      body: "Start your climb by uploading 10 ranked .replay files from the same player and game mode. Don’t cherry-pick the games where you played at your best, mechanically or game-sense-wise. Better yet, play 10 fresh ranked games in your preferred mode before uploading, so the Replay Engine gets a true picture of how you normally play and a stronger foundation for your climb.",
     },
     {
-      label: "Crystal clear breakdown",
-      title: "Pinpoint exactly what to improve.",
-      body: "Replay Method filters the set into a clear breakdown of the supported patterns you need to change in your game.",
+      title: "Find what keeps you hardstuck.",
+      body: "Replay Method works through all 10 of your replays to identify the habits, decisions, game-sense patterns and mechanics that repeatedly hold you back. When you’ve spent hours playing a certain way, those patterns can be hard to notice on your own — and even harder to break. Instead of leaving you to spot every mistake yourself, including the small, easy-to-miss patterns that can quietly cost you games, the Replay Engine does the heavy lifting. It turns what it finds into a crystal-clear plan: what needs to change, why it matters, where you should focus first, and which drills or game-sense adjustments will help you apply those changes in your next games.",
     },
     {
-      label: "Targeted drills",
-      title: "Memorize the changes.",
-      body: "Follow focused, easy-to-apply drills that help you remember each change and bring it into your next games.",
+      title: "Start with the change that matters most.",
+      body: "Your improvement plan turns the patterns found across your 10 replays into a focused set of changes to work on first. Use the recommended drills and simple game-sense cues to practice each change, then take them into your next ranked sessions until they start to become part of how you play. Instead of trying to fix everything at once, you always know what to focus on next as you continue your climb.",
     },
   ] : [
     {
-      label: "Planned Premium · PC · up to 35/week",
-      title: "Upload a representative week.",
-      body: "Upload up to 35 ranked PC .replay files from your preferred game mode each week for a broader view of your game.",
+      title: "Upload up to 35 ranked replays every week.",
+      body: "Upload up to 35 ranked .replay files from the same player and game mode each week. That can be as simple as five ranked games a day, giving Replay Method a much broader view of how you actually play throughout the week. With more matches to work from, it becomes easier to separate one-off mistakes from the habits, decisions and game-sense patterns that consistently shape your games.",
     },
     {
-      label: "Complete analysis",
-      title: "See exactly what needs to change.",
-      body: "Receive a complete analysis paired with tailored coaching around the patterns you need to improve.",
+      title: "Let Replay Method connect the patterns.",
+      body: "With a larger set to work from, Replay Method can build a more complete picture of what repeatedly holds you back across your mechanics, decisions and game sense. By connecting patterns across your matches, the Replay Engine can prioritize what deserves your attention first and turn the findings into a complete breakdown paired with tailored coaching — including what to change, why it matters, what to practice and how to approach it in your games.",
     },
     {
-      label: "Next-week practice",
-      title: "Apply the plan throughout the week.",
-      body: "Follow focused coaching that is easy to apply in your games throughout the next week, then return with your next ranked set.",
+      title: "Get weekly coaching tailored to how your game improves.",
+      body: "Your coaching gives you a clear focus for the week ahead, with targeted drills, simple game-sense cues and practical changes you can take straight into ranked. Instead of trying to remember a long list of problems or deciding what to work on yourself, you can focus on the changes that matter most and apply them one at a time. Play your games, put the coaching into practice, then bring your next set back to Replay Method and keep the cycle moving as your game develops.",
     },
   ];
 
@@ -384,12 +378,13 @@ function HowItWorks() {
           <button type="button" role="tab" aria-selected={method === "free"} aria-controls="method-steps" onClick={() => setMethod("free")}>Free method</button>
           <button type="button" role="tab" aria-selected={method === "premium"} aria-controls="method-steps" onClick={() => setMethod("premium")}>Planned Premium</button>
         </div>
-        <ol id="method-steps" aria-live="polite">
-          {steps.map((step, index) => <li key={`${method}-${step.label}`}>
+        <ol className={`rm-home-how-steps rm-home-how-steps-${method}`} id="method-steps" aria-live="polite">
+          {steps.map((step, index) => <li key={`${method}-${step.title}`}>
             <small>{String(index + 1).padStart(2, "0")}</small>
-            <div><span className="rm-home-how-label">{step.label}</span><h3>{step.title}</h3><p>{step.body}</p></div>
+            <div><h3>{step.title}</h3><p>{step.body}</p></div>
           </li>)}
         </ol>
+        {method === "free" && <p className="rm-home-how-premium-note"><strong>Want to keep the method going?</strong> Premium extends the same cycle across a larger set of replays each week, with tailored coaching that develops alongside your game.</p>}
       </div>
     </div>
   </section>;
@@ -425,17 +420,17 @@ export default function Landing({ game = "general", engineOpen = false, earlyAcc
   if (game === "league" || game === "valorant") return <FutureGame game={game} />;
 
   return <main ref={pageRef} className="marcel-home reveal-home" data-hydrated="false">
-    <CustomerHeader current="product" />
+    <CustomerHeader />
 
-    <section className="rm-home-hero reveal-shell" aria-labelledby="home-title">
+    <section className="rm-home-hero reveal-shell" id="start" aria-labelledby="home-title">
       <span className="reveal-kicker rm-home-hero-category">Rocket League replay analysis for PC</span>
       <h1 id="home-title">From endless grinding —<br />get a clear path toward your next target rank.</h1>
-      <p>Upload 10 ranked PC .replay files. See what keeps going wrong and what to do differently next game.</p>
+      <p>Replay Method is designed to work across up to 35 ranked RL .replay files each week—uncovering the habits, decisions and game-sense patterns keeping you hardstuck. Instead of hours of frustrating tilt and guesswork, you get a crystal-clear breakdown grounded in your own matches, tailored coaching and targeted drills that show you exactly what to change, help each adjustment stick and make it easier to apply in your next games.</p>
       <div className="rm-home-hero-actions">
         <a href="#ten-replay-start" onClick={(event) => scrollToReplayUpload(event, "home_hero")}>Analyze 10 .replay files for free <span aria-hidden="true">↓</span></a>
         <a href="#product">View the stripped-down product demo <span aria-hidden="true">↓</span></a>
       </div>
-      <small>Free first analysis · Original PC .replay files required · Console replay uploads are not supported.</small>
+      <small className="rm-home-hero-assurance"><strong>Free first analysis.</strong> No card required. PC .replay files only.</small>
     </section>
 
     <section className="rm-home-activation reveal-shell" aria-label="Start a free ten-file .replay analysis">
