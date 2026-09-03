@@ -270,7 +270,7 @@ function ProductMoment({ earlyAccessOpen }: { earlyAccessOpen: boolean }) {
 
   return <section className="rm-engine-section" id="product">
     <div className="reveal-shell">
-      <header className="rm-engine-intro"><h2>Select a common ranked RL mistake below and get a brief look at the deep feedback Replay Method can provide.</h2><p>Heads up! This interactive demo is intentionally stripped down. Beyond it, the method can scale to support up to 35 .replay files per week, pairing a complete breakdown with tailored coaching and targeted drills that help you memorize each change and bring it into your games.</p></header>
+      <header className="rm-engine-intro"><h2>Select a common ranked RL mistake below and get a brief look at the deep feedback Replay Method can provide.</h2><p>Heads up! This interactive demo is intentionally stripped down. Beyond it, the method can scale to support up to 35 .replay files per week, pairing a complete breakdown with tailored coaching and targeted drills that help you memorize each change and bring it into your games. Open the exact matches and timestamps, then compare them with the analysis yourself.</p></header>
       <div className="rm-product-demo rm-simple-demo" data-example={example.key} onTouchStart={beginSwipe} onTouchEnd={endSwipe}>
         <header className="rm-product-demo-bar">
           <span><i />Interactive product demo</span>
@@ -390,22 +390,6 @@ function HowItWorks() {
   </section>;
 }
 
-function GoodToKnow() {
-  return <section className="rm-home-trust" id="why" aria-labelledby="why-title">
-    <div className="reveal-shell">
-      <header>
-        <span className="reveal-kicker rm-section-prompt">Why Replay Method?</span>
-        <h2 id="why-title">We identify what keeps going wrong across your .replay files —<br />you get a structured improvement plan designed to help you climb the ranks.</h2>
-      </header>
-      <div className="rm-home-trust-list">
-        <article><span>01</span><div><h3>What keeps going wrong?</h3><p>Usually, it&apos;s a combination of ingrained habits that creates tunnel vision and makes you overlook the fundamentals.</p></div></article>
-        <article><span>02</span><div><h3>How do I fix them?</h3><p>Get a structured improvement program for every repeated mistake we find—including what to change, what to practice and how to apply each fix in your next games.</p></div></article>
-        <article><span>03</span><div><h3>How do I know it&apos;s not bs?</h3><p>Open the exact matches and timestamps, then compare them with the analysis yourself.</p></div></article>
-      </div>
-    </div>
-  </section>;
-}
-
 export default function Landing({ game = "general", engineOpen = false, earlyAccessOpen = false }: { game?: GameKey; engineOpen?: boolean; calibrationOpen?: boolean; earlyAccessOpen?: boolean }) {
   const pageRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -439,7 +423,6 @@ export default function Landing({ game = "general", engineOpen = false, earlyAcc
 
     <ProductMoment earlyAccessOpen={earlyAccessOpen} />
     <HowItWorks />
-    <GoodToKnow />
 
     <section className="rm-home-final reveal-shell" id="pricing" aria-labelledby="final-title">
       <div className="rm-home-final-copy"><h2 id="final-title">Curious?</h2><p>Upload your 10 most recent PC .replay files from the same ranked mode and begin your climb.</p></div>

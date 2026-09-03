@@ -11,14 +11,15 @@ type CustomerHeaderProps = {
   right?: ReactNode;
 };
 
-type HomepageSection = "#start" | "#product" | "#method" | "#why";
+type HomepageSection = "#start" | "#product" | "#method";
 
-const homepageSections: HomepageSection[] = ["#product", "#method", "#why"];
+const homepageSections: HomepageSection[] = ["#product", "#method"];
 
 export function CustomerHeader({ compact = false, current, right }: CustomerHeaderProps) {
   const pathname = usePathname();
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const [activeHomepageSection, setActiveHomepageSection] = useState<HomepageSection>("#start");
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
   const directoryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +38,10 @@ export function CustomerHeader({ compact = false, current, right }: CustomerHead
         }
 
         setActiveHomepageSection((currentSection) => currentSection === nextSection ? currentSection : nextSection);
+
+        const heroLead = document.querySelector<HTMLElement>(".rm-home-hero > p");
+        const nextCompactHeaderVisible = Boolean(heroLead && heroLead.getBoundingClientRect().bottom <= 64);
+        setCompactHeaderVisible((isVisible) => isVisible === nextCompactHeaderVisible ? isVisible : nextCompactHeaderVisible);
       });
     };
 
@@ -61,12 +66,15 @@ export function CustomerHeader({ compact = false, current, right }: CustomerHead
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setDirectoryOpen(false);
     };
+    const closeOnScroll = () => setDirectoryOpen(false);
 
     document.addEventListener("pointerdown", closeOnPointerDown);
     document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("scroll", closeOnScroll, { passive: true });
     return () => {
       document.removeEventListener("pointerdown", closeOnPointerDown);
       document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("scroll", closeOnScroll);
     };
   }, [directoryOpen]);
 
@@ -90,8 +98,6 @@ export function CustomerHeader({ compact = false, current, right }: CustomerHead
       ? "Product demo"
       : activeHref === "/#method"
         ? "How it works"
-      : activeHref === "/#why"
-        ? "Why Replay Method"
         : activeHref === "/analyze"
           ? "Analyze .replay files"
           : activeHref === "/reports"
@@ -108,8 +114,9 @@ export function CustomerHeader({ compact = false, current, right }: CustomerHead
                       ? "Beta terms"
                       : "Explore";
   const active = (href: string) => activeHref === href ? "page" as const : undefined;
+  const homepageHeader = pathname === "/" && !compact;
 
-  return <><header className={`rm-header${compact ? " rm-header-compact" : ""}`}>
+  return <><header className={`rm-header${compact ? " rm-header-compact" : ""}${homepageHeader ? " rm-header-home" : ""}`}>
     <div className="rm-shell rm-header-inner">
       <Link className="rm-wordmark" href="/" aria-label="Replay Method home">
         <span className="rm-wordmark-glyph" aria-hidden="true"><ReplayMark /></span>
@@ -126,7 +133,6 @@ export function CustomerHeader({ compact = false, current, right }: CustomerHead
               <Link aria-current={active("/#start")} href="/#start" onClick={closeDirectory}>Start</Link>
               <Link aria-current={active("/#product")} href="/#product" onClick={closeDirectory}>Product demo</Link>
               <Link aria-current={active("/#method")} href="/#method" onClick={closeDirectory}>How it works</Link>
-              <Link aria-current={active("/#why")} href="/#why" onClick={closeDirectory}>Why Replay Method</Link>
             </section>
             <section>
               <span>Product</span>
@@ -146,7 +152,20 @@ export function CustomerHeader({ compact = false, current, right }: CustomerHead
       </nav>}
       <div className="rm-header-action">{right || <><Link className="rm-header-login" aria-current={current === "report" ? "page" : undefined} href="/reports">My reports</Link><Link className="rm-header-cta" href="/analyze">Start free</Link></>}</div>
     </div>
-  </header><div className="rm-header-spacer" aria-hidden="true" /></>;
+  </header><div className="rm-header-spacer" aria-hidden="true" />
+    {homepageHeader && <header className={`rm-scroll-header${compactHeaderVisible ? " is-visible" : ""}`} aria-hidden={!compactHeaderVisible}>
+      <div className="rm-shell rm-scroll-header-inner">
+        <Link className="rm-wordmark" href="/" aria-label="Replay Method home" tabIndex={compactHeaderVisible ? undefined : -1}>
+          <span className="rm-wordmark-glyph" aria-hidden="true"><ReplayMark /></span>
+          <span>Replay Method</span>
+        </Link>
+        <div className="rm-scroll-header-action">
+          <Link className="rm-header-login" href="/reports" tabIndex={compactHeaderVisible ? undefined : -1}>My reports</Link>
+          <Link className="rm-header-cta" href="/analyze" tabIndex={compactHeaderVisible ? undefined : -1}>Start free</Link>
+        </div>
+      </div>
+    </header>}
+  </>;
 }
 
 export function CustomerFooter() {
@@ -154,7 +173,7 @@ export function CustomerFooter() {
     <div className="rm-shell rm-footer-grid">
       <div className="rm-footer-brand"><span className="rm-footer-wordmark"><span className="rm-wordmark-glyph" aria-hidden="true"><ReplayMark /></span><b>Replay Method</b></span></div>
       <nav aria-label="Product links"><span>Product</span><Link href="/analyze">Analyze 10 .replay files</Link><Link href="/replay-upload">Find .replay files</Link><Link href="/guides/rocket-league-replay-review-checklist">How to review a replay</Link></nav>
-      <nav aria-label="Method links"><span>How it works</span><Link href="/#method">Three simple steps</Link><Link href="/#why">Why Replay Method</Link><Link href="/reports">My reports</Link></nav>
+      <nav aria-label="Method links"><span>How it works</span><Link href="/#method">Three simple steps</Link><Link href="/#product">Product demo</Link><Link href="/reports">My reports</Link></nav>
       <nav aria-label="Company links"><span>Company</span><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/beta-terms">Beta terms</Link><a href="mailto:contact@replaymethod.xyz">Contact</a></nav>
       <small>Independent product. Not affiliated with Epic Games or Psyonix.</small>
     </div>

@@ -63,7 +63,7 @@ test.beforeEach(async ({ page }) => {
 
 async function expectLandingFunnel(page: Page) {
   await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
-  await expect(page.locator("main.marcel-home > section")).toHaveCount(6);
+  await expect(page.locator("main.marcel-home > section")).toHaveCount(5);
   await expect(page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze 10 \.replay files for free/ })).toHaveAttribute("href", "#ten-replay-start");
   await expect(page.locator('#ten-replay-start input[type="file"][multiple]')).toHaveCount(1);
 }
@@ -86,7 +86,8 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".reveal-promises")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: /By filtering out unnecessary hours.*change in your game/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Select a common ranked RL mistake.*deep feedback Replay Method can provide/i })).toBeVisible();
-    await expect(page.locator(".rm-home-trust h2")).toHaveText(/We identify what keeps going wrong.*climb the ranks/i);
+    await expect(page.locator(".rm-home-trust")).toHaveCount(0);
+    await expect(page.locator(".rm-engine-intro > p")).toContainText("Open the exact matches and timestamps, then compare them with the analysis yourself.");
     await expect(page.locator('main.marcel-home input[type="file"][multiple]')).toHaveCount(1);
     await expect(page.getByRole("button", { name: /League of Legends|VALORANT/i })).toHaveCount(0);
     await expect(page.locator(".rm-home-hero-actions").getByRole("link", { name: /Analyze 10 \.replay files for free/ })).toHaveAttribute("href", "#ten-replay-start");
@@ -94,7 +95,7 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".reveal-faq details")).toHaveCount(0);
   });
 
-  test("the three-step and Why Replay Method rows stay geometrically aligned", async ({ page }) => {
+  test("the Free and Planned Premium steps stay geometrically aligned", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/", { waitUntil: "load" });
     await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
@@ -111,11 +112,6 @@ test.describe("first-time visitor funnel", () => {
         const body = item.querySelector<HTMLElement>("p")!.getBoundingClientRect();
         return Math.round(body.top - card.top);
       }),
-      trustOffsets: [...document.querySelectorAll<HTMLElement>(".rm-home-trust-list article")].map(item => {
-        const row = item.getBoundingClientRect();
-        const copy = item.querySelector<HTMLElement>("div")?.getBoundingClientRect();
-        return Math.round((copy?.top || 0) - row.top);
-      }),
     }));
 
     const expectMethodAlignment = (geometry: Awaited<ReturnType<typeof readGeometry>>) => {
@@ -131,7 +127,6 @@ test.describe("first-time visitor funnel", () => {
     const desktop = await readGeometry();
     expectFreeMethodComposition(desktop);
     expect(new Set(desktop.howHeights).size).toBe(1);
-    expect(new Set(desktop.trustOffsets).size).toBe(1);
 
     await page.getByRole("tab", { name: "Planned Premium" }).click();
     await expect(page.locator(".rm-home-how li h3").first()).toHaveText("Upload up to 35 ranked replays every week.");
@@ -143,16 +138,6 @@ test.describe("first-time visitor funnel", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     const mobile = await readGeometry();
     expectMethodAlignment(mobile);
-    const mobileTrust = await page.evaluate(() => ({
-      heights: [...document.querySelectorAll<HTMLElement>(".rm-home-trust-list article")].map(item => Math.round(item.getBoundingClientRect().height)),
-      offsets: [...document.querySelectorAll<HTMLElement>(".rm-home-trust-list article")].map(item => {
-        const row = item.getBoundingClientRect();
-        const copy = item.querySelector<HTMLElement>("div")?.getBoundingClientRect();
-        return Math.round((copy?.top || 0) - row.top);
-      }),
-    }));
-    expect(new Set(mobileTrust.heights).size).toBe(1);
-    expect(new Set(mobileTrust.offsets).size).toBe(1);
 
     await page.getByRole("tab", { name: "Free method" }).click();
     await expect(page.locator(".rm-home-how li h3").first()).toHaveText("Upload one set of 10 ranked replays.");
@@ -160,10 +145,13 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".rm-home-how-label")).toHaveCount(0);
   });
 
-  test("the floating navigation and product intro stay composed at every target width", async ({ page }) => {
+  test("the two-state navigation and product intro stay composed at every target width", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/", { waitUntil: "load" });
     await expect(page.locator('main.marcel-home[data-hydrated="true"]')).toBeVisible();
-    const directoryButton = page.locator(".rm-nav-directory > button");
+    const topHeader = page.locator(".rm-header-home");
+    const compactHeader = page.locator(".rm-scroll-header");
+    const directoryButton = topHeader.locator(".rm-nav-directory > button");
     await expect(page.locator(".rm-main-nav-links")).toHaveCount(0);
     await expect(directoryButton).toHaveText(/Start/);
 
@@ -172,66 +160,77 @@ test.describe("first-time visitor funnel", () => {
     await expect(startItem).toHaveAttribute("aria-current", "page");
     await expect(startItem).toHaveCSS("background-color", "rgba(255, 255, 255, 0.9)");
     expect(await startItem.evaluate(element => getComputedStyle(element, "::after").content)).toBe("none");
-    await page.locator('.rm-nav-directory-panel a[href="/#product"]').click();
+    await page.locator('.rm-nav-directory-panel a[href="/#product"]').click({ force: true });
     await expect(page).toHaveURL(/#product$/);
     await expect(directoryButton).toHaveText(/Product demo/);
-
-    await directoryButton.click();
-    await expect(page.locator('.rm-nav-directory-panel a[href="/#product"]')).toHaveAttribute("aria-current", "page");
-    await page.locator('.rm-nav-directory-panel a[href="/#method"]').click();
-    await expect(page).toHaveURL(/#method$/);
-    await expect(directoryButton).toHaveText(/How it works/);
-
-    await directoryButton.click();
-    await expect(page.locator('.rm-nav-directory-panel a[href="/#method"]')).toHaveAttribute("aria-current", "page");
-    await page.locator('.rm-nav-directory-panel a[href="/#product"]').click();
-    await expect(page).toHaveURL(/#product$/);
-    await expect(directoryButton).toHaveText(/Product demo/);
+    await expect(compactHeader).toHaveClass(/is-visible/);
+    await expect(compactHeader.locator(".rm-nav-directory")).toHaveCount(0);
 
     await page.evaluate(() => {
       document.documentElement.style.scrollBehavior = "auto";
       window.scrollTo(0, 0);
     });
+    await expect(compactHeader).not.toHaveClass(/is-visible/);
     await expect(directoryButton).toHaveText(/Start/);
-    await page.evaluate(() => document.querySelector("#why")?.scrollIntoView());
-    await expect(directoryButton).toHaveText(/Why Replay Method/);
-
-    await page.goto("/#product", { waitUntil: "load" });
-    await expect(directoryButton).toHaveText(/Product demo/);
+    await page.evaluate(() => document.querySelector("#method")?.scrollIntoView());
+    await expect(directoryButton).toHaveText(/How it works/);
+    await expect(compactHeader).toHaveClass(/is-visible/);
 
     for (const width of [1440, 1280, 1180, 1024, 768, 685, 390, 375, 320]) {
       await page.setViewportSize({ width, height: 900 });
+      await page.goto(`/?navigationWidth=${width}#start`, { waitUntil: "load" });
 
-      await expect(directoryButton).toBeVisible();
-      await expect(page.locator(".rm-wordmark > span:last-child")).toBeVisible({ visible: width > 520 });
+      await expect(directoryButton).toBeVisible({ visible: width > 520 });
+      await expect(topHeader.locator(".rm-wordmark > span:last-child")).toBeVisible();
+      await expect(compactHeader).not.toHaveClass(/is-visible/);
 
-      await directoryButton.click();
-      const panel = page.locator(".rm-nav-directory-panel");
-      await expect(panel).toBeVisible();
       const layout = await page.evaluate(() => {
         const heading = document.querySelector<HTMLElement>(".rm-engine-intro h2")!.getBoundingClientRect();
         const paragraph = document.querySelector<HTMLElement>(".rm-engine-intro p")!.getBoundingClientRect();
-        const directory = document.querySelector<HTMLElement>(".rm-nav-directory-panel")!.getBoundingClientRect();
         return {
           headingBottom: heading.bottom,
           headingLeft: heading.left,
+          headingRight: heading.right,
           paragraphTop: paragraph.top,
           paragraphLeft: paragraph.left,
           paragraphWidth: paragraph.width,
-          directoryLeft: directory.left,
-          directoryRight: directory.right,
-          viewport: document.documentElement.clientWidth,
         };
       });
-      expect(layout.paragraphTop).toBeGreaterThan(layout.headingBottom);
-      expect(Math.abs(layout.paragraphLeft - layout.headingLeft)).toBeLessThanOrEqual(1);
-      expect(layout.paragraphWidth).toBeLessThanOrEqual(721);
-      expect(layout.directoryLeft).toBeGreaterThanOrEqual(0);
-      expect(layout.directoryRight).toBeLessThanOrEqual(layout.viewport + 1);
+      if (width >= 1100) {
+        expect(layout.paragraphTop).toBeLessThan(layout.headingBottom);
+        expect(layout.paragraphLeft).toBeGreaterThan(layout.headingRight);
+        expect(layout.paragraphWidth).toBeLessThanOrEqual(481);
+      } else {
+        expect(layout.paragraphTop).toBeGreaterThan(layout.headingBottom);
+        expect(Math.abs(layout.paragraphLeft - layout.headingLeft)).toBeLessThanOrEqual(1);
+        expect(layout.paragraphWidth).toBeLessThanOrEqual(721);
+      }
       await expectNoHorizontalOverflow(page);
 
-      await directoryButton.click();
-      await expect(panel).toHaveCount(0);
+      await page.evaluate(() => {
+        const heroLead = document.querySelector<HTMLElement>(".rm-home-hero > p")!;
+        window.scrollTo(0, window.scrollY + heroLead.getBoundingClientRect().bottom - 32);
+      });
+      await expect(compactHeader).toHaveClass(/is-visible/);
+      await expect.poll(async () => Math.round((await compactHeader.boundingBox())?.y ?? -64)).toBe(0);
+
+      const compactLayout = await compactHeader.evaluate(element => {
+        const wordmark = element.querySelector<HTMLElement>(".rm-wordmark")!.getBoundingClientRect();
+        const actions = element.querySelector<HTMLElement>(".rm-scroll-header-action")!.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          top: Math.round(element.getBoundingClientRect().top),
+          height: Math.round(element.getBoundingClientRect().height),
+          position: style.position,
+          shadow: style.boxShadow,
+          collision: wordmark.right > actions.left,
+        };
+      });
+      expect(compactLayout).toEqual({ top: 0, height: 64, position: "fixed", shadow: "none", collision: false });
+      await expectNoHorizontalOverflow(page);
+
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(compactHeader).not.toHaveClass(/is-visible/);
     }
   });
 
@@ -239,12 +238,13 @@ test.describe("first-time visitor funnel", () => {
     test(`${route} inherits the homepage visual system`, async ({ page }) => {
       await page.goto(route, { waitUntil: "load" });
 
+      const isHomepage = route === "/";
       const main = page.locator("main");
       const header = page.locator(".rm-header");
       const heading = main.locator("h1").first();
       await expect(main).toBeVisible();
       await expect(header).toBeVisible();
-      await expect(page.locator(".rm-nav-directory > button")).toBeVisible();
+      await expect(page.locator(".rm-nav-directory > button")).toBeVisible({ visible: !isHomepage || (await page.viewportSize())!.width > 520 });
       await expect(heading).toBeVisible();
       await expect(main).toHaveCSS("background-color", "rgb(248, 247, 244)");
 
@@ -271,14 +271,23 @@ test.describe("first-time visitor funnel", () => {
       expect(contract.titleRight).toBeLessThanOrEqual(contract.viewport + 1);
       expect(contract.pageWidth).toBeLessThanOrEqual(contract.viewport + 1);
       expect(contract.cleanHeaderSurfaces).toBe(true);
-      expect(contract.headerPosition).toBe(contract.viewport <= 700 ? "fixed" : "sticky");
-      expect(contract.headerShadow).toContain("12px");
-      expect(contract.headerShadow).not.toContain("18px");
-      expect(contract.headerShadow).not.toContain("34px");
+      expect(contract.headerPosition).toBe(isHomepage ? "relative" : contract.viewport <= 700 ? "fixed" : "sticky");
+      if (isHomepage) {
+        expect(contract.headerShadow).toBe("none");
+      } else {
+        expect(contract.headerShadow).toContain("12px");
+        expect(contract.headerShadow).not.toContain("18px");
+        expect(contract.headerShadow).not.toContain("34px");
+      }
 
       await page.evaluate(() => window.scrollTo(0, Math.min(900, document.documentElement.scrollHeight)));
-      await expect.poll(() => page.locator(".rm-header").evaluate(element => Math.round(element.getBoundingClientRect().top))).toBe(0);
-      await expect(header).toBeVisible();
+      if (isHomepage) {
+        await expect(page.locator(".rm-scroll-header")).toHaveClass(/is-visible/);
+        await expect.poll(() => page.locator(".rm-scroll-header").evaluate(element => Math.round(element.getBoundingClientRect().top))).toBe(0);
+      } else {
+        await expect.poll(() => page.locator(".rm-header").evaluate(element => Math.round(element.getBoundingClientRect().top))).toBe(0);
+        await expect(header).toBeVisible();
+      }
 
       await expect(page.locator(".rm-main-nav-links")).toHaveCount(0);
     });
@@ -313,7 +322,7 @@ test.describe("first-time visitor funnel", () => {
     }
   });
 
-  test("the method funnel copy stays exact and the footer uses three symmetric columns", async ({ page }) => {
+  test("the method funnel copy stays exact and the footer uses a left-aligned editorial grid", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/#method", { waitUntil: "load" });
 
@@ -323,7 +332,7 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".rm-home-how h2")).toHaveText("By filtering out unnecessary hours of frustrating tilt, Replay Method delivers focused, easy-to-apply practice and a crystal clear breakdown of exactly what you need to change in your game.");
     await expect(page.locator(".rm-home-how-intro p").nth(0)).toHaveText("Start your climb for free by uploading your 10 latest ranked .replay files, pinpointing exactly what to improve with targeted drills to memorize the changes.");
     await expect(page.locator(".rm-home-how-intro p").nth(1)).toHaveText("Planned Premium extends this method by letting you upload up to 35 ranked .replay files each week. You'll receive a complete analysis paired with tailored coaching that is easy to follow and apply in your games throughout the next week.");
-    await expect(page.locator(".rm-home-trust .reveal-kicker")).toHaveText("Why Replay Method?");
+    await expect(page.locator(".rm-home-trust")).toHaveCount(0);
     await expect(page.locator(".rm-home-hero-category")).toHaveText("Rocket League replay analysis for PC");
     await expect(page.locator(".rm-home-hero > p")).toHaveText("Replay Method is designed to work across up to 35 ranked RL .replay files each week—uncovering the habits, decisions and game-sense patterns keeping you hardstuck. Instead of hours of frustrating tilt and guesswork, you get a crystal-clear breakdown grounded in your own matches, tailored coaching and targeted drills that show you exactly what to change, help each adjustment stick and make it easier to apply in your next games.");
     await expect(page.locator(".rm-home-hero-assurance")).toHaveText("Free first analysis. No card required. PC .replay files only.");
@@ -333,7 +342,7 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".reveal-home-drop > b")).toHaveText("Choose your 10 ranked .replay files");
     await expect(page.locator(".reveal-home-upload-guidance")).toHaveText("Before you upload, play one fresh set of 10 ranked games in your preferred game mode. Save every .replay file and upload the complete set. That gives Replay Method the most honest picture of your game—and the most useful analysis. No card required.");
     await expect(page.locator(".rm-engine-intro .rm-section-prompt")).toHaveCount(0);
-    await expect(page.locator(".rm-engine-intro > p")).toHaveText("Heads up! This interactive demo is intentionally stripped down. Beyond it, the method can scale to support up to 35 .replay files per week, pairing a complete breakdown with tailored coaching and targeted drills that help you memorize each change and bring it into your games.");
+    await expect(page.locator(".rm-engine-intro > p")).toHaveText("Heads up! This interactive demo is intentionally stripped down. Beyond it, the method can scale to support up to 35 .replay files per week, pairing a complete breakdown with tailored coaching and targeted drills that help you memorize each change and bring it into your games. Open the exact matches and timestamps, then compare them with the analysis yourself.");
     const freeTab = page.getByRole("tab", { name: "Free method" });
     const premiumTab = page.getByRole("tab", { name: "Planned Premium" });
     await expect(freeTab).toHaveAttribute("aria-selected", "true");
@@ -409,12 +418,13 @@ test.describe("first-time visitor funnel", () => {
       const disclaimer = document.querySelector<HTMLElement>(".rm-footer-grid > small")!;
       return {
         widths: navs.map(nav => Math.round(nav.getBoundingClientRect().width)),
-        leftGaps: navs.slice(1).map((nav, index) => Math.round(nav.getBoundingClientRect().left - navs[index].getBoundingClientRect().left)),
-        centeredNavCopy: navs.every(nav => getComputedStyle(nav).textAlign === "center" && getComputedStyle(nav).alignItems === "center"),
-        centeredBrand: Math.abs((brand.left + brand.width / 2) - (footer.left + footer.width / 2)) <= 1,
+        leftAlignedNavCopy: navs.every(nav => getComputedStyle(nav).textAlign === "left" && getComputedStyle(nav).alignItems === "flex-start"),
+        brandStartsFooter: Math.abs(brand.left - footer.left) <= 1,
+        brandPrecedesNavigation: brand.right < navs[0].getBoundingClientRect().left,
         integratedDisclaimer: getComputedStyle(disclaimer).backgroundColor === "rgba(0, 0, 0, 0)"
-          && getComputedStyle(disclaimer).textAlign === "center"
-          && Math.abs((disclaimer.getBoundingClientRect().left + disclaimer.getBoundingClientRect().width / 2) - (footer.left + footer.width / 2)) <= 1,
+          && getComputedStyle(disclaimer).textAlign === "left"
+          && getComputedStyle(disclaimer).borderTopStyle === "solid"
+          && Math.abs(disclaimer.getBoundingClientRect().left - footer.left) <= 1,
         relatedPanels: Math.abs(howPanel.width - finalPanel.width) <= 1
           && getComputedStyle(document.querySelector<HTMLElement>(".rm-home-how-panel")!).borderRadius === getComputedStyle(document.querySelector<HTMLElement>(".rm-home-final")!).borderRadius
           && getComputedStyle(document.querySelector<HTMLElement>(".rm-home-how-panel")!).backgroundColor === getComputedStyle(document.querySelector<HTMLElement>(".rm-home-final")!).backgroundColor,
@@ -422,9 +432,9 @@ test.describe("first-time visitor funnel", () => {
     });
 
     expect(new Set(geometry.widths).size).toBe(1);
-    expect(new Set(geometry.leftGaps).size).toBe(1);
-    expect(geometry.centeredNavCopy).toBe(true);
-    expect(geometry.centeredBrand).toBe(true);
+    expect(geometry.leftAlignedNavCopy).toBe(true);
+    expect(geometry.brandStartsFooter).toBe(true);
+    expect(geometry.brandPrecedesNavigation).toBe(true);
     expect(geometry.integratedDisclaimer).toBe(true);
     expect(geometry.relatedPanels).toBe(true);
   });
@@ -436,15 +446,12 @@ test.describe("first-time visitor funnel", () => {
     const appearance = await page.evaluate(() => {
       const style = (selector: string) => getComputedStyle(document.querySelector<HTMLElement>(selector)!);
       const transparent = "rgba(0, 0, 0, 0)";
-      const sections = [".rm-home-hero", ".rm-engine-section", ".rm-home-how", ".rm-home-trust", ".rm-footer"];
+      const sections = [".rm-home-hero", ".rm-engine-section", ".rm-home-how", ".rm-footer"];
       const borderless = [
         ".rm-simple-demo-tease",
         ".rm-product-demo-foot",
-        ".rm-home-trust-list",
-        ".rm-home-trust-list article",
         ".rm-footer-brand",
         ".rm-footer nav",
-        ".rm-footer-grid > small",
       ];
       return {
         canvas: style("main.reveal-home").backgroundColor,
@@ -453,8 +460,7 @@ test.describe("first-time visitor funnel", () => {
           const current = style(selector);
           return current.borderTopWidth === "0px" && current.borderBottomWidth === "0px";
         }),
-        trustCardsAreContained: style(".rm-home-trust-list article").backgroundColor !== transparent
-          && style(".rm-home-trust-list article").borderRadius !== "0px",
+        footerDivider: style(".rm-footer-grid > small").borderTopStyle === "solid",
         demoNotesAreContained: style(".rm-simple-demo-tease").backgroundColor !== transparent
           && style(".rm-product-demo-foot > span").backgroundColor !== transparent,
       };
@@ -464,7 +470,7 @@ test.describe("first-time visitor funnel", () => {
       canvas: "rgb(248, 247, 244)",
       transparentSections: true,
       borderlessGroups: true,
-      trustCardsAreContained: true,
+      footerDivider: true,
       demoNotesAreContained: true,
     });
   });
@@ -488,8 +494,10 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".rm-home-activation .reveal-home-help")).toHaveCSS("border-top-style", "none");
     await expect(helpLinks.first()).toHaveCSS("border-top-style", "solid");
     await expect(helpLinks.first()).toHaveCSS("text-decoration-line", "none");
+    const restingBackground = await helpLinks.first().evaluate(element => getComputedStyle(element).backgroundColor);
     await helpLinks.first().hover();
-    await expect.poll(() => helpLinks.first().evaluate(element => getComputedStyle(element).transform)).not.toBe("none");
+    await expect(helpLinks.first()).toHaveCSS("transform", "none");
+    await expect.poll(() => helpLinks.first().evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe(restingBackground);
     await helpLinks.last().focus();
     await expect(helpLinks.last()).toBeFocused();
   });
@@ -850,6 +858,13 @@ test.describe("first-time visitor funnel", () => {
     await page.goto("/", { waitUntil: "load" });
     await page.locator("#product").scrollIntoViewIfNeeded();
     await expect(page.getByText("Interactive product demo", { exact: true })).toBeVisible();
+    const demoLabelBar = page.locator(".rm-simple-demo .rm-product-demo-bar");
+    const demoLabelMeta = demoLabelBar.locator("small");
+    await expect(demoLabelBar).toHaveCSS("border-bottom-style", "solid");
+    await expect(demoLabelBar).toHaveCSS("border-radius", "0px");
+    await expect(demoLabelBar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(demoLabelMeta).toHaveCSS("border-radius", "0px");
+    await expect(demoLabelMeta).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     await expect(page.getByRole("tab", { name: "Booming the Ball Away fault example", exact: true })).toHaveAttribute("aria-selected", "true");
     await expect(page.locator(".rm-report-demo-flow")).toHaveCount(0);
     await expect(page.locator('.rm-product-demo-nav [role="tab"]')).toHaveCount(10);
@@ -899,6 +914,11 @@ test.describe("first-time visitor funnel", () => {
     await expect(page.locator(".rm-simple-demo-action")).not.toContainText("Your report stays private. No card needed.");
     await expect(page.locator(".rm-product-demo-foot")).toContainText("Your report stays private. No card needed.");
     await expect(page.getByRole("button", { name: /Pause demo|Play demo|Replay animation/ })).toHaveCount(0);
+    await expect(page.locator(".rm-simple-demo-grid")).toHaveCSS("animation-name", "none");
+
+    const staticMethodCard = page.locator(".rm-home-how li").first();
+    await staticMethodCard.hover();
+    await expect(staticMethodCard).toHaveCSS("transform", "none");
   });
 
   test("reduced motion keeps the product loop legible without animated state", async ({ page }) => {
@@ -1055,10 +1075,9 @@ test.describe("truthful product boundaries", () => {
   test("landing explains the player problem, program and self-verification without an FAQ detour", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     await expectLandingFunnel(page);
-    await expect(page.getByText("What keeps going wrong?", { exact: true })).toBeVisible();
-    await expect(page.getByText("How do I fix them?", { exact: true })).toBeVisible();
-    await expect(page.getByText("How do I know it's not bs?", { exact: true })).toBeVisible();
-    await expect(page.getByText(/Open the exact matches and timestamps/i)).toBeVisible();
+    await expect(page.locator(".rm-home-trust")).toHaveCount(0);
+    await expect(page.locator(".rm-engine-intro").getByText(/Open the exact matches and timestamps/i)).toBeVisible();
+    await expect(page.locator(".rm-demo-breakdown time")).not.toHaveCount(0);
   });
 
   test("the public start link reaches the same 10-replay intake on mobile and desktop", async ({ page }) => {
